@@ -8,7 +8,7 @@ This repository contains the code of our research on prognostic AI-monitoring: a
 
 
 
-![pam](figures\pam.jpg)
+![pam](figures/pam.jpg)
 
 
 
