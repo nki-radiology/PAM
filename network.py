@@ -9,7 +9,7 @@ from keras.layers import \
     Add, Lambda, Reshape, Dense, GlobalAveragePooling3D
 
 from layers import GroupNormalization
-from libs.neuron.layers import SpatialTransformer
+from libs.neuron.neuron.layers import SpatialTransformer
 
 from keras.models import Model
 

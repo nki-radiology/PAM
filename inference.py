@@ -6,7 +6,7 @@ from keras.models import Model, load_model
 
 from keras.layers import Input, Multiply
 from layers import GroupNormalization
-from libs.neuron.layers import SpatialTransformer
+from libs.neuron.neuron.layers import SpatialTransformer
 
 from sklearn.linear_model import RANSACRegressor
 from collections import OrderedDict
