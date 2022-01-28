@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-from keras.utils import Sequence
 from keras.models import load_model
 
 from libs.frida.io import ImageLoader, ReadVolume
@@ -61,8 +60,8 @@ class CropThorax(SmartCrop):
         super(CropThorax, self).__init__(margin)
 
     def __call__(self, image):
-        outputs = None
-        image_arr = GetArrayFromImage(image)
+        outputs          = None
+        image_arr        = GetArrayFromImage(image)
         pelvis, diaphram = self._SmartCrop__get_coordinates(image_arr, 20, 70)
         if (pelvis >= 0) and (diaphram <= image_arr.shape[0]) and (pelvis < diaphram):
             outputs = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - diaphram)])
