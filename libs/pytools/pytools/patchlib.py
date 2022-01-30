@@ -16,7 +16,7 @@ import random
 import numpy as np
 
 # local
-import pynd.ndutils as nd
+import libs.pynd.pynd.ndutils as nd
 from imp import reload
 reload(nd)
 

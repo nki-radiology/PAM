@@ -18,7 +18,7 @@ def boundingbox(bwvol):
 
     Parameters
     ----------
-    vol : nd array
+    bwvol : nd array
         the binary (black/white) array for which to compute the boundingbox
 
     Returns

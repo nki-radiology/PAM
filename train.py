@@ -1,10 +1,10 @@
 import argparse
 
-from network import RegistrationNetwork
-from network import Loss
-from network import Penalty
-
-from keras.optimizers import Adam
+# from network import RegistrationNetwork
+# from network import Loss
+# from network import Penalty
+#
+# from keras.optimizers import Adam
 
 parser = argparse.ArgumentParser(description='Train PAM')
 parser.add_argument('--batch_size', default=2, type=int, help='Batch size (can be small thanks to group normalization).')

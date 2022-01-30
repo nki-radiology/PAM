@@ -17,18 +17,19 @@ import sys
 
 import keras
 import numpy as np
-import matplotlib
+# import matplotlib
 import matplotlib.pyplot as plt
 import warnings
 from imp import reload
-import pytools.timer as timer
+import libs.pytools.pytools.timer as timer
 
-import pynd.ndutils as nd
-import pynd.segutils as su
+# import pynd.ndutils as nd
+# import pynd.segutils as su
 
 # the neuron folder should be on the path
-import neuron.plot as nrn_plt
-import neuron.utils as nrn_utils
+# from . import plot as nrn_plt
+from . import utils as nrn_utils
+
 
 class ModelWeightCheck(keras.callbacks.Callback):
     """
@@ -37,7 +38,7 @@ class ModelWeightCheck(keras.callbacks.Callback):
 
     def __init__(self,
                  weight_diff=False,
-                 at_batch_end=False,                 
+                 at_batch_end=False,
                  at_epoch_end=True):
         """
         Params:
@@ -77,10 +78,11 @@ class ModelWeightCheck(keras.callbacks.Callback):
                     if len(w) > 0:
                         for si, sw in enumerate(w):
                             diff = np.maximum(diff, np.max(np.abs(sw - self.wts[wi][si])))
-                            
+
             self.wts = wts
             logs['max_diff'] = diff
             # print("max diff", diff)
+
 
 class CheckLossTrend(keras.callbacks.Callback):
     """
@@ -128,15 +130,13 @@ class CheckLossTrend(keras.callbacks.Callback):
                 err = "Found loss %f, which is much higher than %f + %f " % (this_loss, losses_mean, losses_std)
                 # raise ValueError(err)
                 print(err, file=sys.stderr)
-            
+
             if (this_loss - losses_mean) > (losses_mean * 100):
                 err = "Found loss %f, which is much higher than %f * 100 " % (this_loss, losses_mean)
                 raise ValueError(err)
 
             # cut the first loss and stack athe latest loss.
             self.losses = [*self.losses[1:], logs['loss']]
-
-
 
 
 class PlotTestSlices(keras.callbacks.Callback):
@@ -148,10 +148,11 @@ class PlotTestSlices(keras.callbacks.Callback):
                  savefilepath,
                  generator,
                  vol_size,
-                 run,   # object with fields: patch_size, patch_stride, grid_size
+                 run,  # object with fields: patch_size, patch_stride, grid_size
                  data,  # object with fields:
-                 at_batch_end=None,     # None or number indicate when to execute (i.e. at_batch_end = 10 means execute every 10 batches)
-                 at_epoch_end=True,     # logical, whether to execute at epoch end
+                 at_batch_end=None,
+                 # None or number indicate when to execute (i.e. at_batch_end = 10 means execute every 10 batches)
+                 at_epoch_end=True,  # logical, whether to execute at epoch end
                  verbose=False,
                  period=1,
                  prior=None):
@@ -191,7 +192,7 @@ class PlotTestSlices(keras.callbacks.Callback):
         if prior is not None:
             data = np.load(prior)
             loc_vol = data['prior']
-            self.prior = np.expand_dims(loc_vol, axis=0) # reshape for model
+            self.prior = np.expand_dims(loc_vol, axis=0)  # reshape for model
 
     def on_batch_end(self, batch, logs={}):
         if self.at_batch_end is not None and np.mod(batch + 1, self.at_batch_end) == 0:
@@ -336,6 +337,7 @@ class PredictMetrics(keras.callbacks.Callback):
                         varname = '%s_label_%d' % (metric.__name__, self.label_ids[idx])
                         logs[varname] = meanmet[idx, midx]
 
+
 class ModelCheckpoint(keras.callbacks.Callback):
     """
     A modification of keras' ModelCheckpoint, but allow for saving on_batch_end
@@ -470,6 +472,7 @@ class ModelCheckpoint(keras.callbacks.Callback):
                     else:
                         self.model.save(filepath, overwrite=True)
 
+
 class ModelCheckpointParallel(keras.callbacks.Callback):
     """
     
@@ -568,30 +571,31 @@ class ModelCheckpointParallel(keras.callbacks.Callback):
                     current = logs.get(self.monitor)
                     if current is None:
                         warnings.warn('Can save best model only with %s available, '
-                                    'skipping.' % (self.monitor), RuntimeWarning)
+                                      'skipping.' % (self.monitor), RuntimeWarning)
                     else:
                         if self.monitor_op(current, self.best):
                             if self.verbose > 0:
                                 print('Epoch %05d: Iter%05d: %s improved from %0.5f to %0.5f,'
-                                    ' saving model to %s'
-                                    % (epoch, iter, self.monitor, self.best,
-                                        current, filepath))
+                                      ' saving model to %s'
+                                      % (epoch, iter, self.monitor, self.best,
+                                         current, filepath))
                             self.best = current
                             if self.save_weights_only:
-                                self.model.layers[-(num_outputs+1)].save_weights(filepath, overwrite=True)
+                                self.model.layers[-(num_outputs + 1)].save_weights(filepath, overwrite=True)
                             else:
-                                self.model.layers[-(num_outputs+1)].save(filepath, overwrite=True)
+                                self.model.layers[-(num_outputs + 1)].save(filepath, overwrite=True)
                         else:
                             if self.verbose > 0:
                                 print('Epoch %05d Iter%05d: %s did not improve' %
-                                    (epoch, iter, self.monitor))
+                                      (epoch, iter, self.monitor))
                 else:
                     if self.verbose > 0:
                         print('Epoch %05d: saving model to %s' % (epoch, filepath))
                     if self.save_weights_only:
-                        self.model.layers[-(num_outputs+1)].save_weights(filepath, overwrite=True)
+                        self.model.layers[-(num_outputs + 1)].save_weights(filepath, overwrite=True)
                     else:
-                        self.model.layers[-(num_outputs+1)].save(filepath, overwrite=True)
+                        self.model.layers[-(num_outputs + 1)].save(filepath, overwrite=True)
+
 
 ##################################################################################################
 # helper functions
@@ -616,7 +620,10 @@ def _generate_predictions(model, data_generator, batch_size, nb_samples, vol_par
             vol_pred, vol_true = nrn_utils.next_label(model, data_generator)
             yield (vol_true, vol_pred)
 
+
 import collections
+
+
 def _flatten(l):
     # https://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists
     for el in l:

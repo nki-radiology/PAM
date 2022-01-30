@@ -27,7 +27,7 @@ from subprocess import call
 
 
 # import local ndutils
-import pynd.ndutils as nd
+import libs.pynd.pynd.ndutils as nd
 import re
 
 from imp import reload

@@ -8,7 +8,7 @@ from keras.layers import Input, Multiply
 from layers import GroupNormalization
 from libs.neuron.neuron.layers import SpatialTransformer
 
-from sklearn.linear_model import RANSACRegressor
+# from sklearn.linear_model import RANSACRegressor
 from collections import OrderedDict
 from scipy.stats import kurtosis, skew
 
