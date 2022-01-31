@@ -21,7 +21,8 @@ This repository contains the code of our research on prognostic AI-monitoring: a
 
           $ conda install -c conda-forge pytorch-gpu 
 
-The Pytorch version (as default) is 1.10.1. You can verify the installed version using>
+The Pytorch version (as default) is 1.10.1. You can verify the installed version using:
+
           $ python
           >>> import torch
           >>> print(torch.__version__)
