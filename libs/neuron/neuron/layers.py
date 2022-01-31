@@ -18,12 +18,12 @@ License: GPLv3
 
 # third party
 import numpy as np
-from keras import backend as K
-from keras.legacy import interfaces
+from   keras        import backend as K
+from   keras.legacy import interfaces
 import keras
-from keras.layers import Layer, InputLayer, Input
-import tensorflow as tf
-from keras.engine.topology import Node
+from   keras.layers import Layer, InputLayer, Input
+import tensorflow   as tf
+from   keras.engine.topology import Node
 
 
 # local
@@ -66,9 +66,9 @@ class SpatialTransformer(Layer):
                 'xy' indexing will have the first two entries of the flow 
                 (along last axis) flipped compared to 'ij' indexing
         """
-        self.interp_method = interp_method
-        self.ndims = None
-        self.inshape = None
+        self.interp_method    = interp_method
+        self.ndims            = None
+        self.inshape          = None
         self.single_transform = single_transform
 
         assert indexing in ['ij', 'xy'], "indexing has to be 'ij' (matrix) or 'xy' (cartesian)"
@@ -94,10 +94,10 @@ class SpatialTransformer(Layer):
                             'First argument is the image, second is the transform.')
         
         # set up number of dimensions
-        self.ndims = len(input_shape[0]) - 2
+        self.ndims   = len(input_shape[0]) - 2
         self.inshape = input_shape
-        vol_shape = input_shape[0][1:-1]
-        trf_shape = input_shape[1][1:]
+        vol_shape    = input_shape[0][1:-1]
+        trf_shape    = input_shape[1][1:]
 
         # the transform is an affine iff:
         # it's a 1D Tensor [dense transforms need to be at least ndims + 1]
@@ -645,18 +645,18 @@ class LocallyConnected3D(Layer):
     @interfaces.legacy_conv3d_support
     def __init__(self, filters,
                  kernel_size,
-                 strides=(1, 1, 1),
-                 padding='valid',
-                 data_format=None,
-                 activation=None,
-                 use_bias=True,
-                 kernel_initializer='glorot_uniform',
-                 bias_initializer='zeros',
-                 kernel_regularizer=None,
-                 bias_regularizer=None,
-                 activity_regularizer=None,
-                 kernel_constraint=None,
-                 bias_constraint=None,
+                 strides             = (1, 1, 1),
+                 padding             = 'valid',
+                 data_format         = None,
+                 activation          = None,
+                 use_bias            = True,
+                 kernel_initializer  = 'glorot_uniform',
+                 bias_initializer    = 'zeros',
+                 kernel_regularizer  = None,
+                 bias_regularizer    = None,
+                 activity_regularizer= None,
+                 kernel_constraint   = None,
+                 bias_constraint     = None,
                  **kwargs):
         
         super(LocallyConnected3D, self).__init__(**kwargs)
@@ -668,17 +668,17 @@ class LocallyConnected3D(Layer):
         if self.padding != 'valid':
             raise ValueError('Invalid border mode for LocallyConnected3D '
                              '(only "valid" is supported): ' + padding)
-        self.data_format = conv_utils.normalize_data_format(data_format)
-        self.activation = activations.get(activation)
-        self.use_bias = use_bias
-        self.kernel_initializer = initializers.get(kernel_initializer)
-        self.bias_initializer = initializers.get(bias_initializer)
-        self.kernel_regularizer = regularizers.get(kernel_regularizer)
-        self.bias_regularizer = regularizers.get(bias_regularizer)
+        self.data_format          = conv_utils.normalize_data_format(data_format)
+        self.activation           = activations.get(activation)
+        self.use_bias             = use_bias
+        self.kernel_initializer   = initializers.get(kernel_initializer)
+        self.bias_initializer     = initializers.get(bias_initializer)
+        self.kernel_regularizer   = regularizers.get(kernel_regularizer)
+        self.bias_regularizer     = regularizers.get(bias_regularizer)
         self.activity_regularizer = regularizers.get(activity_regularizer)
-        self.kernel_constraint = constraints.get(kernel_constraint)
-        self.bias_constraint = constraints.get(bias_constraint)
-        self.input_spec = InputSpec(ndim=5)
+        self.kernel_constraint    = constraints.get(kernel_constraint)
+        self.bias_constraint      = constraints.get(bias_constraint)
+        self.input_spec           = InputSpec(ndim=5)
 
     def build(self, input_shape):
         

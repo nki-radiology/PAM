@@ -15,13 +15,13 @@ import sys
 from . import layers
 
 # third party
+import keras
 import numpy as np
 import tensorflow as tf
-import keras
-import keras.layers as KL
-from keras.models import Model
 import keras.backend as K
-from keras.constraints import maxnorm
+import keras.layers as KL
+from   keras.models import Model
+from   keras.constraints import maxnorm
 
 
 def dilation_net(nb_features,

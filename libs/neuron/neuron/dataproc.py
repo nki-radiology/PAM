@@ -8,10 +8,10 @@ import six
 
 # third party
 import nibabel as nib
-import numpy as np
+import numpy   as np
 import scipy.ndimage.interpolation
 from tqdm import tqdm_notebook as tqdm # for verbosity for forloops
-from PIL import Image
+from   PIL import Image
 import matplotlib.pyplot as plt
 
 
@@ -39,7 +39,7 @@ reload(nd)
 
 def proc_mgh_vols(inpath,
                   outpath,
-                  ext='.mgz',
+                  ext      ='.mgz',
                   label_idx=None,
                   **kwargs): 
     ''' process mgh data from mgz format and save to numpy format
@@ -88,10 +88,10 @@ def proc_mgh_vols(inpath,
 
 
 def scans_to_slices(inpath, outpath, slice_nrs,
-                    ext='.mgz',
+                    ext      ='.mgz',
                     label_idx=None,
-                    dim_idx=2,
-                    out_ext='.png',
+                    dim_idx  =2,
+                    out_ext  ='.png',
                     slice_pad=0,
                     vol_inner_pad_for_slice_nrs=0,
                     **kwargs):  # vol_proc args
@@ -160,17 +160,17 @@ def scans_to_slices(inpath, outpath, slice_nrs,
 
 
 def vol_proc(vol_data,
-             crop=None,
-             resize_shape=None, # None (to not resize), or vector. If vector, third entry can be None
-             interp_order=None,
-             rescale=None,
-             rescale_prctle=None,
-             resize_slices=None,
+             crop             =None,
+             resize_shape     =None, # None (to not resize), or vector. If vector, third entry can be None
+             interp_order     =None,
+             rescale          =None,
+             rescale_prctle   =None,
+             resize_slices    =None,
              resize_slices_dim=None,
-             offset=None,
-             clip=None,
-             extract_nd=None,  # extracts a particular section
-             force_binary=None,  # forces anything > 0 to be 1
+             offset           =None,
+             clip             =None,
+             extract_nd       =None,  # extracts a particular section
+             force_binary     =None,  # forces anything > 0 to be 1
              permute=None):
     ''' process a volume with a series of intensity rescale, resize and crop rescale'''
 
@@ -184,18 +184,18 @@ def vol_proc(vol_data,
     if rescale_prctle is not None:
         # print("max:", np.max(vol_data.flat))
         # print("test")
-        rescale = np.percentile(vol_data.flat, rescale_prctle)
+        rescale  = np.percentile(vol_data.flat, rescale_prctle)
         # print("rescaling by 1/%f" % (rescale))
         vol_data = np.multiply(vol_data.astype(float), 1/rescale)
 
     if resize_slices is not None:
         resize_slices = [*resize_slices]
         assert resize_shape is None, "if resize_slices is given, resize_shape has to be None"
-        resize_shape = resize_slices
+        resize_shape  = resize_slices
         if resize_slices_dim is None:
             resize_slices_dim = np.where([f is None for f in resize_slices])[0]
             assert len(resize_slices_dim) == 1, "Could not find dimension or slice resize"
-            resize_slices_dim = resize_slices_dim[0]
+            resize_slices_dim             = resize_slices_dim[0]
         resize_shape[resize_slices_dim] = vol_data.shape[resize_slices_dim]
 
     # resize (downsample) matrices
@@ -245,9 +245,9 @@ def prior_to_weights(prior_filename, nargout=1, min_freq=0, force_binary=False, 
     prior_flat = np.reshape(prior, (np.prod(prior.shape[0:(np.ndim(prior)-1)]), prior.shape[-1]))
 
     if force_binary:
-        nb_labels = prior_flat.shape[-1]
+        nb_labels        = prior_flat.shape[-1]
         prior_flat[:, 1] = np.sum(prior_flat[:, 1:nb_labels], 1)
-        prior_flat = np.delete(prior_flat, range(2, nb_labels), 1)
+        prior_flat       = np.delete(prior_flat, range(2, nb_labels), 1)
 
     # sum total class votes
     class_count = np.sum(prior_flat, 0)
@@ -375,8 +375,8 @@ def ml_split(in_path, out_path,
         os.makedirs(out_path)
 
     # get subjects and randomize their order
-    subjs = sorted(os.listdir(in_path))
-    nb_subj = len(subjs)
+    subjs      = sorted(os.listdir(in_path))
+    nb_subj    = len(subjs)
     subj_order = np.random.permutation(nb_subj)
 
     # prepare split

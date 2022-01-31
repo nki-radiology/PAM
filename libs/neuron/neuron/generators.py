@@ -5,19 +5,19 @@ import sys
 import os
 
 # third party imports
-import numpy as np
+import numpy   as np
 import nibabel as nib
 import scipy
-from keras.utils import np_utils 
+from   keras.utils import np_utils
 import keras
 import keras.preprocessing
 import keras.preprocessing.image
 from keras.models import Model
 
 # local packages
-import pynd.ndutils as nd
+import pynd.ndutils     as nd
 import pytools.patchlib as pl
-import pytools.timer as timer
+import pytools.timer    as timer
 
 # reload patchlib (it's often updated right now...)
 from imp import reload
@@ -32,10 +32,10 @@ class Vol(object):
     
     def __init__(self, 
                  volpath,
-                 ext='.npz',
-                 nb_restart_cycle=None,     # number of files to restart after
-                 name='single_vol',         # name
-                 fixed_vol_size=True,       # assumes each volume is fixed size
+                 ext             = '.npz',
+                 nb_restart_cycle= None,            # number of files to restart after
+                 name            = 'single_vol',    # name
+                 fixed_vol_size  = True,            # assumes each volume is fixed size
                  ):
 
         # get filenames at given paths

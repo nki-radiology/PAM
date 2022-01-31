@@ -14,6 +14,6 @@ def output_init(shape, name=None, dim_ordering=None):
     rpart = np.random.random(size)
 #     idpart_ = np.eye(size[3])
     idpart_ = np.ones((size[3], size[3]))
-    idpart = np.expand_dims(np.expand_dims(idpart_, 0), 0)
-    value = np.concatenate((rpart, idpart), axis=2)
+    idpart  = np.expand_dims(np.expand_dims(idpart_, 0), 0)
+    value   = np.concatenate((rpart, idpart), axis=2)
     return K.variable(value, name=name)

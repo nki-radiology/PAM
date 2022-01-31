@@ -12,10 +12,10 @@ License: GPLv3
 
 # third party
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from matplotlib.colors import Normalize
-from mpl_toolkits.axes_grid1 import make_axes_locatable # plotting
+import matplotlib.pyplot as plt
+from   matplotlib.colors import Normalize
+from   mpl_toolkits.axes_grid1 import make_axes_locatable # plotting
 
 def slices(slices_in,           # the 2D slices
            titles=None,         # list of titles

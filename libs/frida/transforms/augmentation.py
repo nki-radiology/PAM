@@ -1,8 +1,7 @@
 import SimpleITK as sitk
-import numpy as np
+import numpy     as np
 
-from abc import abstractmethod
-
+from abc   import abstractmethod
 from .base import Transform
 
 
@@ -25,21 +24,21 @@ class RandomLinearDisplacement(Augmentation):
     # this code was adapted from keras augmentation module.
 
     def __init__( self,
-                  rotation_range=None,
-                  shear_range=None,
-                  zoom_range=None,
-                  shift_range=None,
-                  random_axis_flip=False,
-                  interpolator=sitk.sitkLinear,
-                  cval=0. ):
+                  rotation_range   = None,
+                  shear_range      = None,
+                  zoom_range       = None,
+                  shift_range      = None,
+                  random_axis_flip = False,
+                  interpolator     = sitk.sitkLinear,
+                  cval             = 0. ):
 
-        self.rotation_range = rotation_range
-        self.shear_range = shear_range
-        self.zoom_range = zoom_range
-        self.shift_range = shift_range
+        self.rotation_range   = rotation_range
+        self.shear_range      = shear_range
+        self.zoom_range       = zoom_range
+        self.shift_range      = shift_range
         self.random_axis_flip = random_axis_flip
-        self.interpolator = interpolator
-        self.cval = cval
+        self.interpolator     = interpolator
+        self.cval             = cval
         super(RandomLinearDisplacement, self).__init__()
 
     def __call__( self, image, *args ):
@@ -53,7 +52,7 @@ class RandomLinearDisplacement(Augmentation):
             for t in args:
                 transform_matrix = transform_matrix.dot(t)
 
-        flt = sitk.AffineTransform(3)
+        flt   = sitk.AffineTransform(3)
         flt.SetTranslation(tuple(transform_matrix[0:3, -1].squeeze()))
         flt.SetMatrix(transform_matrix[:3, :3].ravel())
         image = sitk.Resample(image, image, flt, self.interpolator, self.cval)
@@ -96,7 +95,7 @@ class RandomLinearDisplacement(Augmentation):
         rotation_matrix = np.eye(4)
         for ax, th in zip(axis_of_rotation, thetas):
             c, s = np.cos(th), np.sin(th)
-            R = np.eye(4)
+            R    = np.eye(4)
             if ax == 0:
                 R[:3, :3] = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
             if ax == 1:
@@ -124,8 +123,8 @@ class RandomLinearDisplacement(Augmentation):
             self.shift_range = [self.shift_range] * 3
 
         rg = self.shift_range
-        t = [np.random.uniform(-rg[i], rg[i]) for i in range(3)]
-        transform_matrix = np.eye(4)
+        t  = [np.random.uniform(-rg[i], rg[i]) for i in range(3)]
+        transform_matrix         = np.eye(4)
         transform_matrix[0:3, 3] = t
         return transform_matrix
 
@@ -139,15 +138,15 @@ class RandomLinearDisplacement(Augmentation):
         else:
             zx, zy, zz = np.random.uniform(self.zoom_range[0], self.zoom_range[1], 3)
 
-        transform_matrix = np.eye(4)
+        transform_matrix         = np.eye(4)
         transform_matrix[:3, :3] = np.diag([zx, zy, zz])
 
         return transform_matrix
 
     def _random_axis_flip( self ):
 
-        flip = lambda: np.random.choice([1, -1])
-        transform_matrix = np.eye(4)
+        flip                     = lambda: np.random.choice([1, -1])
+        transform_matrix         = np.eye(4)
         transform_matrix[:3, :3] = np.diag([flip(), flip(), flip()])
         return transform_matrix
 
@@ -157,7 +156,7 @@ class RandomLinearDisplacement(Augmentation):
         o_y = float(y) / 2 + 0.5
         o_z = float(z) / 2 + 0.5
         offset_matrix, reset_matrix = np.eye(4), np.eye(4)
-        offset_matrix[0:3, 3] = [o_x, o_y, o_z]
-        reset_matrix[0:3, 3] = [-o_x, -o_y, -o_z]
-        transform_matrix = np.dot(np.dot(offset_matrix, matrix), reset_matrix)
+        offset_matrix[0:3, 3]       = [o_x, o_y, o_z]
+        reset_matrix[0:3, 3]        = [-o_x, -o_y, -o_z]
+        transform_matrix            = np.dot(np.dot(offset_matrix, matrix), reset_matrix)
         return transform_matrix

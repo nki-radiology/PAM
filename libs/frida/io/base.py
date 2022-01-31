@@ -38,10 +38,10 @@ class ReadDICOM(Read):
     def __call__( self, filename ):
 
         try:
-            reader = sitk.ImageSeriesReader()
+            reader      = sitk.ImageSeriesReader()
             dicom_names = reader.GetGDCMSeriesFileNames(filename)
             reader.SetFileNames(dicom_names)
-            image = reader.Execute()
+            image       = reader.Execute()
             return image
         except:
             return None

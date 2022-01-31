@@ -21,8 +21,8 @@ import itertools
 
 # third party imports
 import numpy as np
-from tqdm import tqdm_notebook as tqdm
-from pprint import pformat
+from   tqdm import tqdm_notebook as tqdm
+from   pprint import pformat
 
 import pytools.patchlib as pl
 import pytools.timer as timer
@@ -31,7 +31,7 @@ import pytools.timer as timer
 import pynd.ndutils as nd
 
 # often changed file
-from imp import reload
+from   imp import reload
 import keras
 import keras.backend as K
 import tensorflow as tf

@@ -1,5 +1,5 @@
 import SimpleITK as sitk
-from numpy import floor, ceil
+from numpy        import floor, ceil
 from numpy.random import uniform
 
 
@@ -16,7 +16,7 @@ class RandomizedTransform(Transform):
 
     def __init__( self, probability, transform ):
         self.probability = probability
-        self.transform = transform
+        self.transform   = transform
         super(RandomizedTransform, self).__init__()
 
     def __call__( self, image ):
@@ -39,26 +39,26 @@ class PadAndCropTo(Transform):
 
     def __init__( self, target_shape, cval=0. ):
         self.target_shape = target_shape
-        self.cval = cval
+        self.cval         = cval
         super(PadAndCropTo, self).__init__()
 
     def __call__( self, image ):
 
         # padding
-        shape = image.GetSize()
+        shape        = image.GetSize()
         target_shape = [s if t is None else t for s, t in zip(shape, self.target_shape)]
-        pad = [max(s - t, 0) for t, s in zip(shape, target_shape)]
-        lo_bound = [int(floor(p / 2)) for p in pad]
-        up_bound = [int(ceil(p / 2)) for p in pad]
-        image = sitk.ConstantPad(image, lo_bound, up_bound, self.cval)
+        pad          = [max(s - t, 0) for t, s in zip(shape, target_shape)]
+        lo_bound     = [int(floor(p / 2)) for p in pad]
+        up_bound     = [int(ceil(p / 2)) for p in pad]
+        image        = sitk.ConstantPad(image, lo_bound, up_bound, self.cval)
 
         # cropping
-        shape = image.GetSize()
+        shape        = image.GetSize()
         target_shape = [s if t is None else t for s, t in zip(shape, self.target_shape)]
-        crop = [max(t - s, 0) for t, s in zip(shape, target_shape)]
-        lo_bound = [int(floor(c / 2)) for c in crop]
-        up_bound = [int(ceil(c / 2)) for c in crop]
-        image = sitk.Crop(image, lo_bound, up_bound)
+        crop         = [max(t - s, 0) for t, s in zip(shape, target_shape)]
+        lo_bound     = [int(floor(c / 2)) for c in crop]
+        up_bound     = [int(ceil(c / 2)) for c in crop]
+        image        = sitk.Crop(image, lo_bound, up_bound)
 
         return image
 
@@ -66,13 +66,13 @@ class PadAndCropTo(Transform):
 class Resample(Transform):
 
     def __init__( self, spacing=1., interpolator=sitk.sitkLinear ):
-        self.spacing = spacing
+        self.spacing      = spacing
         self.interpolator = interpolator
-        self.flt = sitk.ResampleImageFilter()
+        self.flt          = sitk.ResampleImageFilter()
         super(Resample, self).__init__()
 
     def __call__( self, image ):
-        spacing = self.spacing
+        spacing     = self.spacing
         if not isinstance(spacing, list):
             spacing = [spacing, ] * 3
         self.flt.SetReferenceImage(image)
@@ -89,29 +89,29 @@ class ZeroOneScaling(Transform):
 
     def __init__(self):
         self.minmax_flt = sitk.MinimumMaximumImageFilter()
-        self.cast_flt = sitk.CastImageFilter()
+        self.cast_flt   = sitk.CastImageFilter()
         self.cast_flt.SetOutputPixelType(sitk.sitkFloat32)
         super(ZeroOneScaling, self).__init__()
 
     def __call__(self, image):
-        image = self.cast_flt.Execute(image)
+        image   = self.cast_flt.Execute(image)
         # get min and max
         self.minmax_flt.Execute(image)
         minimum = self.minmax_flt.GetMinimum()
         maximum = self.minmax_flt.GetMaximum()
-        image = (image - minimum)/(maximum - minimum)
+        image   = (image - minimum)/(maximum - minimum)
         return image
 
 
 class ToNumpyArray(Transform):
 
     def __init__(self, add_batch_dim=False, add_singleton_dim=False):
-        self.add_batch_dim = add_batch_dim
+        self.add_batch_dim     = add_batch_dim
         self.add_singleton_dim = add_singleton_dim
         super(ToNumpyArray, self).__init__()
 
     def __call__(self, image):
-        image = sitk.GetArrayFromImage(image)
+        image     = sitk.GetArrayFromImage(image)
         if self.add_batch_dim:
             image = image[None]
         if self.add_singleton_dim:
