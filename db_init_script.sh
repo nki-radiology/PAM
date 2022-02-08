@@ -1,0 +1,1 @@
+/databricks/python/bin/pip install -r /dbfs/PAM/requirements_python37.txt
