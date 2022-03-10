@@ -96,15 +96,6 @@ def apply_localizer(tcia_proc: str, path_to_save: str, root_path=''):
                 processed_ct_scan = loader(path)#(row['image_path'])
                 processed_ct_scan = GetImageFromArray(processed_ct_scan)
 
-                #print("Step 01 :D")
-                # The 120 value is to compensate the clamp.SetLowerBound?
-                #processed_ct_scan = processed_ct_scan + 120
-                #print("Step 02 :D")
-                #processed_ct_scan = processed_ct_scan / 2
-                #print("Step 03 :D")
-                #processed_ct_scan = SimpleITK.Cast(processed_ct_scan,SimpleITK.sitkUInt8)
-                #print("Step 04 :D")
-
                 WriteImage(processed_ct_scan, path_to_save + str(index) + '.nrrd')
 
             except:
@@ -137,68 +128,3 @@ tcia                 = tcia[0:3]
 apply_localizer(tcia_proc= tcia, path_to_save= path_root_to_save, root_path=path_data_to_process)
 
 
-
-
-
-
-
-
-
-
-
-#def process_data(dim_img         : tuple,
-#                 csv_file        : str,
-#                 path_dir_to_save: str,
-#                 pat_root_data_
-#                 ):
-
-
-"""
-clamp = ClampImageFilter()
-clamp.SetUpperBound(300)
-clamp.SetLowerBound(-120)
-
-
-
-loader = ImageLoader(
-    ReadDICOM(),
-    CropThorax(margin=5),
-    Resample(2),
-    PadAndCropTo((192, 192, 160), cval=-1000),
-    TransformFromITKFilter(clamp),
-    #ZeroOneScaling(),
-)
-
-
-
-
-
-tcia_file_path       = "../Data/tcia_proc.csv"
-path_root_to_save    = '../../../../DATA/laura/tcia_proc/'
-path_data_to_process = '../../../..'
-tcia                 = pd.read_csv(tcia_file_path, index_col=0)
-tcia                 = tcia[0:10]
-print (" ------------- This is my size: ---------------", len(tcia))
-
-
-with tqdm(total=len(tcia)) as pbar:
-    for index, row in tcia.iterrows():
-        try:
-            #print("This is my path: ", row['image_path'])
-            path = path_data_to_process + row['image_path']
-            print("Path to save: ", path_root_to_save + str(index) + '.nrrd')
-            processed_ct_scan = loader(path)#(row['image_path'])
-            print("Step 01 :D")
-            processed_ct_scan = processed_ct_scan+120
-            print("Step 02 :D")
-            processed_ct_scan = processed_ct_scan/2
-            print("Step 03 :D")
-            #processed_ct_scan = SimpleITK.Cast(processed_ct_scan,SimpleITK.sitkUInt8)
-            print("Step 04 :D")
-            WriteImage(processed_ct_scan, path_root_to_save + str(index) + '.nrrd')
-
-        except:
-            print("---------- CT was not loaded! ----------")
-            pass
-        pbar.update(1)
-"""
