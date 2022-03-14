@@ -13,6 +13,7 @@ from   inference_localizer import *
 
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
+
 def read(filename):
     image = dcmread(filename)
     coord = float(image.ImagePositionPatient[-1])
@@ -70,7 +71,6 @@ def verify_path_to_save(path: str):
 def save_process_tcia_file(tcia, path_to_save, proc_file_name):
     tcia.to_csv(path_to_save + proc_file_name)
     print("The file was processed and saved!")
-
 
 
 def apply_localizer(tcia_proc: str, path_to_save: str, root_path=''):
