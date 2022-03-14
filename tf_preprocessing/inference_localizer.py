@@ -17,6 +17,7 @@ from   libs.frida.io            import ImageLoader, ReadVolume, ReadDICOM
 from   SimpleITK                import GetArrayFromImage, Crop, ClampImageFilter
 from   libs.frida.transforms    import Transform, PadAndCropTo, ZeroOneScaling, TransformFromITKFilter, Resample, ToNumpyArray
 
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 class SmartCrop(Transform):
 
@@ -40,7 +41,7 @@ class SmartCrop(Transform):
         # get anatomical coordinates
         image_arr              = np.clip(image_arr, -120, 300)
         scan_coordinates       = np.arange(image_arr.shape[0])
-        anatomical_coordinates = self.localizer.predict(image_arr[..., None])
+        anatomical_coordinates = self.localizer.predict(image_arr[..., None], batch_size=1)
 
         # linear fit between anatomical and scan coords
         m = RANSACRegressor(random_state=42)
