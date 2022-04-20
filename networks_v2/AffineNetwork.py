@@ -237,7 +237,7 @@ class AffineNetwork(nn.Module):
 model = AffineNetwork(in_channels  = 2,
              out_channels = 1,
              n_blocks     = 6,
-             start_filters= 16,
+             start_filters= 8,
              activation   = 'relu',
              normalization= 'group8',
              conv_mode    = 'same',
