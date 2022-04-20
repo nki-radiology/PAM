@@ -1,6 +1,6 @@
 import torch
-from   layers           import *
-from   SpatialTransform import SpatialTransform
+from   networks_v2.layers           import *
+from   networks_v2.SpatialTransform import SpatialTransform
 
 class Concatenate(nn.Module):
     def __init__(self):
