@@ -80,10 +80,11 @@ class EncodingBlock(nn.Module):
         :rtype: torch.tensor
         """
         y = self.conv1(x)       # convolution   1
-        y = self.act1(y)        # activation    1
 
         if  self.normalization:
             y = self.norm1(y)   # normalization 1
+
+        y = self.act1(y)        # activation    1
 
         if self.pooling:
             y = self.pool(y)    # pooling
@@ -99,7 +100,7 @@ class AffineNetwork(nn.Module):
                  in_channels    : int = 1,
                  out_channels   : int = 2,
                  n_blocks       : int = 4,
-                 start_filters  : int = 32,
+                 start_filters  : int = 16,
                  activation     : str = 'relu',
                  normalization  : str = None,
                  conv_mode      : str = 'same',
@@ -233,13 +234,14 @@ class AffineNetwork(nn.Module):
         return A, registered
 
 
+# To summarize the complete model
 '''
 model = AffineNetwork(in_channels  = 2,
              out_channels = 1,
              n_blocks     = 5,
              start_filters= 16,
              activation   = 'relu',
-             normalization= 'group4',
+             normalization= 'group8',
              conv_mode    = 'same',
              dim          = 3)
 

@@ -22,7 +22,7 @@ class DownBlock(nn.Module):
     def __init__(self,
                  in_channels    : int,
                  out_channels   : int,
-                 pooling        : bool = True,
+                 pooling        : bool = False,
                  activation     : str  = 'relu',
                  normalization  : str  = None,
                  dim            : int  = 2,         # str = 2
@@ -87,9 +87,9 @@ class DownBlock(nn.Module):
         :rtype: torch.tensor
         """
         y = self.conv1(x)       # convolution 1
-        y = self.act1(y)        # activation 1
         if self.normalization:
             y = self.norm1(y)   # normalization 1
+        y = self.act1(y)        # activation 1
 
         before_pooling = y      # save the outputs before the pooling operation
         if self.pooling:
@@ -190,14 +190,16 @@ class UpBlock(nn.Module):
         if self.up_mode != 'transposed':
             # We need to reduce the channel dimension with a conv layer
             up_layer = self.conv0(up_layer)                         # Convolution 0
-        up_layer = self.act0(up_layer)                              # Activation  0
         if self.normalization:
             up_layer = self.norm0(up_layer)  # Normalization 0
+        up_layer = self.act0(up_layer)                              # Activation  0
+
         merged_layer = self.concat(up_layer, cropped_encoder_layer)  # concatenation
+
         y = self.conv1(merged_layer)                                 # Convolution   1
-        y = self.act1(y)                                             # Activation    1
         if self.normalization:
             y = self.norm1(y)                                        # Normalization 1
+        y = self.act1(y)                                             # Activation    1
         return y
 
 
@@ -349,7 +351,7 @@ model = DeformationNetwork(in_channels  = 2,
                            n_blocks     = 5,
                            start_filters= 16,
                            activation   = 'relu',
-                           normalization= 'group4',
+                           normalization= 'group8',
                            conv_mode    = 'same',
                            dim          = 3)
 

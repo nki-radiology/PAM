@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from networks_v1.DeformationNetwork import DeformationNetwork
-from networks_v1.AffineNetwork import AffineNetwork
+from networks_v1.AffineNetwork      import AffineNetwork
 from torchsummary import summary
 
 class RegistrationNetwork(nn.Module):
@@ -93,14 +93,14 @@ class RegistrationNetwork(nn.Module):
 
 """
 model = RegistrationNetwork(in_channels  = 2,
-             out_channels = 1,
+             out_channels   = 1,
              n_blocks_affine= 4,
              n_blocks_deform= 4,
-             start_filters= 16,
-             activation   = 'relu',
-             normalization= 'group4',
-             conv_mode    = 'same',
-             dim          = 3)
+             start_filters  = 16,
+             activation     = 'relu',
+             normalization  = 'group4',
+             conv_mode      = 'same',
+             dim            = 3)
 
 
 x = torch.randn(size=(1, 1, 192, 192, 160), dtype=torch.float32)
