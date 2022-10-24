@@ -4,46 +4,26 @@ This repository contains the code of our research on prognostic AI-monitoring: a
 
 :construction: This research is still in its preliminary phase, further development and validation is warrant before clinical use.  
 
-## Graphical Abstract
 
-
-
-![pam](figures/pam.jpg)
-
-
-
-## Requirements
-
-- Python 3.6
-- Tensorflow 1.15.0
-- Keras 
-- Scikit-Learn
-- Pandas
-- SimpleITK 
-
-`VoxelMorph`, `Neuron` and `Frida` are already included in the `libs` folder. 
-
-Parts of `Keras-Group-Normalization` and `Recursive-Cascaded-Networks` are reused in the main code. 
-
-
-## Installing requirements using Anaconda
+## 1. Requirements
 
 - Virtual environment
 
-          $ conda create --name tf-1.15
-          $ conda activate tf-1.15
+          $ conda create --name pytorch
+          $ conda activate pytorch
 
 - Installing packages inside the virtual environment
 
-          $ conda install -c anaconda tensorflow-gpu==1.15
-          $ conda install -c anaconda scikit-learn
-          $ conda install -c anaconda pandas
+          $ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
           $ conda install -c simpleitk simpleitk
-          $ conda install -c conda-forge keras
           $ conda install -c conda-forge nibabel
           $ conda install -c conda-forge tqdm
-          $ conda install -c anaconda pillow
           $ conda install -c conda-forge matplotlib
+          $ conda install -c anaconda scikit-learn
+          $ conda install -c conda-forge scikit-learn-intelex
+          $ conda install -c anaconda pandas
+          $ conda install -c conda-forge glob2
+          $ pip install torchsummary
 
 
 ## Publications
