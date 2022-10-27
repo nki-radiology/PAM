@@ -42,6 +42,7 @@ Follow the steps to use it and to have your preprocessed data properly.
         $ conda activate tf-1.12
 
 - Installing packages inside the virtual environment
+
         $ conda install -c anaconda tensorflow-gpu==1.12
         $ conda install -c anaconda scikit-learn
         $ conda install -c anaconda pandas
