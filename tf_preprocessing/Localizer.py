@@ -18,7 +18,7 @@ from   SimpleITK                import GetArrayFromImage, Crop, ClampImageFilter
 from   libs.frida.transforms    import Transform, PadAndCropTo, ZeroOneScaling, TransformFromITKFilter, Resample, ToNumpyArray
 
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 class SmartCrop(Transform):
 
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
 
     loader = ImageLoader(
-    	ReadVolume(), # or ReadDICOM()
+    	ReadDICOM(), # or ReadVolume()ReadDICOM()
     	CropThorax(),
         Resample(2),
         PadAndCropTo((192, 192, 160), cval=-1000),
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         ToNumpyArray(add_batch_dim=False, add_singleton_dim=False)
     )
 
-    processed_ct_scan = loader(r'data/LIDIC-IDRI-0001.nii.gz')
+    processed_ct_scan = loader(r'/IMMUNOTEAM/CancerImagingArchive_20200421/CT/CT Lymph Nodes/ABD_LYMPH_001/09-14-2014-ABDLYMPH001-abdominallymphnodes-30274/abdominallymphnodes-26828')
     processed_ct_scan = GetImageFromArray(processed_ct_scan)
-    WriteImage(processed_ct_scan, r'data/LIDIC-IDRI-0001_processed.nii.gz')
+    WriteImage(processed_ct_scan, r'processed.nii.gz')
 """
