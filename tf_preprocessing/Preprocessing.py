@@ -1,15 +1,15 @@
 import os
 import csv
 import SimpleITK
-import numpy               as     np
-import pandas              as     pd
-import SimpleITK           as     sitk
-from   tqdm                import tqdm
-from   pydicom             import dcmread
-from   SimpleITK           import WriteImage
-from   SimpleITK           import ClampImageFilter
-from   Localizer           import *
-from   config              import args_localizer
+import numpy     as     np
+import pandas    as     pd
+import SimpleITK as     sitk
+from   tqdm      import tqdm
+from   pydicom   import dcmread
+from   SimpleITK import WriteImage
+from   SimpleITK import ClampImageFilter
+from   Localizer import *
+from   config    import args_localizer
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
