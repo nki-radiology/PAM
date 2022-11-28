@@ -13,14 +13,6 @@ def reparametrize(mu, logvar):
     std = logvar.div(2).exp()
     eps = Variable(std.data.new(std.size()).normal_())
     return mu + std*eps
-
-class View(nn.Module):
-    def __init__(self, size: int):
-        self.size = size
-    
-    def forward(self, tensor: torch.tensor):
-        return tensor.view(self.size)
-    
    
 
 class Encoder(nn.Module):
@@ -360,14 +352,14 @@ model = model.to('cuda')
 print(model)
 summary = summary(model,(1,  256, 256), device='cuda')"""
 
-model = Affine(input_ch   = 2,
+"""model = Affine(input_ch   = 2,
                data_dim   = 2,
                latent_dim = 256,
                img_shape  = (256, 256),
                filters    = [16, 32, 64, 128, 256])
 model = model.to('cuda')
 print(model)
-summary = summary(model, [(1, 256, 256), (1, 256, 256)], device='cuda')
+summary = summary(model, [(1, 256, 256), (1, 256, 256)], device='cuda')"""
 
 """model = Elastic(input_ch   = 2,
                 output_ch  = 1,
