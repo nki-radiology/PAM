@@ -162,14 +162,14 @@ class Wasserstein_AE(nn.Module):
 
 
 
-class Affine(nn.Module):
+class Affine_WAE(nn.Module):
     def __init__(self,
                  input_ch  : int,
                  data_dim  : int,
                  latent_dim: int,
                  img_shape : object = (256, 256),
                  filters   : object = [16, 32, 64, 128, 256]):
-        super(Affine, self).__init__()
+        super(Affine_WAE, self).__init__()
         """
         Inputs:
             - input_ch   : Number of input channels of the image. For medical images, this parameter usually is 1
@@ -264,7 +264,7 @@ class Affine(nn.Module):
 
 
 
-class Elastic(nn.Module):
+class Elastic_WAE(nn.Module):
     def __init__(self,
                  input_ch  : int,
                  output_ch : int,
@@ -272,7 +272,7 @@ class Elastic(nn.Module):
                  latent_dim: int,
                  img_shape : object = (256, 256),
                  filters   : object = [16, 32, 64, 128, 256]):
-        super(Elastic, self).__init__()
+        super(Elastic_WAE, self).__init__()
         
         self.input_ch   = input_ch
         self.output_ch  = output_ch
@@ -309,7 +309,7 @@ class Elastic(nn.Module):
 
 
 #from torchsummary import summary
-"""model = Affine(input_ch   = 2,
+"""model = Affine_WAE(input_ch   = 2,
                data_dim   = 3,
                latent_dim = 256,
                img_shape  = (256, 256, 256),
@@ -318,7 +318,7 @@ model = model.to('cuda')
 print(model)
 summary = summary(model, [(1, 256, 256, 256), (1, 256, 256, 256)], device='cuda')"""
 
-"""model = Elastic(input_ch   = 2,
+"""model = Elastic_WAE(input_ch   = 2,
                 output_ch  = 1,
                 data_dim   = 2,
                 latent_dim = 256,
