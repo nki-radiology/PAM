@@ -2,10 +2,10 @@ import torch
 import torch.nn             as     nn
 import torch.nn.functional  as     F
 from   collections          import OrderedDict
-from   layer                import conv_layer
-from   layer                import conv_up_layer
-from   layer                import conv_gl_avg_pool_layer
-from   spatial_transformer  import SpatialTransformer
+from   networks.layer                import conv_layer
+from   networks.layer                import conv_up_layer
+from   networks.layer                import conv_gl_avg_pool_layer
+from   networks.spatial_transformer  import SpatialTransformer
 
 
 class Encoder(nn.Module):
@@ -304,7 +304,7 @@ class Elastic_WAE(nn.Module):
         # Spatial Transformer
         elastic_img = self.spatial_transformer(moving, deformation_field)
                
-        return deformation_field, elastic_img
+        return deformation_field, elastic_img, z
         
 
 

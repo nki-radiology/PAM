@@ -10,10 +10,12 @@ from   losses                       import reconstruction_loss
 from   losses                       import kl_divergence
 from   losses                       import total_loss
 from   losses                       import imq_kernel
+from   registration_dataset         import RegistrationDataSet
 from   networks.registration_model  import Registration_Beta_VAE
 from   networks.registration_model  import Registration_Wasserstein_AE
 from   torch.utils.data             import DataLoader
 from   sklearn.model_selection      import train_test_split
+import matplotlib.pyplot            as     plt
 
 class Disentanglement(object):
     def __init__(self, args):
@@ -113,11 +115,61 @@ class Disentanglement(object):
 
         # Validation dataloader
         self.valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=self.batch_size, shuffle=True)
+    
+    
+    def save_table(table_name, fixed_img, moving_img, w0_img, w1_img, t1_img):
+        table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image', 'Deformation Field'], allow_mixed_types = True)
+    
+        saving_examples_folder = "/DATA/laura/table/" + 'example_images_wandb/'
+        
+        fixed_img = fixed_img
+        moving_img = moving_img
+        affine_img = w0_img
+        deformation_img = w1_img
+        deformation_field = t1_img
+        
+        plt.figure(figsize=(10,10))
+        plt.axis("off")
+        plt.imshow(fixed_img.squeeze().detach().cpu().numpy())
+        plt.savefig(saving_examples_folder + "fixed_image.jpg")
+        plt.close()
+        
+        plt.figure(figsize=(10,10))
+        plt.axis("off")
+        plt.imshow(moving_img.squeeze().detach().cpu().numpy())
+        plt.savefig(saving_examples_folder + "moving_image.jpg")
+        plt.close()
+
+        plt.figure(figsize=(10,10))
+        plt.axis("off")
+        plt.imshow(affine_img.squeeze().detach().cpu().numpy())
+        plt.savefig(saving_examples_folder + "affine_reg_image.jpg")
+        plt.close()
+
+        plt.figure(figsize=(10,10))
+        plt.axis("off")
+        plt.imshow(deformation_img.squeeze().detach().cpu().numpy())
+        plt.savefig(saving_examples_folder + "deformation_reg_image.jpg")
+        plt.close()
+        
+        plt.figure(figsize=(10,10))
+        plt.axis("off")
+        plt.imshow(deformation_field.squeeze().detach().cpu().numpy())
+        plt.savefig(saving_examples_folder + "deformation_field.jpg")
+        plt.close()
+        
+        table.add_data(
+            wandb.Image(plt.imread(saving_examples_folder + "fixed_image.jpg")),
+            wandb.Image(plt.imread(saving_examples_folder + "moving_image.jpg")),
+            wandb.Image(plt.imread(saving_examples_folder + "affine_reg_image.jpg")),
+            wandb.Image(plt.imread(saving_examples_folder + "deformation_reg_image.jpg")),
+            wandb.Image(plt.imread(saving_examples_folder + "deformation_field.jpg"))
+        )
+        
+        wandb.log({table_name: table})
 
         
     def train_Beta_VAE(self):
-        train_losses = []
-        valid_losses = []
         
         # weights and biases
         wandb.init(project='Beta-VAE', entity='ljestaciocerquin')
@@ -194,13 +246,13 @@ class Disentanglement(object):
                 # Computing the Beta-VAE loss
                 recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist)
                 total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
-                loss_beta_vae                     = recon_loss + self.beta*total_kld
+                total_loss_beta_vae               = recon_loss + self.beta*total_kld
                 loss_reconst_train  += recon_loss.item()
                 loss_kl_diver_train += total_kld.item()
-                loss_beta_vae_train += loss_beta_vae.item()
+                loss_beta_vae_train += total_loss_beta_vae.item()
                 
                 # Total loss
-                loss = loss_affine_train + loss_elastic_train + loss_beta_vae_train
+                loss = total_affine + total_elastic + total_loss_beta_vae
                 loss_pam_beta_vae_train += loss
                 
                 # one backward pass
@@ -220,10 +272,10 @@ class Disentanglement(object):
                         'Train: Elastic loss':  total_elastic.item(),
                         'Train: Reconstruction loss': recon_loss.item(),
                         'Train: KL-divergence Loss': total_kld.item(),
-                        'Train: KBeta-VAE Loss': total_kld.item(),
+                        'Train: Beta-VAE Loss': total_loss_beta_vae.item(),
                         'Train: Total loss': loss.item()})
             
-            
+                save_table('Training_examples', fixed, moving, w_0, w_1, t_1)
             
             with torch.no_grad():
                 self.net.eval()
@@ -256,22 +308,16 @@ class Disentanglement(object):
                     # Computing the Beta-VAE loss
                     recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist)
                     total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
-                    loss_beta_vae                     = recon_loss + self.beta*total_kld
+                    total_loss_beta_vae               = recon_loss + self.beta*total_kld
                     loss_reconst_valid  += recon_loss.item()
                     loss_kl_diver_valid += total_kld.item()
-                    loss_beta_vae_valid += loss_beta_vae.item()
+                    loss_beta_vae_valid += total_loss_beta_vae.item()
                     
                     # Total loss
-                    loss = loss_affine_valid + loss_elastic_valid + loss_beta_vae_valid
+                    loss = total_affine + total_elastic + total_loss_beta_vae
                     loss_pam_beta_vae_valid += loss
                     
-                    # one backward pass
-                    loss.backward()
-                    
-                    # Update the parameters
-                    self.optim.step()
-                    
-                    
+
                     # Display in tensorboard
                     # ========
                     wandb.log({'Iteration': epoch, 'Valid: Similarity Affine loss': sim_af.item(),
@@ -282,8 +328,10 @@ class Disentanglement(object):
                             'Valid: Elastic loss':  total_elastic.item(),
                             'Valid: Reconstruction loss': recon_loss.item(),
                             'Valid: KL-divergence Loss': total_kld.item(),
-                            'Valid: KBeta-VAE Loss': total_kld.item(),
+                            'Valid: Beta-VAE Loss': total_loss_beta_vae.item(),
                             'Valid: Total loss': loss.item()})
+                    
+                    save_table('Training_examples', fixed_tr, moving_tr, w0_tr, w1_tr, t1_tr)
         
             
         # Compute the loss per epoch
@@ -304,9 +352,20 @@ class Disentanglement(object):
             name_pam = 'PAMModel_BetaVAE_' + str(epoch) + '.pth'
             torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
             print('Saving model')
-    
-    
-    
+
+        # Compute the loss per epoch
+        data_loader_len         = len(self.valid_dataloader)
+        loss_affine_sim_valid  /= data_loader_len
+        loss_affine_reg_valid  /= data_loader_len
+        loss_affine_valid      /= data_loader_len
+        loss_elastic_sim_valid /= data_loader_len
+        loss_elastic_reg_valid /= data_loader_len
+        loss_elastic_valid     /= data_loader_len
+        loss_reconst_valid     /= data_loader_len
+        loss_kl_diver_valid    /= data_loader_len
+        loss_beta_vae_valid    /= data_loader_len
+        loss_pam_beta_vae_valid/= data_loader_len
+           
     
     def train_WAE(self):
 
@@ -327,12 +386,12 @@ class Disentanglement(object):
             loss_elastic_reg_train = 0
             
             # Beta-VAE loss for the training stage
-            loss_wae_train    = 0
+            loss_wae_train         = 0
             loss_reconst_train     = 0
-            loss_kl_diver_train    = 0
+            loss_mmd_train         = 0
             
             # Total loss 
-            loss_pam_beta_vae_train= 0
+            loss_pam_wae_train     = 0
             
             # Affine losses for the validation stage
             loss_affine_valid      = 0
@@ -345,12 +404,12 @@ class Disentanglement(object):
             loss_elastic_reg_valid = 0
             
             # Beta-VAE loss for the validation stage
-            loss_wae_valid    = 0
-            loss_reconst_valid     = 0
-            loss_kl_diver_valid    = 0
+            loss_wae_valid        = 0
+            loss_reconst_valid    = 0
+            loss_mmd_valid        = 0
             
             # Total loss 
-            loss_pam_wae_valid= 0
+            loss_pam_wae_valid    = 0
             
             # Set the training mode
             self.net.train()
@@ -363,7 +422,7 @@ class Disentanglement(object):
                 self.optim.zero_grad()
                 
                 # Forward pass through the registration model
-                t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
+                t_0, w_0, t_1, w_1, z = self.net(fixed, moving)
                 
                 # Computing the affine loss
                 sim_af, reg_af = total_loss(fixed, w_0, w_0)
@@ -382,17 +441,19 @@ class Disentanglement(object):
                 loss_elastic_reg_train += reg_ela.item()
                 loss_elastic_train     += total_elastic.item()
                 
-                # Computing the Beta-VAE loss
-                recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist)
-                mmd_loss                          = imq_kernel(fixed, t_1, h_dim=self.z_dim)
-                loss_beta_vae                     = recon_loss + self.beta*total_kld
+                # Computing the WAE loss
+                z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.z_dim) * 1)
+                z_fake.to(self.device)
+                recon_loss           = torch.nn.MSELoss(t_1, fixed)
+                mmd_loss             = imq_kernel(z, z_fake, h_dim=self.z_dim)
+                total_loss_wae       = recon_loss + mmd_loss
                 loss_reconst_train  += recon_loss.item()
-                loss_kl_diver_train += total_kld.item()
-                loss_beta_vae_train += loss_beta_vae.item()
+                loss_mmd_train      += mmd_loss.item()
+                loss_wae_train      += total_loss_wae.item()
                 
                 # Total loss
-                loss = loss_affine_train + loss_elastic_train + loss_beta_vae_train
-                loss_pam_beta_vae_train += loss
+                loss = total_affine + total_elastic + total_loss_wae
+                loss_pam_wae_train += loss
                 
                 # one backward pass
                 loss.backward()
@@ -410,8 +471,8 @@ class Disentanglement(object):
                         'Train: Regression Elastic loss': reg_ela.item(),
                         'Train: Elastic loss':  total_elastic.item(),
                         'Train: Reconstruction loss': recon_loss.item(),
-                        'Train: KL-divergence Loss': total_kld.item(),
-                        'Train: KBeta-VAE Loss': total_kld.item(),
+                        'Train: MMD Loss': mmd_loss.item(),
+                        'Train: WAE Loss': total_loss_wae.item(),
                         'Train: Total loss': loss.item()})
             
             
@@ -423,7 +484,6 @@ class Disentanglement(object):
                     fixed  = x_1.to(self.device)
                     moving = x_2.to(self.device)
                     
-                                        
                     # Forward pass through the registration model
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                     
@@ -435,7 +495,6 @@ class Disentanglement(object):
                     loss_affine_reg_valid += reg_af.item()
                     loss_affine_valid     += total_affine.item()
                     
-                                
                     # Computing the elastic loss
                     sim_ela, reg_ela = total_loss(fixed, w_1, t_1)
                     total_elastic    = sim_ela + reg_ela
@@ -444,24 +503,20 @@ class Disentanglement(object):
                     loss_elastic_reg_valid += reg_ela.item()
                     loss_elastic_valid     += total_elastic.item()
                     
-                    # Computing the Beta-VAE loss
-                    recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist)
-                    total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
-                    loss_beta_vae                     = recon_loss + self.beta*total_kld
+                    # Computing the WAE loss
+                    z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.z_dim) * 1)
+                    z_fake.to(self.device)
+                    recon_loss           = torch.nn.MSELoss(t_1, fixed)
+                    mmd_loss             = imq_kernel(z, z_fake, h_dim=self.z_dim)
+                    total_loss_wae       = recon_loss + mmd_loss
                     loss_reconst_valid  += recon_loss.item()
-                    loss_kl_diver_valid += total_kld.item()
-                    loss_beta_vae_valid += loss_beta_vae.item()
+                    loss_mmd_valid      += mmd_loss.item()
+                    loss_wae_valid      += total_loss_wae.item()
                     
                     # Total loss
-                    loss = loss_affine_valid + loss_elastic_valid + loss_beta_vae_valid
-                    loss_pam_beta_vae_valid += loss
-                    
-                    # one backward pass
-                    loss.backward()
-                    
-                    # Update the parameters
-                    self.optim.step()
-                    
+                    loss = total_affine + total_elastic + total_loss_wae
+                    loss_pam_wae_valid  += loss
+                                     
                     
                     # Display in tensorboard
                     # ========
@@ -472,8 +527,8 @@ class Disentanglement(object):
                             'Valid: Regression Elastic loss': reg_ela.item(),
                             'Valid: Elastic loss':  total_elastic.item(),
                             'Valid: Reconstruction loss': recon_loss.item(),
-                            'Valid: KL-divergence Loss': total_kld.item(),
-                            'Valid: KBeta-VAE Loss': total_kld.item(),
+                            'Valid: MMD Loss': mmd_loss.item(),
+                            'Valid: WAE Loss': total_loss_wae.item(),
                             'Valid: Total loss': loss.item()})
         
             
@@ -486,12 +541,39 @@ class Disentanglement(object):
         loss_elastic_reg_train /= data_loader_len
         loss_elastic_train     /= data_loader_len
         loss_reconst_train     /= data_loader_len
-        loss_kl_diver_train    /= data_loader_len
-        loss_beta_vae_train    /= data_loader_len
-        loss_pam_beta_vae_train/= data_loader_len
+        loss_mmd_train         /= data_loader_len
+        loss_wae_train         /= data_loader_len
+        loss_pam_wae_train     /= data_loader_len
         
         # Save checkpoints
         if epoch % 10 == 0:
-            name_pam = 'PAMModel_BetaVAE_' + str(epoch) + '.pth'
+            name_pam = 'PAMModel_WAE_' + str(epoch) + '.pth'
             torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
             print('Saving model')
+        
+         # Compute the loss per epoch
+        data_loader_len         = len(self.valid_dataloader)
+        loss_affine_sim_valid  /= data_loader_len
+        loss_affine_reg_valid  /= data_loader_len
+        loss_affine_valid      /= data_loader_len
+        loss_elastic_sim_valid /= data_loader_len
+        loss_elastic_reg_valid /= data_loader_len
+        loss_elastic_valid     /= data_loader_len
+        loss_reconst_valid     /= data_loader_len
+        loss_mmd_valid         /= data_loader_len
+        loss_wae_valid         /= data_loader_len
+        loss_pam_wae_valid     /= data_loader_len
+    
+    
+    def train_disentanglement_method(self):
+        self.model_init()
+        self.set_optimizer()
+        self.load_dataloader()
+        
+        if self.model == 'WAE':
+            self.train_WAE()
+        elif self.model == 'Beta-VAE':
+            self.train_Beta_VAE()
+        else:
+            NotImplementedError('only support WAE and Beta-VAE training!')
+        

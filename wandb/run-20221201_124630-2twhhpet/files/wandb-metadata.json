@@ -1,0 +1,257 @@
+{
+    "os": "Linux-5.4.0-126-generic-x86_64-with-glibc2.31",
+    "python": "3.10.6",
+    "heartbeatAt": "2022-12-01T12:46:30.821603",
+    "startedAt": "2022-12-01T12:46:30.290424",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/DATA/laura/code/PAM/main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "https://github.com/nki-radiology/PAM.git",
+        "commit": "2a61cb035d6c11d3a674979878057339a91b93d3"
+    },
+    "email": "lj.estacio.cerquin@gmail.com",
+    "root": "/DATA/laura/code/PAM",
+    "host": "wilhelmroentgen",
+    "username": "laura",
+    "executable": "/DATA/laura/miniconda/envs/pytorch/bin/python",
+    "cpu_count": 20,
+    "cpu_count_logical": 40,
+    "cpu_freq": {
+        "current": 1985.1322000000005,
+        "min": 1200.0,
+        "max": 3100.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.393,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1797.443,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2680.994,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2048.458,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1703.783,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2560.346,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2532.013,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2625.604,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1203.293,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2811.367,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1358.488,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1329.888,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1389.991,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1292.375,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1201.413,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1654.004,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2604.096,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1660.899,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1406.49,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1319.317,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1201.628,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1667.422,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2644.345,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2245.398,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1659.969,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2214.012,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 3028.834,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2541.13,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1200.267,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 3029.892,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1434.446,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1307.918,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1309.279,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1241.24,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1200.407,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1608.184,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 2743.317,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1721.685,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1495.579,
+            "min": 1200.0,
+            "max": 3100.0
+        },
+        {
+            "current": 1378.459,
+            "min": 1200.0,
+            "max": 3100.0
+        }
+    ],
+    "disk": {
+        "total": 59.77511978149414,
+        "used": 29.544342041015625
+    },
+    "gpu": "Quadro RTX 8000",
+    "gpu_count": 4,
+    "gpu_devices": [
+        {
+            "name": "Quadro RTX 8000",
+            "memory_total": 50962169856
+        },
+        {
+            "name": "Quadro RTX 8000",
+            "memory_total": 50962169856
+        },
+        {
+            "name": "Quadro RTX 8000",
+            "memory_total": 50962169856
+        },
+        {
+            "name": "Quadro RTX 8000",
+            "memory_total": 50962169856
+        }
+    ],
+    "memory": {
+        "total": 251.77557373046875
+    }
+}

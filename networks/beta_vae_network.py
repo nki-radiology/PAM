@@ -3,10 +3,10 @@ import torch.nn             as     nn
 import torch.nn.functional  as     F
 from   torch.autograd       import Variable
 from   collections          import OrderedDict
-from   layer                import conv_layer
-from   layer                import conv_up_layer
-from   layer                import conv_gl_avg_pool_layer
-from   spatial_transformer  import SpatialTransformer
+from   networks.layer                import conv_layer
+from   networks.layer                import conv_up_layer
+from   networks.layer                import conv_gl_avg_pool_layer
+from   networks.spatial_transformer  import SpatialTransformer
 
 
 def reparametrize(mu, logvar):
@@ -153,7 +153,7 @@ class Decoder(nn.Module):
      
 
 
-class Beta_AE(nn.Module):
+class Beta_VAE(nn.Module):
     def __init__(self, 
                  data_dim          : int,
                  z_latent_dim      : int,
@@ -161,7 +161,7 @@ class Beta_AE(nn.Module):
                  num_outpt_channels: int, 
                  filters            : object=[32, 32, 32, 32, 32]
                  ):
-        super(Beta_AE, self).__init__()
+        super(Beta_VAE, self).__init__()
         """
         Inputs:
             - num_input_channels: Number of input channels of the image. For medical images, this parameter usually is 1

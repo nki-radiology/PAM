@@ -1,0 +1,33 @@
+Image Path:  tcia_idx                                                    557
+dicom_path    /DATA/laura/datasets/chest_xray/train/NORMAL/I...
+Name: 557, dtype: object
+fixed:  (1854, 1572)
+torch.Size([256, 256])
+Moving:  <PIL.Image.Image image mode=L size=1558x1106 at 0x7FB4A2A28B80>
+torch.Size([256, 256])
+Traceback (most recent call last):
+  File "/DATA/laura/code/PAM/main.py", line 48, in <module>
+    main(args)
+  File "/DATA/laura/code/PAM/main.py", line 14, in main
+    net.train_disentanglement_method()
+  File "/DATA/laura/code/PAM/disentanglement.py", line 576, in train_disentanglement_method
+    self.train_Beta_VAE()
+  File "/DATA/laura/code/PAM/disentanglement.py", line 227, in train_Beta_VAE
+    t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
+  File "/DATA/laura/miniconda/envs/pytorch/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/DATA/laura/code/PAM/networks/registration_model.py", line 42, in forward
+    transform_affine,  warped_affine               = self.affine_net(fixed, moving)
+  File "/DATA/laura/miniconda/envs/pytorch/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/DATA/laura/code/PAM/networks/beta_vae_network.py", line 263, in forward
+    x = self.last_linear(x)
+  File "/DATA/laura/miniconda/envs/pytorch/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/DATA/laura/miniconda/envs/pytorch/lib/python3.10/site-packages/torch/nn/modules/container.py", line 139, in forward
+    input = module(input)
+  File "/DATA/laura/miniconda/envs/pytorch/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/DATA/laura/miniconda/envs/pytorch/lib/python3.10/site-packages/torch/nn/modules/linear.py", line 114, in forward
+    return F.linear(input, self.weight, self.bias)
+RuntimeError: mat1 and mat2 shapes cannot be multiplied (256x1 and 256x1024)

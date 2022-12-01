@@ -1,9 +1,9 @@
 import torch
 import torch.nn            as     nn
-from   beta_vae_network    import Affine_Beta_VAE
-from   beta_vae_network    import Elastic_Beta_VAE 
-from   wasserstein_network import Affine_WAE
-from   wasserstein_network import Elastic_WAE
+from   networks.beta_vae_network    import Affine_Beta_VAE
+from   networks.beta_vae_network    import Elastic_Beta_VAE 
+from   networks.wasserstein_network import Affine_WAE
+from   networks.wasserstein_network import Elastic_WAE
 
 class Registration_Beta_VAE(nn.Module):   
     def __init__(self,
@@ -80,9 +80,9 @@ class Registration_Wasserstein_AE(nn.Module):
                                        filters=self.filters)
         
     def forward(self, fixed:torch.tensor, moving:torch.tensor):
-        transform_affine,  warped_affine  = self.affine_net(fixed, moving)
-        transform_elastic, warped_elastic = self.elastic_net(fixed, warped_affine)
+        transform_affine,  warped_affine     = self.affine_net(fixed, moving)
+        transform_elastic, warped_elastic, z = self.elastic_net(fixed, warped_affine)
         
-        return transform_affine, warped_affine, transform_elastic, warped_elastic
+        return transform_affine, warped_affine, transform_elastic, warped_elastic, z
         
          

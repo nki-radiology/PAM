@@ -1,5 +1,6 @@
 import os
 import torch
+import pandas   as pd
 import argparse
 import torch.nn as     nn
 from   pathlib  import Path
@@ -52,4 +53,16 @@ def weights_init(m):
 def read_train_data(path_input):
     path      = Path(path_input)
     filenames = list(path.glob('*.jpeg'))
-    return filenames
+    data_index= []
+
+    print(filenames)
+    i = 0
+    for f in filenames:
+        data_index.append(i)
+        i += 1
+
+    train_data = list(zip(data_index, filenames))
+    train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
+    print(train_data.head())
+
+    return train_data
