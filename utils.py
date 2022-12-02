@@ -41,7 +41,7 @@ def cuda_seeds():
 
 def weights_init(m):
     if isinstance(m, (nn.Linear, nn.Conv2d, nn.Conv3d)):
-        nn.init.kaiming_normal(m.weight)
+        nn.init.kaiming_normal_(m.weight)
         if m.bias is not None:
             m.bias.data.fill_(0)
     elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
@@ -55,7 +55,6 @@ def read_train_data(path_input):
     filenames = list(path.glob('*.jpeg'))
     data_index= []
 
-    print(filenames)
     i = 0
     for f in filenames:
         data_index.append(i)
@@ -63,6 +62,5 @@ def read_train_data(path_input):
 
     train_data = list(zip(data_index, filenames))
     train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
-    print(train_data.head())
 
     return train_data
