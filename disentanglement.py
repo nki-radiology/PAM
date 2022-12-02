@@ -37,8 +37,9 @@ class Disentanglement(object):
         self.beta2     = args.beta2
         self.batch_size= args.batch_size
         
-        # Path to save checkpoints
+        # Path to save checkpoints and results
         self.checkpoints_folder = args.ckpt_dir
+        self.results_dir        = args.results_dir
         
         # Device
         self.device    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,6 +55,7 @@ class Disentanglement(object):
         
         # Directory to save checkpoints
         create_directory(self.checkpoints_folder)
+        create_directory(self.results_dir)
         
         # Cuda Seeds for reproducibility
         cuda_seeds()
@@ -117,53 +119,45 @@ class Disentanglement(object):
         self.valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=self.batch_size, shuffle=True)
     
     
-    def save_table(table_name, fixed_img, moving_img, w0_img, w1_img, t1_img):
+    def save_table(self, table_name, fixed_img, moving_img, affine_img, deformation_img, deformation_field):
         table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image', 'Deformation Field'], allow_mixed_types = True)
     
-        saving_examples_folder = "/DATA/laura/table/" + 'example_images_wandb/'
-        
-        fixed_img = fixed_img
-        moving_img = moving_img
-        affine_img = w0_img
-        deformation_img = w1_img
-        deformation_field = t1_img
-        
         plt.figure(figsize=(10,10))
         plt.axis("off")
-        plt.imshow(fixed_img.squeeze().detach().cpu().numpy())
-        plt.savefig(saving_examples_folder + "fixed_image.jpg")
+        plt.imshow(fixed_img[0].squeeze().detach().cpu().numpy())
+        plt.savefig(self.results_dir + "fixed_image.png")
         plt.close()
         
         plt.figure(figsize=(10,10))
         plt.axis("off")
-        plt.imshow(moving_img.squeeze().detach().cpu().numpy())
-        plt.savefig(saving_examples_folder + "moving_image.jpg")
+        plt.imshow(moving_img[0].squeeze().detach().cpu().numpy())
+        plt.savefig(self.results_dir + "moving_image.png")
         plt.close()
 
         plt.figure(figsize=(10,10))
         plt.axis("off")
-        plt.imshow(affine_img.squeeze().detach().cpu().numpy())
-        plt.savefig(saving_examples_folder + "affine_reg_image.jpg")
+        plt.imshow(affine_img[0].squeeze().detach().cpu().numpy())
+        plt.savefig(self.results_dir + "affine_reg_image.png")
         plt.close()
 
         plt.figure(figsize=(10,10))
         plt.axis("off")
-        plt.imshow(deformation_img.squeeze().detach().cpu().numpy())
-        plt.savefig(saving_examples_folder + "deformation_reg_image.jpg")
+        plt.imshow(deformation_img[0].squeeze().detach().cpu().numpy())
+        plt.savefig(self.results_dir + "deformation_reg_image.png")
         plt.close()
         
         plt.figure(figsize=(10,10))
         plt.axis("off")
-        plt.imshow(deformation_field.squeeze().detach().cpu().numpy())
-        plt.savefig(saving_examples_folder + "deformation_field.jpg")
+        plt.imshow(deformation_field[0].squeeze().detach().cpu().numpy())
+        plt.savefig(self.results_dir + "deformation_field.png")
         plt.close()
         
         table.add_data(
-            wandb.Image(plt.imread(saving_examples_folder + "fixed_image.jpg")),
-            wandb.Image(plt.imread(saving_examples_folder + "moving_image.jpg")),
-            wandb.Image(plt.imread(saving_examples_folder + "affine_reg_image.jpg")),
-            wandb.Image(plt.imread(saving_examples_folder + "deformation_reg_image.jpg")),
-            wandb.Image(plt.imread(saving_examples_folder + "deformation_field.jpg"))
+            wandb.Image(plt.imread(self.results_dir + "fixed_image.jpg")),
+            wandb.Image(plt.imread(self.results_dir + "moving_image.jpg")),
+            wandb.Image(plt.imread(self.results_dir + "affine_reg_image.jpg")),
+            wandb.Image(plt.imread(self.results_dir + "deformation_reg_image.jpg")),
+            wandb.Image(plt.imread(self.results_dir + "deformation_field.jpg"))
         )
         
         wandb.log({table_name: table})
@@ -219,12 +213,17 @@ class Disentanglement(object):
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
                 moving = x_2.to(self.device)
+                fixed_t = fixed
+                moving_t = moving
                 
                 # zero-grad the net parameters
                 self.optim.zero_grad()
                 
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
+                w0_tr = w_0
+                w1_tr = w_1
+                t1_tr = t_1
                 
                 # Computing the affine loss
                 sim_af, reg_af = total_loss(fixed, w_0, w_0)
@@ -253,7 +252,7 @@ class Disentanglement(object):
                 
                 # Total loss
                 loss = total_affine + total_elastic + total_loss_beta_vae
-                loss_pam_beta_vae_train += loss
+                loss_pam_beta_vae_train += loss.item()
                 
                 # one backward pass
                 loss.backward()
@@ -264,7 +263,7 @@ class Disentanglement(object):
                 
                 # Display in tensorboard
                 # ========
-                wandb.log({'Iteration': epoch, 'Train: Similarity Affine loss': sim_af.item(),
+                """wandb.log({'Iteration': epoch, 'Train: Similarity Affine loss': sim_af.item(),
                         'Train: Regression Affine loss': reg_af.item(),
                         'Train: Affine loss': total_affine.item(),
                         'Train: Similarity Elastic loss': sim_ela.item(),
@@ -275,7 +274,7 @@ class Disentanglement(object):
                         'Train: Beta-VAE Loss': total_loss_beta_vae.item(),
                         'Train: Total loss': loss.item()})
             
-                save_table('Training_examples', fixed, moving, w_0, w_1, t_1)
+                self.save_table('Training_Images', fixed_t, moving_t, w_0, w_1, t_1)"""
             
             with torch.no_grad():
                 self.net.eval()
@@ -283,11 +282,15 @@ class Disentanglement(object):
                 for i, (x_1, x_2) in enumerate (self.valid_dataloader):
                     fixed  = x_1.to(self.device)
                     moving = x_2.to(self.device)
+                    fixed_v = fixed
+                    moving_v = moving
                     
                                         
                     # Forward pass through the registration model
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
-                    
+                    w0_v = w_0
+                    w1_v = w_1
+                    t1_v = t_1
                     # Computing the affine loss
                     sim_af, reg_af = total_loss(fixed, w_0, w_0)
                     total_affine   = sim_af + reg_af
@@ -315,12 +318,12 @@ class Disentanglement(object):
                     
                     # Total loss
                     loss = total_affine + total_elastic + total_loss_beta_vae
-                    loss_pam_beta_vae_valid += loss
+                    loss_pam_beta_vae_valid += loss.item()
                     
 
                     # Display in tensorboard
                     # ========
-                    wandb.log({'Iteration': epoch, 'Valid: Similarity Affine loss': sim_af.item(),
+                    """wandb.log({'Iteration': epoch, 'Valid: Similarity Affine loss': sim_af.item(),
                             'Valid: Regression Affine loss': reg_af.item(),
                             'Valid: Affine loss': total_affine.item(),
                             'Valid: Similarity Elastic loss': sim_ela.item(),
@@ -329,43 +332,72 @@ class Disentanglement(object):
                             'Valid: Reconstruction loss': recon_loss.item(),
                             'Valid: KL-divergence Loss': total_kld.item(),
                             'Valid: Beta-VAE Loss': total_loss_beta_vae.item(),
-                            'Valid: Total loss': loss.item()})
+                            'Valid: Total loss': loss.item()})"""
                     
-                    save_table('Training_examples', fixed_tr, moving_tr, w0_tr, w1_tr, t1_tr)
+                    #self.save_table('Validation_Images', fixed_v, moving_v, w_0, w_1, t_1)
+                    self.save_table('Training_examples', fixed_t, moving_t, w0_tr, w1_tr, t1_tr)
+                    self.save_table('Validation_examples', fixed_v, moving_v, w0_v, w1_v, t1_v)
         
             
-        # Compute the loss per epoch
-        data_loader_len         = len(self.train_dataloader)
-        loss_affine_sim_train  /= data_loader_len
-        loss_affine_reg_train  /= data_loader_len
-        loss_affine_train      /= data_loader_len
-        loss_elastic_sim_train /= data_loader_len
-        loss_elastic_reg_train /= data_loader_len
-        loss_elastic_train     /= data_loader_len
-        loss_reconst_train     /= data_loader_len
-        loss_kl_diver_train    /= data_loader_len
-        loss_beta_vae_train    /= data_loader_len
-        loss_pam_beta_vae_train/= data_loader_len
+            # Compute the loss per epoch
+            data_loader_len         = len(self.train_dataloader)
+            loss_affine_sim_train  /= data_loader_len
+            loss_affine_reg_train  /= data_loader_len
+            loss_affine_train      /= data_loader_len
+            loss_elastic_sim_train /= data_loader_len
+            loss_elastic_reg_train /= data_loader_len
+            loss_elastic_train     /= data_loader_len
+            loss_reconst_train     /= data_loader_len
+            loss_kl_diver_train    /= data_loader_len
+            loss_beta_vae_train    /= data_loader_len
+            loss_pam_beta_vae_train/= data_loader_len
         
-        # Save checkpoints
-        if epoch % 10 == 0:
-            name_pam = 'PAMModel_BetaVAE_' + str(epoch) + '.pth'
-            torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
-            print('Saving model')
+            # Save checkpoints
+            if epoch % 10 == 0:
+                name_pam = 'PAMModel_BetaVAE_' + str(epoch) + '.pth'
+                torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
+                print('Saving model')
 
-        # Compute the loss per epoch
-        data_loader_len         = len(self.valid_dataloader)
-        loss_affine_sim_valid  /= data_loader_len
-        loss_affine_reg_valid  /= data_loader_len
-        loss_affine_valid      /= data_loader_len
-        loss_elastic_sim_valid /= data_loader_len
-        loss_elastic_reg_valid /= data_loader_len
-        loss_elastic_valid     /= data_loader_len
-        loss_reconst_valid     /= data_loader_len
-        loss_kl_diver_valid    /= data_loader_len
-        loss_beta_vae_valid    /= data_loader_len
-        loss_pam_beta_vae_valid/= data_loader_len
-           
+            # Compute the loss per epoch
+            data_loader_len         = len(self.valid_dataloader)
+            loss_affine_sim_valid  /= data_loader_len
+            loss_affine_reg_valid  /= data_loader_len
+            loss_affine_valid      /= data_loader_len
+            loss_elastic_sim_valid /= data_loader_len
+            loss_elastic_reg_valid /= data_loader_len
+            loss_elastic_valid     /= data_loader_len
+            loss_reconst_valid     /= data_loader_len
+            loss_kl_diver_valid    /= data_loader_len
+            loss_beta_vae_valid    /= data_loader_len
+            loss_pam_beta_vae_valid/= data_loader_len
+        
+        
+            # Display in tensorboard
+            # ========
+            wandb.log({'epoch': epoch+1, 'Train: Similarity Affine loss': loss_affine_sim_train,
+                            'Train: Regression Affine loss': loss_affine_reg_train,
+                            'Train: Affine loss': loss_affine_train,
+                            'Train: Similarity Elastic loss': loss_elastic_sim_train,
+                            'Train: Regression Elastic loss': loss_elastic_reg_train,
+                            'Train: Elastic loss':  loss_elastic_train,
+                            'Train: Reconstruction loss': loss_reconst_train,
+                            'Train: KL-divergence Loss': loss_kl_diver_train,
+                            'Train: Beta-VAE Loss': loss_beta_vae_train,
+                            'Train: Total loss': loss_pam_beta_vae_train,
+                            'Valid: Similarity Affine loss': loss_affine_sim_valid,
+                            'Valid: Regression Affine loss': loss_affine_reg_valid,
+                            'Valid: Affine loss': loss_affine_valid,
+                            'Valid: Similarity Elastic loss': loss_elastic_sim_valid,
+                            'Valid: Regression Elastic loss': loss_elastic_reg_valid,
+                            'Valid: Elastic loss':  loss_elastic_valid,
+                            'Valid: Reconstruction loss': loss_reconst_valid,
+                            'Valid: KL-divergence Loss': loss_kl_diver_valid,
+                            'Valid: Beta-VAE Loss': loss_beta_vae_valid,
+                            'Valid: Total loss': loss_pam_beta_vae_valid})
+        
+            # Print the train and validation losses
+            print("Train epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, self.n_epochs, loss_pam_beta_vae_train)) # epoch + 1, n_epochs
+            print("Valid epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, self.n_epochs, loss_pam_beta_vae_valid))
     
     def train_WAE(self):
 
