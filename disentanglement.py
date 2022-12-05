@@ -24,6 +24,7 @@ class Disentanglement(object):
         self.output_ch = args.output_ch
         self.data_dim  = args.data_dim
         self.z_dim     = args.z_dim
+        self.group_num = args.group_num
         self.img_shape = args.img_size
         self.filters   = [16, 32, 64, 128, 256]
         
@@ -74,6 +75,7 @@ class Disentanglement(object):
                             output_ch  = self.output_ch,
                             data_dim   = self.data_dim,
                             latent_dim = self.z_dim,
+                            group_num  = self.group_num,
                             img_shape  = self.img_shape,
                             filters    = self.filters)
         
@@ -125,31 +127,31 @@ class Disentanglement(object):
         plt.figure(figsize=(10,10))
         plt.axis("off")
         plt.imshow(fixed_img[0].squeeze().detach().cpu().numpy())
-        plt.savefig(self.results_dir + "fixed_image.png")
+        plt.savefig(self.results_dir + "fixed_image.jpg")
         plt.close()
         
         plt.figure(figsize=(10,10))
         plt.axis("off")
         plt.imshow(moving_img[0].squeeze().detach().cpu().numpy())
-        plt.savefig(self.results_dir + "moving_image.png")
+        plt.savefig(self.results_dir + "moving_image.jpg")
         plt.close()
 
         plt.figure(figsize=(10,10))
         plt.axis("off")
         plt.imshow(affine_img[0].squeeze().detach().cpu().numpy())
-        plt.savefig(self.results_dir + "affine_reg_image.png")
+        plt.savefig(self.results_dir + "affine_reg_image.jpg")
         plt.close()
 
         plt.figure(figsize=(10,10))
         plt.axis("off")
         plt.imshow(deformation_img[0].squeeze().detach().cpu().numpy())
-        plt.savefig(self.results_dir + "deformation_reg_image.png")
+        plt.savefig(self.results_dir + "deformation_reg_image.jpg")
         plt.close()
         
         plt.figure(figsize=(10,10))
         plt.axis("off")
         plt.imshow(deformation_field[0].squeeze().detach().cpu().numpy())
-        plt.savefig(self.results_dir + "deformation_field.png")
+        plt.savefig(self.results_dir + "deformation_field.jpg")
         plt.close()
         
         table.add_data(
@@ -243,7 +245,7 @@ class Disentanglement(object):
                 loss_elastic_train     += total_elastic.item()
                 
                 # Computing the Beta-VAE loss
-                recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist)
+                recon_loss                        = 0.00001 * reconstruction_loss(fixed, t_1, self.decoder_dist)
                 total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
                 total_loss_beta_vae               = recon_loss + self.beta*total_kld
                 loss_reconst_train  += recon_loss.item()
@@ -275,6 +277,7 @@ class Disentanglement(object):
                         'Train: Total loss': loss.item()})
             
                 self.save_table('Training_Images', fixed_t, moving_t, w_0, w_1, t_1)"""
+                self.save_table('Training_examples', fixed_t, moving_t, w0_tr, w1_tr, t1_tr)
             
             with torch.no_grad():
                 self.net.eval()
@@ -309,7 +312,7 @@ class Disentanglement(object):
                     loss_elastic_valid     += total_elastic.item()
                     
                     # Computing the Beta-VAE loss
-                    recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist)
+                    recon_loss                        = 0.00001 * reconstruction_loss(fixed, t_1, self.decoder_dist)
                     total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
                     total_loss_beta_vae               = recon_loss + self.beta*total_kld
                     loss_reconst_valid  += recon_loss.item()
@@ -335,7 +338,6 @@ class Disentanglement(object):
                             'Valid: Total loss': loss.item()})"""
                     
                     #self.save_table('Validation_Images', fixed_v, moving_v, w_0, w_1, t_1)
-                    self.save_table('Training_examples', fixed_t, moving_t, w0_tr, w1_tr, t1_tr)
                     self.save_table('Validation_examples', fixed_v, moving_v, w0_v, w1_v, t1_v)
         
             
