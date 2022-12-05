@@ -20,6 +20,7 @@ class Encoder(nn.Module):
                  input_ch  : int,
                  data_dim  : int,
                  latent_dim: int,
+                 group_num : int,
                  filters   : object = [32, 32, 32, 32, 32]
                  ):
         super(Encoder, self).__init__()
@@ -31,8 +32,9 @@ class Encoder(nn.Module):
         """
         self.input_ch   = input_ch
         self.data_dim   = data_dim
-        self.filters    = filters
         self.latent_dim = latent_dim
+        self.group_num  = group_num
+        self.filters    = filters
         
         if self.data_dim == 2:
             self.input_linear = 8 * 8
@@ -43,23 +45,28 @@ class Encoder(nn.Module):
         
         self.encoder_net =  nn.Sequential(OrderedDict([
             ('encoder_conv_16'    , conv_layer(self.data_dim)(in_channels=self.input_ch, out_channels=self.filters[0], 
-                                                              kernel_size=3, stride=2, padding=1, bias=False)), 
+                                                              kernel_size=3, stride=2, padding=1, bias=False)),
+            ('encoder_gnorm_16'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[0])),
             ('encoder_act_fn_16'  , nn.GELU()), # 256 x 256 => 128 x 128
             
             ('encoder_conv_32'    , conv_layer(self.data_dim)(in_channels=self.filters[0], out_channels=self.filters[1], 
                                                               kernel_size=3, stride=2, padding=1, bias=False)),
+            ('encoder_gnorm_32'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[1])),
             ('encoder_act_fn_32'  , nn.GELU()), # 128 x 128 => 64 x 64
             
             ('encoder_conv_64'    , conv_layer(self.data_dim)(in_channels=self.filters[1], out_channels=self.filters[2], 
                                                               kernel_size=3, stride=2, padding=1, bias=False)),
+            ('encoder_gnorm_64'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[2])),
             ('encoder_act_fn_64'  , nn.GELU()), # 64 x 64 => 32 x 32
             
             ('encoder_conv_128'   , conv_layer(self.data_dim)(in_channels=self.filters[2], out_channels=self.filters[3], 
                                                               kernel_size=3, stride=2, padding=1, bias=False)),
+            ('encoder_gnorm_128'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[3])),
             ('encoder_act_fn_128' , nn.GELU()), # 32 x 32 => 16 x 16
             
             ('encoder_conv_256'   , conv_layer(self.data_dim)(in_channels=self.filters[3], out_channels=self.filters[4], 
                                                               kernel_size=3, stride=2, padding=1, bias=False)),
+            ('encoder_gnorm_256'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[4])),
             ('encoder_act_fn_256' , nn.GELU()), # 16 x 16 => 8 x 8
         ]))
             
@@ -87,6 +94,7 @@ class Decoder(nn.Module):
                  output_ch : int,
                  data_dim  : int,
                  latent_dim: int,
+                 group_num : int, 
                  filters   : object = [32, 32, 32, 32, 32]):
         super(Decoder, self).__init__()
         """
@@ -98,8 +106,9 @@ class Decoder(nn.Module):
         self.input_ch   = input_ch
         self.output_ch  = output_ch
         self.data_dim   = data_dim
-        self.filters    = filters
         self.latent_dim = latent_dim
+        self.group_num  = group_num
+        self.filters    = filters
         
         if self.data_dim == 2:
             self.input_linear = 8 * 8
@@ -120,23 +129,26 @@ class Decoder(nn.Module):
         self.decoder_net =  nn.Sequential(OrderedDict([
             ('decoder_conv_256'   , conv_up_layer(self.data_dim)(in_channels=self.filters[4], out_channels=self.filters[3], 
                                                               kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)), 
+            ('decoder_gnorm_256'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[3])),
             ('decoder_act_fn_256' , nn.GELU()), # 8 x 8 => 16 x 16
             
             ('decoder_conv_128'   , conv_up_layer(self.data_dim)(in_channels=self.filters[3], out_channels=self.filters[2], 
                                                               kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
+            ('decoder_gnorm_128'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[2])),
             ('decoder_act_fn_128' , nn.GELU()), # 16 x 16 => 32 x 32
             
             ('decoder_conv_64'    , conv_up_layer(self.data_dim)(in_channels=self.filters[2], out_channels=self.filters[1], 
                                                               kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
+            ('decoder_gnorm_64'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[1])),
             ('decoder_act_fn_64'  , nn.GELU()), # 32 x 32 => 64 x 64
             
             ('decoder_conv_32'    , conv_up_layer(self.data_dim)(in_channels=self.filters[1], out_channels=self.filters[0], 
                                                               kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
+            ('decoder_gnorm_32'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[0])),
             ('decoder_act_fn_32'  , nn.GELU()), # 64 x 64 => 128 x 128
             
             ('decoder_conv_16'    , conv_up_layer(self.data_dim)(in_channels=self.filters[0], out_channels=self.output_ch, 
                                                               kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
-            ('decoder_act_fn_16'  , nn.Tanh()), # 128 x 128 => 256 x 256   
         ]))
     
     def forward(self, x):
@@ -196,6 +208,7 @@ class Affine_Beta_VAE(nn.Module):
                  input_ch  : int,
                  data_dim  : int,
                  latent_dim: int,
+                 group_num : int,
                  img_shape : object = (256, 256),
                  filters   : object = [16, 32, 64, 128, 256]):
         super(Affine_Beta_VAE, self).__init__()
@@ -208,6 +221,7 @@ class Affine_Beta_VAE(nn.Module):
         self.input_ch   = input_ch
         self.data_dim   = data_dim
         self.latent_dim = latent_dim
+        self.group_num  = group_num
         self.image_shape= img_shape
         self.filters    = filters
         
@@ -215,22 +229,27 @@ class Affine_Beta_VAE(nn.Module):
         self.encoder_net =  nn.Sequential(OrderedDict([
             ('affine_conv_16'    , conv_layer(self.data_dim)(in_channels=self.input_ch, out_channels=self.filters[0], 
                                                              kernel_size=3, stride=2, padding=1, bias=False)), 
+            ('affine_gnorm_16'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[0])),
             ('affine_act_fn_16'  , nn.GELU()), # 256 x 256 => 128 x 128
             
             ('affine_conv_32'    , conv_layer(self.data_dim)(in_channels=self.filters[0], out_channels=self.filters[1], 
                                                              kernel_size=3, stride=2, padding=1, bias=False)),
+            ('affine_gnorm_32'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[1])),
             ('affine_act_fn_32'  , nn.GELU()), # 128 x 128 => 64 x 64
             
             ('affine_conv_64'    , conv_layer(self.data_dim)(in_channels=self.filters[1], out_channels=self.filters[2], 
                                                              kernel_size=3, stride=2, padding=1, bias=False)),
+            ('affine_gnorm_64'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[2])),
             ('affine_act_fn_64'  , nn.GELU()), # 64 x 64 => 32 x 32
             
             ('affine_conv_128'   , conv_layer(self.data_dim)(in_channels=self.filters[2], out_channels=self.filters[3], 
                                                              kernel_size=3, stride=2, padding=1, bias=False)),
+            ('affine_gnorm_128'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[3])),
             ('affine_act_fn_128' , nn.GELU()), # 32 x 32 => 16 x 16
             
             ('affine_conv_256'   , conv_layer(self.data_dim)(in_channels=self.filters[3], out_channels=self.filters[4], 
                                                              kernel_size=3, stride=2, padding=1, bias=False)),
+            ('affine_gnorm_256'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[4])),
             ('affine_act_fn_256' , nn.GELU()), # 16 x 16 => 8 x 8
         ]))
         
@@ -299,6 +318,7 @@ class Elastic_Beta_VAE(nn.Module):
                  output_ch : int,
                  data_dim  : int,
                  latent_dim: int,
+                 group_num : int,
                  img_shape : object = (256, 256),
                  filters   : object = [16, 32, 64, 128, 256]):
         super(Elastic_Beta_VAE, self).__init__()
@@ -307,14 +327,15 @@ class Elastic_Beta_VAE(nn.Module):
         self.output_ch  = output_ch
         self.data_dim   = data_dim
         self.latent_dim = latent_dim
+        self.group_num  = group_num
         self.image_shape= img_shape
         self.filters    = filters
         
         # Encoder Block
-        self.encoder  = Encoder(self.input_ch, self.data_dim, self.latent_dim, self.filters)
+        self.encoder  = Encoder(self.input_ch, self.data_dim, self.latent_dim, self.group_num, self.filters)
         
         # Decoder Block
-        self.decoder  = Decoder(self.input_ch, self.output_ch, self.data_dim, self.latent_dim, self.filters)
+        self.decoder  = Decoder(self.input_ch, self.output_ch, self.data_dim, self.latent_dim, self.group_num, self.filters)
 
         # Spataial Transformer Network
         self.spatial_transformer = SpatialTransformer(self.image_shape)
@@ -328,9 +349,9 @@ class Elastic_Beta_VAE(nn.Module):
         distributions = self.encoder(x)
         
         # Decoder Block
-        mu               = distributions[:, :self.latent_dim]
-        logvar           = distributions[:, self.latent_dim:]
-        z                = reparametrize(mu, logvar)      
+        mu                = distributions[:, :self.latent_dim]
+        logvar            = distributions[:, self.latent_dim:]
+        z                 = reparametrize(mu, logvar)      
         deformation_field = self.decoder(z)
         deformation_field = deformation_field.view(moving.size())
         

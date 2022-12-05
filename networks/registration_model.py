@@ -10,6 +10,7 @@ class Registration_Beta_VAE(nn.Module):
                  input_ch   : int,
                  output_ch  : int,
                  data_dim   : int,
+                 group_num  : int,
                  latent_dim : int,
                  img_shape  : object = (256, 256),
                  filters    : object = [16, 32, 64, 128, 256]):
@@ -19,24 +20,27 @@ class Registration_Beta_VAE(nn.Module):
         self.input_ch   = input_ch
         self.output_ch  = output_ch
         self.data_dim   = data_dim
+        self.group_num  = group_num
         self.latent_dim = latent_dim
         self.img_shape  = img_shape
         self.filters    = filters
         
         # Affine Network
-        self.affine_net = Affine_Beta_VAE(input_ch=self.input_ch,
-                                          data_dim=self.data_dim,
-                                          latent_dim=self.latent_dim,
-                                          img_shape=self.img_shape,
-                                          filters=self.filters)
+        self.affine_net = Affine_Beta_VAE(input_ch   = self.input_ch,
+                                          data_dim   = self.data_dim,
+                                          latent_dim = self.latent_dim,
+                                          group_num  = self.group_num,
+                                          img_shape  = self.img_shape,
+                                          filters    = self.filters)
         
         # Deformation/Elastic Network
-        self.elastic_net = Elastic_Beta_VAE(input_ch=self.input_ch,
-                                            output_ch=self.output_ch,
-                                            data_dim=self.data_dim,
-                                            latent_dim=self.latent_dim,
-                                            img_shape=self.img_shape,
-                                            filters=self.filters)
+        self.elastic_net = Elastic_Beta_VAE(input_ch   = self.input_ch,
+                                            output_ch  = self.output_ch,
+                                            data_dim   = self.data_dim,
+                                            latent_dim = self.latent_dim,
+                                            group_num  = self.group_num,
+                                            img_shape  = self.img_shape,
+                                            filters    = self.filters)
         
     def forward(self, fixed:torch.tensor, moving:torch.tensor):
         transform_affine,  warped_affine               = self.affine_net(fixed, moving)
@@ -52,6 +56,7 @@ class Registration_Wasserstein_AE(nn.Module):
                  output_ch  : int,
                  data_dim   : int,
                  latent_dim : int,
+                 group_num  : int,
                  img_shape  : object = (256, 256),
                  filters    : object = [16, 32, 64, 128, 256]):
         
@@ -61,6 +66,7 @@ class Registration_Wasserstein_AE(nn.Module):
         self.output_ch  = output_ch
         self.data_dim   = data_dim
         self.latent_dim = latent_dim
+        self.group_num  = group_num
         self.img_shape  = img_shape
         self.filters    = filters
         
@@ -68,16 +74,18 @@ class Registration_Wasserstein_AE(nn.Module):
         self.affine_net = Affine_WAE(input_ch=self.input_ch,
                                      data_dim=self.data_dim,
                                      latent_dim=self.latent_dim,
+                                     group_num  = self.group_num,
                                      img_shape=self.img_shape,
                                      filters=self.filters)
         
         # Deformation/Elastic Network
-        self.elastic_net = Elastic_WAE(input_ch=self.input_ch,
-                                       output_ch=self.output_ch,
-                                       data_dim=self.data_dim,
-                                       latent_dim=self.latent_dim,
-                                       img_shape=self.img_shape,
-                                       filters=self.filters)
+        self.elastic_net = Elastic_WAE(input_ch   = self.input_ch,
+                                       output_ch  = self.output_ch,
+                                       data_dim   = self.data_dim,
+                                       latent_dim = self.latent_dim,
+                                       group_num  = self.group_num,
+                                       img_shape  = self.img_shape,
+                                       filters    = self.filters)
         
     def forward(self, fixed:torch.tensor, moving:torch.tensor):
         transform_affine,  warped_affine     = self.affine_net(fixed, moving)
