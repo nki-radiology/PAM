@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_ch',  default=1,          type=int,       help='Number of output channels of the image')
     parser.add_argument('--data_dim',   default=2,          type=int,       help='dimension of the data')
     parser.add_argument('--z_dim',      default=256,        type=int,       help='dimension of the representation z')
+    parser.add_argument('--group_num',  default=8,          type=int,       help='Group normalization size')
     parser.add_argument('--img_size',   default=(256, 256), type=tuple,     help='dimension of the image. now only (256,256) is supported')
     
     parser.add_argument('--lr',         default=1e-4,       type=float,     help='learning rate')
