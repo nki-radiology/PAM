@@ -43,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers',default=2,          type=int,       help='dataloader num_workers')
     
     parser.add_argument('--ckpt_dir',   default='/DATA/laura/code/PAM/Beta-VAE/checkpoints',     type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE/images_results/', type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE/imgs_results_rec_relu/', type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     
