@@ -8,7 +8,7 @@ def reconstruction_loss(x, x_recon, distribution):
     if distribution == 'bernoulli':
         recon_loss = F.binary_cross_entropy_with_logits(x_recon, x, size_average=False).div(batch_size)
     elif distribution == 'gaussian':
-        x_recon    = F.relu(x_recon)
+        x_recon    = F.sigmoid(x_recon)
         recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
     else:
         recon_loss = None
