@@ -171,7 +171,7 @@ class Disentanglement(object):
         # weights and biases
         wandb.init(project='Beta-VAE', entity='ljestaciocerquin')
         config = wandb.config
-        wandb.watch(self.net)
+        wandb.watch(self.net, log="all")
         
         for epoch in range(self.start_epoch, self.n_epochs):
             # Affine losses for the training stage
