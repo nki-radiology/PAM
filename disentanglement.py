@@ -37,6 +37,7 @@ class Disentanglement(object):
         self.beta1     = args.beta1
         self.beta2     = args.beta2
         self.batch_size= args.batch_size
+        self.criterion = torch.nn.MSELoss()
         
         # Path to save checkpoints and results
         self.checkpoints_folder = args.ckpt_dir
@@ -46,13 +47,13 @@ class Disentanglement(object):
         self.device    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         # Beta value for Beta_VAE
-        self.beta        = 4
+        self.beta        = 0
         
         # Data folder
         self.data_folder = args.dset_dir
         
         self.n_epochs    = args.n_epochs
-        self.start_epoch = 0
+        self.start_epoch = 1
         
         # Directory to save checkpoints
         create_directory(self.checkpoints_folder)
@@ -208,9 +209,14 @@ class Disentanglement(object):
             
             # Total loss 
             loss_pam_beta_vae_valid= 0
+            lambda_value           = 0.001
             
             # Set the training mode
             self.net.train()
+            
+            
+            if epoch % 50 == 0:
+                self.beta += 1
             
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
@@ -228,12 +234,14 @@ class Disentanglement(object):
                 t1_tr = t_1
                 
                 # Computing the affine loss
-                sim_af, reg_af = total_loss(fixed, w_0, w_0)
-                total_affine   = sim_af #+ reg_af
+                #sim_af, reg_af = total_loss(fixed, w_0, w_0)
+                #total_affine  = sim_af #+ reg_af
+                #total_affine   = reg_af
+                total_affine  = self.criterion(w_0, fixed)
                 
-                loss_affine_sim_train += sim_af.item() # This one : Affine!
+                #loss_affine_sim_train += sim_af.item() # This one : Affine!
                 #loss_affine_reg_train += reg_af.item()
-                #loss_affine_train     += total_affine.item()
+                loss_affine_train     += total_affine.item()
                 
                                
                 # Computing the elastic loss
@@ -245,7 +253,7 @@ class Disentanglement(object):
                 #loss_elastic_train     += total_elastic.item()
                 
                 # Computing the Beta-VAE loss
-                recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist) #0.00001 * reconstruction_loss(fixed, t_1, self.decoder_dist)
+                recon_loss                        = lambda_value * reconstruction_loss(fixed, t_1, self.decoder_dist) #0.00001 * reconstruction_loss(fixed, t_1, self.decoder_dist)
                 total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
                 total_loss_beta_vae               = recon_loss + self.beta*total_kld
                 loss_reconst_train  += recon_loss.item()
@@ -277,7 +285,7 @@ class Disentanglement(object):
                         'Train: Total loss': loss.item()})
             
                 self.save_table('Training_Images', fixed_t, moving_t, w_0, w_1, t_1)"""
-                self.save_table('Training_examples', fixed_t, moving_t, w0_tr, w1_tr, t1_tr)
+                #self.save_table('Training_examples', fixed_t, moving_t, w0_tr, w1_tr, t1_tr)
             
             with torch.no_grad():
                 self.net.eval()
@@ -295,10 +303,11 @@ class Disentanglement(object):
                     w1_v = w_1
                     t1_v = t_1
                     # Computing the affine loss
-                    sim_af, reg_af = total_loss(fixed, w_0, w_0)
-                    total_affine   = sim_af # + reg_af
+                    #sim_af, reg_af = total_loss(fixed, w_0, w_0)
+                    total_affine  = self.criterion(w_0, fixed) #sim_af # + reg_af
+                    #total_affine   = reg_af
                     
-                    loss_affine_sim_valid += sim_af.item()
+                    #loss_affine_sim_valid += sim_af.item()
                     #loss_affine_reg_valid += reg_af.item()
                     loss_affine_valid     += total_affine.item()
                     
@@ -312,7 +321,7 @@ class Disentanglement(object):
                     #loss_elastic_valid     += total_elastic.item()
                     
                     # Computing the Beta-VAE loss
-                    recon_loss                        = reconstruction_loss(fixed, t_1, self.decoder_dist) #0.00001 * reconstruction_loss(fixed, t_1, self.decoder_dist)
+                    recon_loss                        = lambda_value * reconstruction_loss(fixed, t_1, self.decoder_dist) #0.00001 * reconstruction_loss(fixed, t_1, self.decoder_dist)
                     total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
                     total_loss_beta_vae               = recon_loss + self.beta*total_kld
                     loss_reconst_valid  += recon_loss.item()
@@ -338,12 +347,12 @@ class Disentanglement(object):
                             'Valid: Total loss': loss.item()})"""
                     
                     #self.save_table('Validation_Images', fixed_v, moving_v, w_0, w_1, t_1)
-                    self.save_table('Validation_examples', fixed_v, moving_v, w0_v, w1_v, t1_v)
+                    #self.save_table('Validation_examples', fixed_v, moving_v, w0_v, w1_v, t1_v)
         
             
             # Compute the loss per epoch
             data_loader_len         = len(self.train_dataloader)
-            loss_affine_sim_train  /= data_loader_len
+            #loss_affine_sim_train  /= data_loader_len
             #loss_affine_reg_train  /= data_loader_len
             loss_affine_train      /= data_loader_len
             #loss_elastic_sim_train /= data_loader_len
@@ -362,7 +371,7 @@ class Disentanglement(object):
 
             # Compute the loss per epoch
             data_loader_len         = len(self.valid_dataloader)
-            loss_affine_sim_valid  /= data_loader_len
+            #loss_affine_sim_valid  /= data_loader_len
             #loss_affine_reg_valid  /= data_loader_len
             loss_affine_valid      /= data_loader_len
             #loss_elastic_sim_valid /= data_loader_len
@@ -376,7 +385,7 @@ class Disentanglement(object):
         
             # Display in tensorboard
             # ========
-            wandb.log({'epoch': epoch+1, 'Train: Similarity Affine loss': loss_affine_sim_train,
+            wandb.log({'epoch': epoch+1, #'Train: Similarity Affine loss': loss_affine_sim_train,
                             #'Train: Regression Affine loss': loss_affine_reg_train,
                             'Train: Affine loss': loss_affine_train,
                             #'Train: Similarity Elastic loss': loss_elastic_sim_train,
@@ -386,7 +395,7 @@ class Disentanglement(object):
                             'Train: KL-divergence Loss': loss_kl_diver_train,
                             'Train: Beta-VAE Loss': loss_beta_vae_train,
                             'Train: Total loss': loss_pam_beta_vae_train,
-                            'Valid: Similarity Affine loss': loss_affine_sim_valid,
+                            #'Valid: Similarity Affine loss': loss_affine_sim_valid,
                             #'Valid: Regression Affine loss': loss_affine_reg_valid,
                             'Valid: Affine loss': loss_affine_valid,
                             #'Valid: Similarity Elastic loss': loss_elastic_sim_valid,
@@ -400,6 +409,8 @@ class Disentanglement(object):
             # Print the train and validation losses
             print("Train epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, self.n_epochs, loss_pam_beta_vae_train)) # epoch + 1, n_epochs
             print("Valid epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, self.n_epochs, loss_pam_beta_vae_valid))
+            
+            
     
     def train_WAE(self):
 
@@ -522,8 +533,8 @@ class Disentanglement(object):
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                     
                     # Computing the affine loss
-                    sim_af, reg_af = total_loss(fixed, w_0, w_0)
-                    total_affine   = sim_af + reg_af
+                    #sim_af, reg_af = total_loss(fixed, w_0, w_0)
+                    # total_affine   = sim_af + reg_af
                     
                     loss_affine_sim_valid += sim_af.item()
                     loss_affine_reg_valid += reg_af.item()
