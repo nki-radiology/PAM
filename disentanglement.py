@@ -221,17 +221,14 @@ class Disentanglement(object):
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
                 moving = x_2.to(self.device)
-                fixed_t = fixed
-                moving_t = moving
+               
                 
                 # zero-grad the net parameters
                 self.optim.zero_grad()
                 
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
-                w0_tr = w_0
-                w1_tr = w_1
-                t1_tr = t_1
+                
                 
                 # Computing the affine loss
                 #sim_af, reg_af = total_loss(fixed, w_0, w_0)
@@ -284,8 +281,8 @@ class Disentanglement(object):
                         'Train: Beta-VAE Loss': total_loss_beta_vae.item(),
                         'Train: Total loss': loss.item()})
             
-                self.save_table('Training_Images', fixed_t, moving_t, w_0, w_1, t_1)"""
-                #self.save_table('Training_examples', fixed_t, moving_t, w0_tr, w1_tr, t1_tr)
+                """
+                
             
             with torch.no_grad():
                 self.net.eval()
@@ -293,15 +290,12 @@ class Disentanglement(object):
                 for i, (x_1, x_2) in enumerate (self.valid_dataloader):
                     fixed  = x_1.to(self.device)
                     moving = x_2.to(self.device)
-                    fixed_v = fixed
-                    moving_v = moving
+                  
                     
                                         
                     # Forward pass through the registration model
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
-                    w0_v = w_0
-                    w1_v = w_1
-                    t1_v = t_1
+                    
                     # Computing the affine loss
                     #sim_af, reg_af = total_loss(fixed, w_0, w_0)
                     total_affine  = self.criterion(w_0, fixed) #sim_af # + reg_af
@@ -346,9 +340,7 @@ class Disentanglement(object):
                             'Valid: Beta-VAE Loss': total_loss_beta_vae.item(),
                             'Valid: Total loss': loss.item()})"""
                     
-                    #self.save_table('Validation_Images', fixed_v, moving_v, w_0, w_1, t_1)
-                    #self.save_table('Validation_examples', fixed_v, moving_v, w0_v, w1_v, t1_v)
-        
+                   
             
             # Compute the loss per epoch
             data_loader_len         = len(self.train_dataloader)
