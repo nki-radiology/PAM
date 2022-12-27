@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--train',      default=True,       type=str2bool,  help='train or testing')
     parser.add_argument('--seed',       default=42,         type=int,       help='random seed')
     parser.add_argument('--cuda',       default=True,       type=str2bool,  help='enable cuda')
-    parser.add_argument('--n_epochs',   default=200,        type=int,       help='maximum training iteration')
+    parser.add_argument('--n_epochs',   default=2000,        type=int,       help='maximum training iteration')
     parser.add_argument('--batch_size', default=8,          type=int,       help='batch size')
 
     parser.add_argument('--model',      default='Beta-VAE', type=str,       help='Wasserstein Autoencoder (WAE) and Beta Variational Autoencoder (Beta-VAE)')
@@ -39,11 +39,11 @@ if __name__ == '__main__':
     parser.add_argument('--beta1',      default=0.9,        type=float,     help='Adam optimizer beta1')
     parser.add_argument('--beta2',      default=0.999,      type=float,     help='Adam optimizer beta2')
     
-    parser.add_argument('--dset_dir',   default='/DATA/laura/datasets/chest_xray/train/NORMAL',  type=str, help='dataset directory')
+    parser.add_argument('--dset_dir',   default='/SHARED/active_Laura/chest_xray/train/NORMAL',  type=str, help='dataset directory')
     parser.add_argument('--num_workers',default=2,          type=int,       help='dataloader num_workers')
     
     parser.add_argument('--ckpt_dir',   default='/DATA/laura/code/PAM/Beta-VAE/checkpoints',     type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE/imgs_results_no_elastic_losses/', type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE/imgs_results_corr/', type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     
