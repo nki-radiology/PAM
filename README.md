@@ -47,6 +47,7 @@ Follow the steps to use it and to have your preprocessed data properly.
         $ conda install -c anaconda scikit-learn
         $ conda install -c anaconda pandas
         $ conda install -c simpleitk simpleitk
+        $ conda install -c conda-forge pydicom
         $ conda install -c conda-forge keras
         $ conda install -c conda-forge nibabel
         $ conda install -c conda-forge tqdm
