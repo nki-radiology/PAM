@@ -42,8 +42,8 @@ if __name__ == '__main__':
     parser.add_argument('--dset_dir',   default='/SHARED/active_Laura/chest_xray/train/NORMAL',  type=str, help='dataset directory')
     parser.add_argument('--num_workers',default=2,          type=int,       help='dataloader num_workers')
     
-    parser.add_argument('--ckpt_dir',   default='/DATA/laura/code/PAM/Beta-VAE-new/checkpoints',     type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE-new/imgs_results_corr/', type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--ckpt_dir',   default='/DATA/laura/code/PAM/Beta-VAE/checkpoints',  type=str, help='checkpoint directory')
+    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE/img_results/', type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     
