@@ -215,8 +215,15 @@ class Disentanglement(object):
             self.net.train()
             
             
-            if epoch % 50 == 0:
-                self.beta += 1
+            if epoch == 50:
+                self.beta = 1e-10
+            
+            elif epoch > 50:
+                if self.beta < 4:
+                    self.beta = self.beta * 2
+                else:
+                    self.beta = 4        
+                                        
             
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
@@ -399,8 +406,8 @@ class Disentanglement(object):
                             'Valid: Total loss': loss_pam_beta_vae_valid})
         
             # Print the train and validation losses
-            print("Train epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, self.n_epochs, loss_pam_beta_vae_train)) # epoch + 1, n_epochs
-            print("Valid epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, self.n_epochs, loss_pam_beta_vae_valid))
+            print("Train epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, self.beta)) # epoch + 1, n_epochs
+            print("Valid epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, self.beta))
             
             
     
