@@ -12,15 +12,19 @@ from   losses                       import imq_kernel
 from   registration_dataset         import RegistrationDataSet
 from   networks.registration_model  import Registration_Beta_VAE
 from   networks.registration_model  import Registration_Wasserstein_AE
+from   networks.discriminator       import Discriminator
 from   torch.utils.data             import DataLoader
 from   sklearn.model_selection      import train_test_split
 import matplotlib.pyplot            as     plt
 import numpy                        as     np
+import torchvision.transforms.functional as TF
+from random import randint
 
 class Disentanglement(object):
     def __init__(self, args):
 
         self.input_ch  = args.input_ch
+        self.input_ch_d=args.input_ch_d
         self.output_ch = args.output_ch
         self.data_dim  = args.data_dim
         self.z_dim     = args.z_dim
@@ -30,6 +34,7 @@ class Disentanglement(object):
         
         # Model
         self.model        = args.model
+        self.add_disc     = args.add_disc
         self.decoder_dist = 'gaussian'
         
         # Model Parameters
@@ -53,7 +58,7 @@ class Disentanglement(object):
         self.data_folder = args.dset_dir
         
         self.n_epochs    = args.n_epochs
-        self.start_epoch = 1
+        self.start_epoch = args.start_ep #1
         
         # Directory to save checkpoints
         create_directory(self.checkpoints_folder)
@@ -66,13 +71,15 @@ class Disentanglement(object):
     def model_init(self):
         if self.model == 'WAE':
             net = Registration_Wasserstein_AE
+            print('-------------- Running WAE Model --------------')
         elif self.model == 'Beta-VAE':
             net = Registration_Beta_VAE
+            print('-------------- Running Beta-VAE Model --------------')
         else:
             raise NotImplementedError('only support model WAE and B-VAE')
         
         # Network Definition
-        self.net = net(input_ch   = self.input_ch,
+        self.net = net(input_ch        = self.input_ch,
                             output_ch  = self.output_ch,
                             data_dim   = self.data_dim,
                             latent_dim = self.z_dim,
@@ -86,10 +93,29 @@ class Disentanglement(object):
         # GPU computation
         self.net.to(self.device)
     
-    
+        # Adversarial Learning
+        if self.add_disc:
+            self.disc_net  = Discriminator(
+                input_ch   = self.input_ch_d,
+                data_dim   = self.data_dim,
+                latent_dim = self.z_dim,
+                group_num  = self.group_num,
+                img_shape  = self.img_shape,
+                filters    = self.filters)
+            
+            self.disc_net.apply(weights_init)
+            self.disc_net.to(self.device)
+            self.disc_loss_bce = torch.nn.BCELoss()
+            self.disc_loss_fts = torch.nn.MSELoss()
+            print('-------------- Running Adversarial Beta-VAE Model --------------')
+            
+            
+        
     def set_optimizer(self):
-        self.optim = torch.optim.Adam(self.net.parameters(), lr=self.lr,
-                                      betas=(self.beta1, self.beta2))
+        self.optim      = torch.optim.Adam(self.net.parameters(), lr=self.lr,
+                                           betas=(self.beta1, self.beta2))
+        self.optim_disc = torch.optim.Adam(self.disc_net.parameters(), lr=self.lr, 
+                                           betas=(self.beta1, self.beta2))
         
                     
     def load_dataloader(self):
@@ -172,6 +198,7 @@ class Disentanglement(object):
         wandb.init(project='Beta-VAE', entity='ljestaciocerquin')
         config = wandb.config
         wandb.watch(self.net, log="all")
+        alpha_value = 0.01
         
         for epoch in range(self.start_epoch, self.n_epochs):
             # Affine losses for the training stage
@@ -216,7 +243,9 @@ class Disentanglement(object):
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                 
                 # Computing the affine loss
-                total_affine       = self.criterion(w_0, fixed)
+                #total_affine       = self.criterion(w_0, fixed)
+                sim_af_loss, reg_af_loss = total_loss(fixed, w_0, w_0)
+                total_affine             = sim_af_loss + alpha_value * reg_af_loss
                 loss_affine_train += total_affine.item()
                 
                 # Computing the elastic loss: Beta-VAE loss
@@ -249,7 +278,9 @@ class Disentanglement(object):
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                     
                     # Computing the affine loss
-                    total_affine       = self.criterion(w_0, fixed) 
+                    #total_affine       = self.criterion(w_0, fixed)
+                    sim_af_loss, reg_af_loss = total_loss(fixed, w_0, w_0)
+                    total_affine             = sim_af_loss + alpha_value * reg_af_loss
                     loss_affine_valid += total_affine.item()
                                 
                     # Computing the elastic loss: Beta-VAE loss
@@ -305,6 +336,246 @@ class Disentanglement(object):
             # Print the train and validation losses
             print("Train epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, self.beta)) # epoch + 1, n_epochs
             print("Valid epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, self.beta))
+
+
+
+    def train_Beta_VAE_Adversarial(self):
+        
+        # weights and biases
+        wandb.init(project='Beta-VAE-Adversarial', entity='ljestaciocerquin')
+        config = wandb.config
+        wandb.watch(self.net, log="all")
+        
+        # Assign lambda and gamma values to regularize the reconstruction 
+        lambda_value = 0.001
+        gamma_value  = 0.1
+                
+        # Establish convention for real and fake labels during training
+        real_label   = 1.
+        fake_label   = 0.
+        
+        for epoch in range(self.start_epoch, self.n_epochs):
+            # Affine losses for the training stage
+            loss_affine_train      = 0
+            
+            # Elastic losses for the training stage: Beta-VAE loss
+            loss_beta_vae_train    = 0
+            loss_reconst_train     = 0
+            loss_kl_diver_train    = 0
+            
+            # Total loss train
+            loss_pam_beta_vae_train= 0
+            loss_gen_train         = 0
+            loss_disc_train        = 0
+            
+            # Affine losses for the validation stage
+            loss_affine_valid      = 0
+            
+            # Elastic losses for the validation stage: Beta-VAE loss
+            loss_beta_vae_valid    = 0
+            loss_reconst_valid     = 0
+            loss_kl_diver_valid    = 0
+            
+            # Total loss valid
+            loss_pam_beta_vae_valid= 0
+            loss_gen_valid         = 0
+            loss_disc_valid        = 0
+            
+            
+            # Set the training mode
+            self.net.train()
+            self.disc_net.train()
+            
+            # Update the beta value gradually
+            if epoch >= 50: 
+                self.beta = np.maximum(self.beta, 1e-10)
+                self.beta = np.minimum(self.beta*2, 4.)  
+            
+            angle = randint(0, 20)    
+                                        
+            
+            for i, (x_1, x_2) in enumerate (self.train_dataloader):
+                
+                # send to device (GPU or CPU)
+                fixed  = x_1.to(self.device)
+                moving = x_2.to(self.device)
+                
+                # -----------------
+                #  Train Generator
+                # -----------------
+                
+                # zero-grad the net parameters
+                self.optim.zero_grad()
+                
+                # Forward pass through the registration model: generator (1)
+                t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
+                
+                # Loss measures generator's ability to fool the discriminator
+                real_pred_gen, real_fts_gen  = self.disc_net(w_1)
+                _, ground_truth_fts          = self.disc_net(TF.rotate(fixed, angle))
+                
+                # Compute generator loss
+                g_loss  = gamma_value * self.disc_loss_fts(real_fts_gen, ground_truth_fts)
+                loss_gen_train += g_loss.item()
+                
+                # Computing the affine loss
+                total_affine       = self.criterion(w_0, fixed)
+                loss_affine_train += total_affine.item()
+                
+                # Computing the elastic loss: Beta-VAE loss
+                recon_loss                        = lambda_value * reconstruction_loss(fixed, w_1, self.decoder_dist) 
+                total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
+                total_loss_beta_vae               = recon_loss + self.beta*total_kld
+                loss_reconst_train  += recon_loss.item()
+                loss_kl_diver_train += total_kld.item()
+                loss_beta_vae_train += total_loss_beta_vae.item()
+                
+                # Total loss Beta-VAE train
+                loss = total_affine + total_loss_beta_vae + g_loss
+                loss_pam_beta_vae_train += loss.item()
+                
+                # one backward pass
+                loss.backward()
+                
+                # Update the parameters
+                self.optim.step()
+                
+                # ---------------------
+                #  Train Discriminator
+                # ---------------------
+
+                # Backward pass discriminator
+                self.optim_disc.zero_grad()
+                
+                # Measure discriminator's ability to classify real from generated samples
+                real, fts_real = self.disc_net(TF.rotate(fixed, angle))  # (fixed)
+                fake, fts_fake = self.disc_net(w_1.detach())
+                b_size   = real.shape
+                label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
+                label_f  = torch.full(b_size, fake_label, dtype=torch.float, device=self.device)
+                
+                # Compute discriminator loss
+                loss_d_real = self.disc_loss_bce(real, label_r)
+                loss_d_fake = self.disc_loss_bce(fake, label_f)
+                loss_d_t    = (loss_d_real + loss_d_fake) * 0.5
+                loss_disc_train += loss_d_t.item()
+                
+                # one backward pass
+                loss_d_t.backward()
+
+                # Update Discriminator
+                self.optim_disc.step()
+                
+                # Reinit the affine network weights
+                if loss_d_t.item() < 1e-5:  # 
+                    self.disc_net.apply(weights_init)
+                    print("Reloading discriminator weights")
+                
+                
+            
+            with torch.no_grad():
+                self.net.eval()
+                self.disc_net.eval()
+                
+                for i, (x_1, x_2) in enumerate (self.valid_dataloader):
+                    fixed  = x_1.to(self.device)
+                    moving = x_2.to(self.device)
+                                        
+                    # Forward pass through the registration model
+                    t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
+                    
+                    # Loss measures generator's ability to fool the discriminator
+                    real_pred_gen, real_pred_fts = self.disc_net(w_1)
+                    _, ground_truth_fts          = self.disc_net(TF.rotate(fixed, angle))#(fixed)
+                    
+                    # Compute the generator loss
+                    g_loss = gamma_value * self.disc_loss_fts(real_pred_fts, ground_truth_fts)
+                    loss_gen_valid += g_loss.item()
+                    
+                    # Computing the affine loss
+                    total_affine       = self.criterion(w_0, fixed)
+                    loss_affine_valid += total_affine.item()
+                                
+                    # Computing the elastic loss: Beta-VAE loss
+                    recon_loss                        = lambda_value * reconstruction_loss(fixed, w_1, self.decoder_dist)
+                    total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, log_var)
+                    total_loss_beta_vae               = recon_loss + self.beta*total_kld
+                    loss_reconst_valid  += recon_loss.item()
+                    loss_kl_diver_valid += total_kld.item()
+                    loss_beta_vae_valid += total_loss_beta_vae.item()
+                    
+                    # Total loss Beta-VAE valid (Generator)
+                    loss                     = total_affine + total_loss_beta_vae + g_loss
+                    loss_pam_beta_vae_valid += loss.item()
+                    
+                    # ----------- 1. Update the Discriminator -----------
+
+                    # Measure discriminator's ability to classify real from generated samples
+                    real, _ = self.disc_net(TF.rotate(fixed, angle))#(fixed)  # (w_0)
+                    fake, _ = self.disc_net(w_1.detach())
+
+                    b_size = real.shape
+                    label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
+                    label_f  = torch.full(b_size, fake_label, dtype=torch.float, device=self.device)
+
+                    # Calculate loss
+                    loss_d_real      = self.disc_loss_bce(real, label_r)
+                    loss_d_fake      = self.disc_loss_bce(fake, label_f)
+                    loss_d_v         = (loss_d_real + loss_d_fake) * 0.5
+                    loss_disc_valid += loss_d_v.item()
+                    
+            
+            # Compute the loss per epoch
+            data_loader_len         = len(self.train_dataloader)
+            loss_gen_train         /= data_loader_len
+            loss_disc_train        /= data_loader_len
+            loss_affine_train      /= data_loader_len
+            loss_reconst_train     /= data_loader_len
+            loss_kl_diver_train    /= data_loader_len
+            loss_beta_vae_train    /= data_loader_len
+            loss_pam_beta_vae_train/= data_loader_len
+        
+            # Save checkpoints
+            if epoch % 10 == 0:
+                name_pam = 'PAMModel_BetaVAE_Adversarial_' + str(epoch) + '.pth'
+                name_dis = 'DisModel_BetaVAE_Adversarial_' + str(epoch) + '.pth'
+                torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
+                torch.save(self.disc_net.state_dict(), os.path.join(self.checkpoints_folder, name_dis))
+                print('Saving model')
+
+            # Compute the loss per epoch
+            data_loader_len         = len(self.valid_dataloader)
+            loss_gen_valid         /= data_loader_len
+            loss_disc_valid        /= data_loader_len
+            loss_affine_valid      /= data_loader_len
+            loss_reconst_valid     /= data_loader_len
+            loss_kl_diver_valid    /= data_loader_len
+            loss_beta_vae_valid    /= data_loader_len
+            loss_pam_beta_vae_valid/= data_loader_len
+        
+        
+            # Display in tensorboard
+            # ========
+            wandb.log({'epoch': epoch,
+                            'Train: Affine loss': loss_affine_train,
+                            'Train: Reconstruction loss': loss_reconst_train,
+                            'Train: KL-divergence Loss': loss_kl_diver_train,
+                            'Train: Beta-VAE Loss': loss_beta_vae_train,
+                            'Train: FTS Generator Loss': loss_gen_train,
+                            'Train: Generator Total loss': loss_pam_beta_vae_train,
+                            'Train: Discriminator loss': loss_disc_train,
+                            'Valid: Affine loss': loss_affine_valid,
+                            'Valid: Reconstruction loss': loss_reconst_valid,
+                            'Valid: KL-divergence Loss': loss_kl_diver_valid,
+                            'Valid: Beta-VAE Loss': loss_beta_vae_valid,
+                            'Valid: FTS Generator Loss': loss_gen_valid,
+                            'Valid: Generator Total loss': loss_pam_beta_vae_valid,
+                            'Valid: Discriminator loss': loss_disc_valid})
+        
+            # Print the train and validation losses
+            print("Train epoch : {}/{}, loss_PAM = {:.6f}, loss_Disc = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, loss_disc_train, self.beta)) # epoch + 1, n_epochs
+            print("Valid epoch : {}/{}, loss_PAM = {:.6f}, loss_Disc = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, loss_disc_valid ,self.beta))
+
             
             
     
@@ -511,6 +782,8 @@ class Disentanglement(object):
         self.set_optimizer()
         self.load_dataloader()
         
+        if self.add_disc:
+            self.train_Beta_VAE_Adversarial()
         if self.model == 'WAE':
             self.train_WAE()
         elif self.model == 'Beta-VAE':
