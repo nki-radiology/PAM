@@ -362,6 +362,7 @@ class Elastic_Beta_VAE(nn.Module):
         
 
 
+        
 from torchsummary import summary
 
 """model = Beta_AE(data_dim = 2,
@@ -392,4 +393,4 @@ model = model.to('cuda')
 print(model)
 summary = summary(model, [(1,  256, 256), (1,  256, 256)], device='cuda')"""
 
-                
+      
