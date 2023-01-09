@@ -10,7 +10,7 @@ from   SimpleITK import WriteImage
 from   SimpleITK import ClampImageFilter
 from   Localizer import *
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 
 def get_data_file(filename: str):
@@ -30,12 +30,9 @@ def get_data_file(filename: str):
 
     # Concatenation of both dataframes and removing duplicate paths
     non_repeating_data = list(new_prior['PRIOR_PATH']) + list(new_subsq['SUBSQ_PATH'])
-    #print((non_repeating_data))
-    #print(len(non_repeating_data))
-    #non_repeating_data = list(dict.fromkeys(non_repeating_data))
     print(len(non_repeating_data))
 
-    return data, non_repeating_data# new_prior, new_subsq#['PRIOR_PATH'], new_subsq['SUBSQ_PATH'], result
+    return data, non_repeating_data
 
 
 def verify_path_to_save(path: str):
@@ -71,7 +68,8 @@ def apply_localizer(tcia_proc: list, crop: str):
         )
         print('Applying crop of Abdomen!')
 
-    f      = open("/DATA/laura/external_data_remaning/unprocessed_external_thorax_data.csv", 'w') 
+    name_f = "/DATA/laura/data_melda/unprocessed_" + crop + "_data.csv"
+    f      = open(name_f, 'w') 
     writer = csv.writer(f)
     header = ['dicom_path']
     writer.writerow(header)
@@ -87,7 +85,7 @@ def apply_localizer(tcia_proc: list, crop: str):
                 processed_ct_scan = processed_ct_scan / 2
                 processed_ct_scan = SimpleITK.Cast(processed_ct_scan, sitk.sitkUInt8)
 
-                path_1 = path.replace("/IMMUNOTEAM", "/DATA/laura/external_data_remaning/" + crop)
+                path_1 = path.replace("/IMMUNOTEAM", "/DATA/laura/data_melda/" + crop)
                 verify_path_to_save(path_1)
                 ct_path = path_1 + '/' + path.split('/')[6] + '.nrrd'
                 print(' My New Path is: ---------------------------------')
@@ -103,7 +101,7 @@ def apply_localizer(tcia_proc: list, crop: str):
     print("Done!")
 
 
-path                     = "/SHARED/active_Laura/QoL_data/ScanPairs_remaning.csv"
+path                     = "/SHARED/active_Laura/Features_Melda/ScanPairs.csv"
 data, non_repeating_data = get_data_file(path)
-apply_localizer(non_repeating_data, 'thorax')
+apply_localizer(non_repeating_data, 'abdomen')
 

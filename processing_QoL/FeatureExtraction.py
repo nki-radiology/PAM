@@ -22,8 +22,8 @@ def replace_Z_by_Immunoteam(filename: str):
     data['PRIOR_PATH'] = data['PRIOR_PATH'].replace(r'\\', '/',  regex=True)
     data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace(r'\\', '/',  regex=True)
 
-    prior_path_nrrd = list( data['PRIOR_PATH'].replace('/IMMUNOTEAM', '/DATA/laura/external_data_remaning/thorax', regex=True) )
-    subsq_path_nrrd = list( data['SUBSQ_PATH'].replace('/IMMUNOTEAM', '/DATA/laura/external_data_remaning/thorax', regex=True) )
+    prior_path_nrrd = list( data['PRIOR_PATH'].replace('/IMMUNOTEAM', '/DATA/laura/data_melda/abdomen', regex=True) )
+    subsq_path_nrrd = list( data['SUBSQ_PATH'].replace('/IMMUNOTEAM', '/DATA/laura/data_melda/abdomen', regex=True) )
 
     for idx in range(len(prior_path_nrrd)):
         prior_path           = prior_path_nrrd[idx] + '/' + prior_path_nrrd[idx].split('/')[9] + '.nrrd'
@@ -33,7 +33,7 @@ def replace_Z_by_Immunoteam(filename: str):
         
     data['PRIOR_PATH_NRRD'] = prior_path_nrrd
     data['SUBSQ_PATH_NRRD'] = subsq_path_nrrd
-    data.to_excel('/DATA/laura/external_data_remaning/thorax/ThoraxScanPairs.xlsx') 
+    data.to_excel('/DATA/laura/data_melda/abdomen/AbdomenScanPairs.xlsx') 
 
 
 
@@ -302,7 +302,7 @@ class PamFeatures():
                     subsq_date_nr = pd.DataFrame.from_dict(self.subsq_date_list_no_read)
                     subsq_path_nr = pd.DataFrame.from_dict(self.subsq_path_list_no_read)
                     new_df_nr = pd.concat([patient_nr, prior_date_nr, prior_path_nr, subsq_date_nr, subsq_path_nr], axis=1, ignore_index=False, sort=False)
-                    new_df_nr.to_excel(path_to_save_files + name_to_save_xlsx + '_2_unprocessed_images.xlsx') 
+                    new_df_nr.to_excel(path_to_save_files + name_to_save_xlsx + '_unprocessed_images.xlsx') 
                 pbar.update(1)
 
     
@@ -312,20 +312,20 @@ if __name__ == "__main__":
     import json
 
     parser = ArgumentParser()
-    parser.add_argument('--thorax_raw_file_path',      type=str, default='/DATA/laura/external_data_remaning/thorax/ThoraxScanPairs.xlsx')
+    parser.add_argument('--thorax_raw_file_path',      type=str, default='/DATA/laura/data_melda/thorax/ThoraxScanPairs.xlsx')
     parser.add_argument('--thorax_pam_checkpoint',     type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia/models/pam_adv_fts_sit/PAMModel_50.pth')
     parser.add_argument('--thorax_dis_checkpoint',     type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia/models/pam_adv_fts_sit/DisModel_50.pth')
-    parser.add_argument('--thorax_path_to_save_file',  type=str, default='/DATA/laura/external_data_remaning/thorax/')
+    parser.add_argument('--thorax_path_to_save_file',  type=str, default='/DATA/laura/data_melda/thorax/')
     parser.add_argument('--thorax_name_to_save_xlsx',  type=str, default='features_pam_thorax')
-    parser.add_argument('--abdomen_raw_file_path',     type=str, default='/DATA/laura/external_data_remaning/abdomen/AbdomenScanPairs.xlsx')
+    parser.add_argument('--abdomen_raw_file_path',     type=str, default='/DATA/laura/data_melda/abdomen/AbdomenScanPairs.xlsx')
     parser.add_argument('--abdomen_pam_checkpoint',    type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia_abdomen/models/PAMModel_50.pth')
     parser.add_argument('--abdomen_dis_checkpoint',    type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia_abdomen/models/DisModel_50.pth')
-    parser.add_argument('--abdomen_path_to_save_file', type=str, default='/DATA/laura/external_data_remaning/abdomen/')
+    parser.add_argument('--abdomen_path_to_save_file', type=str, default='/DATA/laura/data_melda/abdomen/')
     parser.add_argument('--abdomen_name_to_save_xlsx', type=str, default='features_pam_abdomen')
     args = parser.parse_args()
 
     # If data is considering path with Z:\\.....
-    #path = "/DATA/laura/external_data_remaning/ScanPairs_remaning.csv" #"/DATA/laura/external_data/B01_ScanPairs.csv"
+    #path = "/DATA/laura/data_melda/ScanPairs.csv" #"/DATA/laura/external_data/B01_ScanPairs.csv"
     #replace_Z_by_Immunoteam(path)
     
 
