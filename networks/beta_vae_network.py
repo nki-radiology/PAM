@@ -1,6 +1,8 @@
+import numpy as np
 import torch
-import torch.nn             as     nn
-import torch.nn.functional  as     F
+import torch.nn as nn
+import torch.nn.functional as F
+
 from   torch.autograd       import Variable
 from   collections          import OrderedDict
 from   networks.layer                import conv_layer
@@ -10,81 +12,71 @@ from   networks.spatial_transformer  import SpatialTransformer
 
 
 def reparametrize(mu, logvar):
-    std = logvar.div(2).exp()
-    eps = Variable(std.data.new(std.size()).normal_())
-    return mu + std*eps
+    std = torch.exp(0.5 * logvar)
+    eps = torch.randn_like(std)
+    return mu + std * eps
    
+def dim_after_n_layers(size, n_layers):
+    for _ in range(n_layers):
+        size = np.ceil(size/2)
+    return size
 
 class Encoder(nn.Module):
     def __init__(self,
-                 input_ch  : int,
-                 data_dim  : int,
-                 latent_dim: int,
-                 group_num : int,
-                 filters   : object = [32, 32, 32, 32, 32]
+                 #COM try always to fill out the default parameters 
+                 input_dim : int = [256, 256, 512],
+                 latent_dim: int = 512,
+                 group_num : int = 8,
+                 filters   : object = [32, 64, 128, 256] 
                  ):
         super(Encoder, self).__init__()
         """
         Inputs:
-            - input_ch   : Number of input channels of the image. For medical images, this parameter usually is 1
+            - input_dim  : Dimensionality of the input 
             - latent_dim : Dimensionality of the latent space (Z)
+            - groups     : Number of groups in the normalization layers
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
         """
-        self.input_ch   = input_ch
-        self.data_dim   = data_dim
-        self.latent_dim = latent_dim
-        self.group_num  = group_num
-        self.filters    = filters
+        #COM no need to set all the variables as attribute of the object, if you dont use them outside of this method
+        #self.input_dim   = input_dim
+        #self.latent_dim = latent_dim
+        #self.group_num  = group_num
+        #self.filters    = filters
         
-        if self.data_dim == 2:
-            self.input_linear = 8 * 8
-        elif self.data_dim == 3:
-            self.input_linear = 8 * 8 * 8
-        else: 
-            NotImplementedError('only supported 2D and 3D data')
+        #COM you can infer this from input_dim
+        #if self.data_dim == 2:
+        #    self.input_linear = 8 * 8
+        #elif self.data_dim == 3:
+        #    self.input_linear = 8 * 8 * 8
+        #else: 
+        #    NotImplementedError('only supported 2D and 3D data')
+
+        #COM this can be done with a for loop 
+        modules = OrderedDict()
         
-        self.encoder_net =  nn.Sequential(OrderedDict([
-            ('encoder_conv_16'    , conv_layer(self.data_dim)(in_channels=self.input_ch, out_channels=self.filters[0], 
-                                                              kernel_size=3, stride=2, padding=1, bias=False)),
-            ('encoder_gnorm_16'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[0])),
-            ('encoder_act_fn_16'  , nn.GELU()), # 256 x 256 => 128 x 128
+        for layer_i, layer_filters in enumerate(filters):
+
+            modules['encoder_block' + str(layer_i)] = nn.Sequential(
+                conv_layer(len(self.input_ch))(
+                    in_channels=self.input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.GroupNorm(num_groups=self.group_num, num_channels=layer_filters),
+                nn.GELU()
+            )
+        
+        self.convnet = nn.Sequential(modules)
+
+        #COM you can compute the output dimensions and number of elements after flattening
+        output_dim = [dim_after_n_layers(i, layer_i) for i in input_dim]
+        self.elem = layer_filters * np.prod(output_dim)
             
-            ('encoder_conv_32'    , conv_layer(self.data_dim)(in_channels=self.filters[0], out_channels=self.filters[1], 
-                                                              kernel_size=3, stride=2, padding=1, bias=False)),
-            ('encoder_gnorm_32'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[1])),
-            ('encoder_act_fn_32'  , nn.GELU()), # 128 x 128 => 64 x 64
-            
-            ('encoder_conv_64'    , conv_layer(self.data_dim)(in_channels=self.filters[1], out_channels=self.filters[2], 
-                                                              kernel_size=3, stride=2, padding=1, bias=False)),
-            ('encoder_gnorm_64'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[2])),
-            ('encoder_act_fn_64'  , nn.GELU()), # 64 x 64 => 32 x 32
-            
-            ('encoder_conv_128'   , conv_layer(self.data_dim)(in_channels=self.filters[2], out_channels=self.filters[3], 
-                                                              kernel_size=3, stride=2, padding=1, bias=False)),
-            ('encoder_gnorm_128'   , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[3])),
-            ('encoder_act_fn_128' , nn.GELU()), # 32 x 32 => 16 x 16
-            
-            ('encoder_conv_256'   , conv_layer(self.data_dim)(in_channels=self.filters[3], out_channels=self.filters[4], 
-                                                              kernel_size=3, stride=2, padding=1, bias=False)),
-            ('encoder_gnorm_256'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[4])),
-            ('encoder_act_fn_256' , nn.GELU()), # 16 x 16 => 8 x 8
-        ]))
-            
-             
-        self.encoder_last_layer =  nn.Sequential(OrderedDict([
-            ('encoder_linear_1'   , nn.Linear(in_features=self.filters[4] * self.input_linear, out_features=latent_dim*3, bias=False)), # self.input?linear
-            ('encoder_act_fn_l1'  , nn.GELU()),
-            ('encoder_linear_2'   , nn.Linear(in_features=latent_dim*3, out_features=latent_dim*3, bias=False)), 
-            ('encoder_act_fn_l2'  , nn.GELU()),
-            ('encoder_linear_3'   , nn.Linear(in_features=latent_dim*3, out_features=latent_dim*2, bias=False)), 
-            #('encoder_act_fn_l1'  , nn.GELU()),
-        ]))
-    
+        self.fc_mu = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
+        self.fc_var = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
+
     def forward(self, x):
-        x = self.encoder_net(x)
-        x = x.view(-1, self.filters[4] * self.input_linear)#self.filters[4]*8*8)
-        x = self.encoder_last_layer(x)
-        return x
+        x = self.convnet(x)
+        x = x.view(-1, self.elem)
+        mu, sigma = self.fc_mu(x), self.fc_var(x)
+        return mu, sigma
     
     
     
