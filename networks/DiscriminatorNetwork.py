@@ -26,11 +26,9 @@ class DiscriminatorNetwork(nn.Module):
 
     def __init__(self):
         super(DiscriminatorNetwork, self).__init__()
-        self.in_ch   = discriminator.in_channels # 1
         self.filters = discriminator.filters     # [8, 16, 32, 64, 128, 256, 512]
-        self.out_fts = discriminator.out_features
 
-        self.conv1 = S_Conv(self.in_ch,      self.filters[0])
+        self.conv1 = S_Conv(1,               self.filters[0])
         self.conv2 = S_Conv(self.filters[0], self.filters[1])
         self.conv3 = S_Conv(self.filters[1], self.filters[2])
         self.conv4 = S_Conv(self.filters[2], self.filters[3])
@@ -41,7 +39,7 @@ class DiscriminatorNetwork(nn.Module):
 
         # Last Layer
         self.h     = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
-        self.dense = nn.Linear(in_features=self.filters[6], out_features=self.out_fts, bias=False)
+        self.dense = nn.Linear(in_features=self.filters[6], out_features=1, bias=False)
         self.act   = nn.Sigmoid()
 
 

@@ -45,10 +45,8 @@ U-Net Generator class
 """
 class DeformationNetwork(nn.Module):
 
-    def __init__(self, in_channels, out_channels, filters, img_dim):
+    def __init__(self, filters, img_dim):
         super(DeformationNetwork, self).__init__()
-        self.in_ch   = in_channels   # 2
-        self.out_ch  = out_channels  # 1
         self.filters = filters       # [16, 32, 64, 128, 256]
         self.img_dim = img_dim
 
@@ -57,7 +55,7 @@ class DeformationNetwork(nn.Module):
         self.Maxpool3 = nn.MaxPool3d(kernel_size=2, stride=2)
         self.Maxpool4 = nn.MaxPool3d(kernel_size=2, stride=2)
 
-        self.Conv1    = Conv   (self.in_ch,      self.filters[0])
+        self.Conv1    = Conv   (2,      self.filters[0])
         self.Conv2    = Conv   (self.filters[0], self.filters[1])
         self.Conv3    = Conv   (self.filters[1], self.filters[2])
         self.Conv4    = Conv   (self.filters[2], self.filters[3])
@@ -76,7 +74,7 @@ class DeformationNetwork(nn.Module):
         self.Up2      = Up_Conv(self.filters[1], self.filters[0])
         self.Up_conv2 = Conv   (self.filters[1], self.filters[0])
 
-        self.Conv     = nn.Conv3d(self.filters[0], self.out_ch, kernel_size=1, stride=1, padding=0, bias=False)
+        self.Conv     = nn.Conv3d(self.filters[0], len(self.img_dim), kernel_size=1, stride=1, padding=0, bias=False)
 
         self.spat_trs = SpatialTransformer(self.img_dim)  #((192, 192, 160))
 
@@ -139,9 +137,7 @@ class DeformationNetwork(nn.Module):
         e4  = self.Conv4   (e4)
 
         e5  = self.Maxpool4(e4)
-        e6  = self.Conv5   (e5) #e5  = self.Conv5   (e5)
-        #ls  = self.Conv5ls (e5)
-
+        e6  = self.Conv5   (e5) 
 
         d5  = self.Up5     (e6) #(e5)
         d5  = torch.cat((e4, d5), dim=1)

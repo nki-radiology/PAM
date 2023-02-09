@@ -23,13 +23,12 @@ class S_Conv(nn.Module):
 
 class AffineNetwork(nn.Module):
 
-    def __init__(self, in_channels, filters, img_dim):
+    def __init__(self, filters, img_dim):
         super(AffineNetwork, self).__init__()
-        self.in_ch   = in_channels # 2
         self.filters = filters     # [32, 64, 128, 256, 512]
         self.img_dim = img_dim
 
-        self.conv1 = S_Conv(self.in_ch,      self.filters[0])
+        self.conv1 = S_Conv(2,               self.filters[0])
         self.conv2 = S_Conv(self.filters[0], self.filters[1])
         self.conv3 = S_Conv(self.filters[1], self.filters[2])
         self.conv4 = S_Conv(self.filters[2], self.filters[3])
@@ -66,8 +65,6 @@ class AffineNetwork(nn.Module):
         # Affine Matrix
         W = self.den_w(x).view(-1, 3, 3)
         b = self.den_b(x).view(-1, 3)
-        I = torch.eye(3, dtype=torch.float32, requires_grad=True, device="cuda")
-        A = W + I
 
         # Input for the Spatial Transform Network
         transformation = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
@@ -78,7 +75,7 @@ class AffineNetwork(nn.Module):
         # Spatial transform
         registered     = self.sp_t(moving, transformed)
 
-        return A, registered
+        return transformation, registered
 
 """
 # To summarize the complete model
