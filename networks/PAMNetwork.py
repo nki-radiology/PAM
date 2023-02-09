@@ -8,25 +8,22 @@ import sys
 sys.path.append('../')
 from config import affine
 from config import deformation
+from config import image
 
 
 class PAMNetwork(nn.Module):
 
     def __init__(self):
         super(PAMNetwork, self).__init__()
+        self.img_dim = image.img_dim
 
         # Affine Network
-        self.in_ch_aff   = affine.in_channels
         self.filters_aff = affine.filters
-        self.img_dim_aff = affine.img_dim
-        self.affine_net = AffineNetwork(self.in_ch_aff, self.filters_aff, self.img_dim_aff)
+        self.affine_net = AffineNetwork(self.filters_aff, self.img_dim)
 
         # Deformation Network
-        self.in_ch_def   = deformation.in_channels
-        self.out_ch_def  = deformation.out_channels
         self.filters_def = deformation.filters
-        self.img_dim_def = deformation.img_dim
-        self.deform_net  = DeformationNetwork(self.in_ch_def, self.out_ch_def, self.filters_def, self.img_dim_def)
+        self.deform_net  = DeformationNetwork(self.filters_def, self.img_dim)
 
 
     def forward(self, fixed: torch.tensor, moving: torch.tensor):

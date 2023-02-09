@@ -123,9 +123,20 @@ def load_dataloader():
 
     return train_dataloader, valid_dataloader
 
-
-def training(pam_net, dis_net, device, disc_loss, fts_loss, pam_optimizer, dis_optimizer,
-             train_dataloader, valid_dataloader):
+#BUG the losses are not saved anywhere! changed to the four types of losses used in these experiemnts 
+def training(
+        pam_net, 
+        dis_net, 
+        device, 
+        disc_loss,          # discriminator loss
+        l2_loss,            # L2 loss, for feature maps
+        nn_loss,            # cross correlation loss
+        energy_loss,        # energy loss - penalty for large deformation fields
+        pam_optimizer, 
+        dis_optimizer,
+        train_dataloader, 
+        valid_dataloader
+    ):
     print ('Starting the Training :D')
 
     epoch        = 51
@@ -194,39 +205,29 @@ def training(pam_net, dis_net, device, disc_loss, fts_loss, pam_optimizer, dis_o
             # Forward pass generator (1)
             t_0, w_0, t_1, w_1 = pam_net(fixed, moving)
 
-            # Loss measures generator's ability to fool the discriminator
-            real_pred_gen, real_fts_gen  = dis_net(w_1)
-            _, ground_truth_fts          = dis_net(w_0)
-            # Just Binary cross entropy
-            # d_size  = real_pred_gen.shape
-            # label_g = torch.full(d_size, real_label, dtype=torch.float, device=device)
-            # g_loss  = isc_loss(real_pred_gen, label_g)
-            g_loss                       = gamma_value * fts_loss(real_fts_gen, ground_truth_fts)
+            # Compute distance between feature maps
+            _, features_w1 = dis_net(w_1)
+            _, features_w0 = dis_net(w_0)
+            generator_adv_loss = l2_loss(features_w1, features_w0)
 
-            # Computing the Generator Loss
             # Affine network loss
-            sim_af_loss, reg_af_loss = total_loss(fixed, w_0, w_0)
-            total_affine             = sim_af_loss + alpha_value * reg_af_loss
-
-            l_at_sim      += sim_af_loss.item()
-            l_at_reg      += alpha_value * reg_af_loss.item()
-            loss_affine_t += total_affine.item()
+            registration_affine_loss = nn_loss(fixed, w_0)
+            penalty_affine_loss = energy_loss(t_0)
 
             # Deformation network loss
-            sim_df_loss, reg_df_loss = total_loss(fixed, w_1, t_1)
-            total_elastic            = sim_df_loss + beta_value * reg_df_loss
+            registration_deform_loss = nn_loss(fixed, w_1)
+            penalty_deform_loss = energy_loss(t_1)
 
-            l_dt_sim           += sim_df_loss.item()
-            l_dt_reg           += beta_value * reg_df_loss.item()
-            loss_deformation_t += total_elastic.item()
-            l_gen_t            += g_loss.item()
+            # total loss 
+            loss = \
+                registration_affine_loss + \
+                alpha_value * penalty_affine_loss + \
+                registration_deform_loss + \
+                beta_value * penalty_deform_loss + \
+                gamma_value * generator_adv_loss
 
-            # PAM loss
-            #loss            = alpha_value * total_affine + alpha_value * total_elastic + beta_value * g_loss
-            loss = total_affine + total_elastic + g_loss
             loss_pam_train += loss.item()
 
-            # one backward pass
             loss.backward()
 
             # update the parameters
@@ -240,8 +241,8 @@ def training(pam_net, dis_net, device, disc_loss, fts_loss, pam_optimizer, dis_o
             dis_optimizer.zero_grad()
 
             # Measure discriminator's ability to classify real from generated samples
-            real, fts_real = dis_net(w_0.detach())  # (fixed)
-            fake, fts_fake = dis_net(w_1.detach())
+            real, _ = dis_net(w_0.detach())  # (fixed) - why detach??
+            fake, _ = dis_net(w_1.detach())
 
             b_size   = real.shape
             label_r  = torch.full(b_size, real_label, dtype=torch.float, device=device)
@@ -267,13 +268,12 @@ def training(pam_net, dis_net, device, disc_loss, fts_loss, pam_optimizer, dis_o
 
             # Display in tensorboard
             # ========
-            wandb.log({'Iteration': it_train_counter, 'Train: Similarity Affine loss': sim_af_loss.item(),
-                       'Train: Regression Affine loss': alpha_value * reg_af_loss.item(),
-                       'Train: Affine loss': total_affine.item(),
-                       'Train: Similarity Elastic loss': sim_df_loss.item(),
-                       'Train: Regression Elastic loss': beta_value * reg_df_loss.item(),
-                       'Train: Elastic loss':  total_elastic.item(),
-                       'Train: Generator Adversarial Loss': g_loss.item(),
+            wandb.log({'Iteration': it_train_counter, 
+                       'Train: Similarity Affine loss': registration_affine_loss.item(),
+                       'Train: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
+                       'Train: Similarity Elastic loss': registration_deform_loss.item(),
+                       'Train: Penalty Elastic loss': beta_value * penalty_deform_loss.item(),
+                       'Train: Generator Adversarial Loss': generator_adv_loss.item(),
                        'Train: Total loss': loss.item(),
                        'Train: Discriminator Loss': loss_d_t.item()})
 
@@ -282,6 +282,8 @@ def training(pam_net, dis_net, device, disc_loss, fts_loss, pam_optimizer, dis_o
 
 
         with torch.no_grad():
+
+            #BUG this code below is the same, with minor changes, to the one above: fix without repetitions! 
 
             train_flag = False
 
