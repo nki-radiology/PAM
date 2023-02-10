@@ -2,7 +2,7 @@
 
 This branch contains the code of the Image Registration module of PAM; running these scripts it's possible to perform all the experiments.
 
-![pam](figures/pam.jpg)
+![pam](PAM_and_prognost (1).pdf)
 
 Experiment 1 : baseline model
 Experiment 2 : baseline model + adversarial learning
