@@ -14,7 +14,12 @@ Experiment 4 : ViT-PAM + adversarial learning
 In order to run the chosen experiment, it's important to check the "general_config.py" file: following the instruction in it, it is possible to select the adversarial_choice, the ViT_choice, the size_choice (big, small, big_noskip version of the model). 
 
 The training scripts (both of them) automatically assign the right name to the checkpoints to save (dependent on the choices), so who wants to run the trainings should just care about the config file. 
-`It's important to point out that, for Experiments 2 and 4 (adversarial ones), the "TrainPAMAdversarial.py" script has to be used.`
+
+`For Experiments 1 and 3 (not adversarial ones), the "TrainPAMAdversarial.py" script has to be used.`
+
+`For Experiments 2 and 4 (adversarial ones), the "TrainPAM_noAdversarial.py" script has to be used.`
+
+
 
 ## Publications
 
