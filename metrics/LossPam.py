@@ -88,79 +88,105 @@ def avp_loss(self, y_true, y_pred, smooth=9):
     return raw_loss
 
 
-def pearson_correlation(fixed, warped):
-    """
-    This loss represents the correlation coefficient loss of PAM
-    fixed and warped have shapes (batch, 1, 192, 192, 160)
-    """
+class Cross_Correlation_Loss(nn.Module):
 
-    # Flatten
-    flatten_fixed  = torch.flatten(fixed, start_dim=1)
-    flatten_warped = torch.flatten(warped, start_dim=1)
+    def __init__(self):
+        super(Cross_Correlation_Loss, self).__init__()
 
-    # Compute the mean
-    mean_fixed     = torch.mean(flatten_fixed)
-    mean_warped    = torch.mean(flatten_warped)
+    def pearson_correlation(self, fixed, warped):
+        """
+        This loss represents the correlation coefficient loss of PAM
+        fixed and warped have shapes (batch, 1, 192, 192, 160)
+        """
 
-    # Compute the variance
-    var_fixed      = torch.mean((flatten_fixed - mean_fixed) ** 2)
-    var_warped     = torch.mean((flatten_warped - mean_warped) ** 2)
+        # Flatten
+        flatten_fixed  = torch.flatten(fixed, start_dim=1)
+        flatten_warped = torch.flatten(warped, start_dim=1)
 
-    # Compute the covariance
-    cov_fix_war    = torch.mean((flatten_fixed - mean_fixed) * (flatten_warped - mean_warped))
-    eps            = 1e-6
+        # Compute the mean
+        mean_fixed     = torch.mean(flatten_fixed)
+        mean_warped    = torch.mean(flatten_warped)
 
-    # Compute the correlation coefficient loss
-    pearson_r      = cov_fix_war / torch.sqrt((var_fixed + eps) * (var_warped + eps))
-    raw_loss       = 1 - pearson_r
+        # Compute the variance
+        var_fixed      = torch.mean((flatten_fixed - mean_fixed) ** 2)
+        var_warped     = torch.mean((flatten_warped - mean_warped) ** 2)
 
-    return raw_loss
+        # Compute the covariance
+        cov_fix_war    = torch.mean((flatten_fixed - mean_fixed) * (flatten_warped - mean_warped))
+        eps            = 1e-6
 
+        # Compute the correlation coefficient loss
+        pearson_r      = cov_fix_war / torch.sqrt((var_fixed + eps) * (var_warped + eps))
+        raw_loss       = 1 - pearson_r
 
-
-def elastic_loss_2D(flow):
-    """
-    flow has shape (batch, 2, 192, 192)
-    Loss for 2D dataset
-    """
-    dx = (flow[..., 1:, :] - flow[..., :-1, :]) ** 2
-    dy = (flow[..., 1:   ] - flow[..., :-1   ]) ** 2
-
-    d = torch.mean(dx) + torch.mean(dy)
-
-    return d / 2.0
+        return raw_loss
 
 
 
-def elastic_loss_3D(flow):
-    """
-    This loss represents the total variation loss or the elastic loss of PAM
-    flow has shape (batch, 3, 192, 192, 160)
-    """
-    flow = flow[None, :]
-    dy   = flow[:, :, 1:,  :,  :] - flow[:, :, :-1, :  , :  ]
-    dx   = flow[:, :,  :, 1:,  :] - flow[:, :, :  , :-1, :  ]
-    dz   = flow[:, :,  :,  :, 1:] - flow[:, :, :  , :  , :-1]
-    d    = torch.mean(dx**2) + torch.mean(dy**2) + torch.mean(dz**2)
+class Energy_Loss(nn.Module):
 
-    return d / 3.0
+    def __init__(self):
+        super(Energy_Loss, self).__init__()
+
+    def elastic_loss_2D(self, flow):
+        """
+        flow has shape (batch, 2, 192, 192)
+        Loss for 2D dataset
+        """
+        dx = (flow[..., 1:, :] - flow[..., :-1, :]) ** 2
+        dy = (flow[..., 1:   ] - flow[..., :-1   ]) ** 2
+
+        d = torch.mean(dx) + torch.mean(dy)
+
+        return d / 2.0
 
 
-def total_loss(fixed, moving, flows):
-    """
-    Deformation network loss
-    :param fixed : fixed image
-    :param moving: moving image
-    :param flows : flows
-    :return      : correlation coefficient loss plus total variation loss
-    """
-    sim_loss = pearson_correlation(fixed, moving)
 
-    # Regularize all flows
-    if len(fixed.size()) == 4:  # (N, C, H, W)
-        reg_loss = elastic_loss_2D(flows)
-    else:
-        reg_loss = sum([elastic_loss_3D(flow) for flow in flows])
+    def elastic_loss_3D(self, flow):
+        """
+        This loss represents the total variation loss or the elastic loss of PAM
+        flow has shape (batch, 3, 192, 192, 160)
+        """
+        flow = flow[None, :]
+        dy   = flow[:, :, 1:,  :,  :] - flow[:, :, :-1, :  , :  ]
+        dx   = flow[:, :,  :, 1:,  :] - flow[:, :, :  , :-1, :  ]
+        dz   = flow[:, :,  :,  :, 1:] - flow[:, :, :  , :  , :-1]
+        d    = torch.mean(dx**2) + torch.mean(dy**2) + torch.mean(dz**2)
 
-    return sim_loss, reg_loss
+        return d / 3.0
+
+
+    def energy_loss(self, flows):
+
+        if len(fixed.size()) == 4:  # (N, C, H, W)
+            reg_loss = energy_loss.elastic_loss_2D(flows)
+        else:
+            reg_loss = sum([energy_loss.elastic_loss_3D(flow) for flow in flows])
+        
+        return reg_loss
+
+
+class Total_Loss(nn.Module):
+
+    def __init__(self):
+        super(Total_Loss, self).__init__()
+        pearson_correlation = Cross_Correlation_Loss()
+        penalty_deformation = Energy_Loss()
+
+
+    def total_loss(fixed, moving, flows):
+        """
+        Deformation network loss
+        :param fixed : fixed image
+        :param moving: moving image
+        :param flows : flows
+        :return      : correlation coefficient loss plus total variation loss
+        """
+        sim_loss = pearson_correlation(fixed, moving)
+
+        # Regularize all flows
+        energy_loss = penalty_deformation.energy_loss(flows)
+
+        return sim_loss, energy_loss
+
 
