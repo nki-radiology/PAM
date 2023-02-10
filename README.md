@@ -1,50 +1,14 @@
-# Prognostic AI-monitoring
+# Prognostic AI-monitoring - Ablation Study
 
-This repository contains the code of our research on prognostic AI-monitoring: a prototype for automatic response evaluation to treatment of cancer patients with advanced disease based on deep learning image-to-image registration. 
+This branch contains the code of the Image Registration module of PAM; running these scripts it's possible to perform all the experiments.
 
-:construction: This research is still in its preliminary phase, further development and validation is warrant before clinical use.  
+Experiment 1 : baseline model
+Experiment 2 : baseline model + adversarial learning
+Experiment 3 : ViT-PAM
+Experiment 4 : ViT-PAM + adversarial learning
 
-## Graphical Abstract
-
-
-
-![pam](figures/pam.jpg)
-
-
-
-## Requirements
-
-- Python 3.6
-- Tensorflow 1.15.0
-- Keras 
-- Scikit-Learn
-- Pandas
-- SimpleITK 
-
-`VoxelMorph`, `Neuron` and `Frida` are already included in the `libs` folder. 
-
-Parts of `Keras-Group-Normalization` and `Recursive-Cascaded-Networks` are reused in the main code. 
-
-
-## Installing requirements using Anaconda
-
-- Virtual environment
-
-          $ conda create --name tf-1.15
-          $ conda activate tf-1.15
-
-- Installing packages inside the virtual environment
-
-          $ conda install -c anaconda tensorflow-gpu==1.15
-          $ conda install -c anaconda scikit-learn
-          $ conda install -c anaconda pandas
-          $ conda install -c simpleitk simpleitk
-          $ conda install -c conda-forge keras
-          $ conda install -c conda-forge nibabel
-          $ conda install -c conda-forge tqdm
-          $ conda install -c anaconda pillow
-          $ conda install -c conda-forge matplotlib
-
+In order to run the chosen experiment, it's important to check the "general_config.py" file: following the instruction in it, it is possible to select the adversarial_choice, the ViT_choice, the size_choice (big, small, big_noskip version of the model). 
+The training scripts (both of them) automatically assign the right name to the checkpoints to save (dependent on the choices), so who wants to run the trainings should just care about the config file. 
 
 ## Publications
 
