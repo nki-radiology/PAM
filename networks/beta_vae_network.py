@@ -23,12 +23,12 @@ def dim_after_n_layers(size, n_layers):
 
 class Encoder(nn.Module):
     def __init__(self,
-                 #COM try always to fill out the default parameters 
-                 input_dim : int = [256, 256, 512],
-                 latent_dim: int = 512,
-                 group_num : int = 8,
-                 filters   : object = [32, 64, 128, 256] 
-                 ):
+                input_ch  : int = 1,
+                input_dim : int = [256, 256, 512],
+                latent_dim: int = 512,
+                group_num : int = 8,
+                filters   : object = [32, 64, 128, 256] 
+                ):
         super(Encoder, self).__init__()
         """
         Inputs:
@@ -37,29 +37,14 @@ class Encoder(nn.Module):
             - groups     : Number of groups in the normalization layers
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
         """
-        #COM no need to set all the variables as attribute of the object, if you dont use them outside of this method
-        #self.input_dim   = input_dim
-        #self.latent_dim = latent_dim
-        #self.group_num  = group_num
-        #self.filters    = filters
-        
-        #COM you can infer this from input_dim
-        #if self.data_dim == 2:
-        #    self.input_linear = 8 * 8
-        #elif self.data_dim == 3:
-        #    self.input_linear = 8 * 8 * 8
-        #else: 
-        #    NotImplementedError('only supported 2D and 3D data')
-
-        #COM this can be done with a for loop 
         modules = OrderedDict()
         
         for layer_i, layer_filters in enumerate(filters):
 
             modules['encoder_block' + str(layer_i)] = nn.Sequential(
-                conv_layer(len(self.input_ch))(
-                    in_channels=self.input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
-                nn.GroupNorm(num_groups=self.group_num, num_channels=layer_filters),
+                conv_layer(len(input_dim))(
+                    in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
                 nn.GELU()
             )
         
@@ -67,9 +52,9 @@ class Encoder(nn.Module):
 
         #COM you can compute the output dimensions and number of elements after flattening
         output_dim = [dim_after_n_layers(i, layer_i) for i in input_dim]
-        self.elem = layer_filters * np.prod(output_dim)
+        self.elem  = int(layer_filters * np.prod(output_dim))
             
-        self.fc_mu = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
+        self.fc_mu  = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
         self.fc_var = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
 
     def forward(self, x):
@@ -82,12 +67,11 @@ class Encoder(nn.Module):
     
 class Decoder(nn.Module):
     def __init__(self,
-                 input_ch  : int,
-                 output_ch : int,
-                 data_dim  : int,
-                 latent_dim: int,
-                 group_num : int, 
-                 filters   : object = [32, 32, 32, 32, 32]):
+                 output_ch : int = 3,
+                 input_dim : int = [256, 256, 512],
+                 latent_dim: int = 512,
+                 group_num : int = 8, 
+                 filters   : object = [32, 64, 128, 256]):
         super(Decoder, self).__init__()
         """
         Inputs:
@@ -95,19 +79,10 @@ class Decoder(nn.Module):
             - latent_dim : Dimensionality of the latent space (Z)
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
         """          
-        self.input_ch   = input_ch
-        self.output_ch  = output_ch
-        self.data_dim   = data_dim
-        self.latent_dim = latent_dim
-        self.group_num  = group_num
-        self.filters    = filters
-        
-        if self.data_dim == 2:
-            self.input_linear = 8 * 8
-        elif self.data_dim == 3:
-            self.input_linear = 8 * 8 * 8
-        else: 
-            NotImplementedError('only supported 2D and 3D data')
+        modules = OrderedDict()
+
+        for layer_i, layer_filters in enumerate(filters[::-1]):
+
         
         self.linear = nn.Sequential(OrderedDict([
             ('decoder_linear_1'       , nn.Linear(self.latent_dim, self.latent_dim*3)), 
