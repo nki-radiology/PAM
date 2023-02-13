@@ -220,7 +220,7 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
             dis_optimizer.zero_grad()
 
             # Measure discriminator's ability to classify real from generated samples
-            real, _ = dis_net(w_0.detach())  # why detach?? Because w_0 was called previously
+            real, _ = dis_net(w_0.detach()) 
             fake, _ = dis_net(w_1.detach())
 
             b_size   = real.shape
