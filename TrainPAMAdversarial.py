@@ -132,28 +132,10 @@ def load_dataloader():
 
     return train_dataloader, valid_dataloader
 
-<<<<<<< HEAD
 
 def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss, pam_optimizer, dis_optimizer,
              train_dataloader, valid_dataloader):
     print ('Starting training stage!')
-=======
-#BUG the losses are not saved anywhere! changed to the four types of losses used in these experiemnts 
-def training(
-        pam_net, 
-        dis_net, 
-        device, 
-        disc_loss,          # discriminator loss
-        l2_loss,            # L2 loss, for feature maps
-        nn_loss,            # cross correlation loss
-        energy_loss,        # energy loss - penalty for large deformation fields
-        pam_optimizer, 
-        dis_optimizer,
-        train_dataloader, 
-        valid_dataloader
-    ):
-    print ('Starting the Training :D')
->>>>>>> origin/prognostic-ai-monitoring_rev1
 
     epoch        = 0
     n_epochs     = 10001
