@@ -132,10 +132,28 @@ def load_dataloader():
 
     return train_dataloader, valid_dataloader
 
+<<<<<<< HEAD
 
 def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss, pam_optimizer, dis_optimizer,
              train_dataloader, valid_dataloader):
     print ('Starting training stage!')
+=======
+#BUG the losses are not saved anywhere! changed to the four types of losses used in these experiemnts 
+def training(
+        pam_net, 
+        dis_net, 
+        device, 
+        disc_loss,          # discriminator loss
+        l2_loss,            # L2 loss, for feature maps
+        nn_loss,            # cross correlation loss
+        energy_loss,        # energy loss - penalty for large deformation fields
+        pam_optimizer, 
+        dis_optimizer,
+        train_dataloader, 
+        valid_dataloader
+    ):
+    print ('Starting the Training :D')
+>>>>>>> origin/prognostic-ai-monitoring_rev1
 
     epoch        = 0
     n_epochs     = 10001
@@ -190,6 +208,7 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
             t_0, w_0, t_1, w_1 = pam_net(fixed, moving)
 
             # Compute distance between feature maps
+
             _, features_w1 = dis_net(w_1) 
             _, features_w0 = dis_net(w_0) 
             generator_adv_loss = l2_loss(features_w1, features_w0)
@@ -206,7 +225,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
             loss = registration_affine_loss + alpha_value * penalty_affine_loss + registration_deform_loss + beta_value * penalty_deform_loss + gamma_value * generator_adv_loss
             loss_pam_train += loss.item()
 
-            # one backward pass
             loss.backward()
 
             # update the parameters
@@ -261,6 +279,8 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
 
         with torch.no_grad():
+
+            #BUG this code below is the same, with minor changes, to the one above: fix without repetitions! 
 
             train_flag = False
 

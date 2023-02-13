@@ -1,27 +1,24 @@
 import argparse
+#DONE removed all inputs for channel dimensions and output dimensions, as these should be standards
+#DONE changed all image dimensions to be the same for all networks 
+# Image variables
+parser = argparse.ArgumentParser()
+parser.add_argument('--img_dim',     type=tuple, default=(192, 192, 160),         help='Image dimension')
+image = parser.parse_args()
 
-# ------------------------------------------ Affine Network Variables------------------------------------------
 # Affine Network
 parser = argparse.ArgumentParser()
-parser.add_argument('--in_channels', type=int,   default=2,                       help='Input channels')
 parser.add_argument('--filters',     type=list,  default=[32, 64, 128, 256, 512], help='filters number for each layer')
-parser.add_argument('--img_dim',     type=tuple, default=(192, 192, 160),         help='Image dimension')
 affine = parser.parse_args()
 
 # Deformation Network
 parser = argparse.ArgumentParser()
-parser.add_argument('--in_channels', type=int,   default=2,                       help='Input channels')
-parser.add_argument('--out_channels',type=int,   default=1,                       help='Output channels')
 parser.add_argument('--filters',     type=list,  default=[32, 64, 128, 256, 512], help='filters number for each layer')
-parser.add_argument('--img_dim',     type=tuple, default=(192, 192, 160),         help='Image dimension')
 deformation = parser.parse_args()
 
 # Discriminator Network
 parser = argparse.ArgumentParser()
-parser.add_argument('--in_channels', type=int,   default=1,                       help='Input channels')
-parser.add_argument('--out_features',type=int,   default=1,                       help='Output features')
-parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128, 256, 512],
-                    help='filters number for each layer')
+parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128, 256, 512], help='filters number for each layer')
 discriminator = parser.parse_args()
 
 
