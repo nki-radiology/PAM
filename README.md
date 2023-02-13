@@ -19,8 +19,37 @@ The training scripts (both of them) automatically assign the right name to the c
 
 `For Experiments 2 and 4 (adversarial ones), the "TrainPAM_noAdversarial.py" script has to be used.`
 
+## How to run a training
 
+It's needed a sbatch file, where to set some parameters as the name of the job, the partition, the time-limit ...
 
+Example of sbatch file:
+
+```ruby
+#!/bin/bash
+#SBATCH --job-name=exp1_small                       # Job name
+#SBATCH --partition=rtx8000                         # Partition
+#SBATCH --gpus-per-task=1                           # Number of gpus per node
+#SBATCH --gpus=1                                    # Number of gpus in total
+#SBATCH --ntasks=1                                  # Run on a single node
+#SBATCH --mem=64G                                   # Memory
+#SBATCH --cpus-per-task=10                          # Number of cores
+#SBATCH --time=96:00:00                             # Time limit hrs:min:sec
+#SBATCH --output=/projects/pam_valerio/outputjobs/slurm_%j.log   # Standard output and error log
+pwd; hostname; date
+
+# Source bashrc, such that the shell is setup properly
+source ~/.bashrc
+# Activate conda environment pyenv
+source /home/v.pugliese/miniconda3/bin/activate pytorch2
+
+# Load cuda and cudnn (make sure versions match)
+# eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
+
+# Run your command
+python /projects/pam_valerio/code/Registration_experiments/TrainPAM_noAdversarial.py 
+```
+Who wants to run it should change the virtual environment.
 ## Publications
 
 Stefano Trebeschi, Zuhir Bodalal, Thierry N. Boellaard,  Teresa M. Tareco Bucho, Silvia G. Drago, Ieva Kurilova, Adriana M. Calin-Vainak,  Andrea Delli Pizzi, Mirte Muller, Karlijn Hummelink, Koen J. Hartemink, Thi Dan Linh Nguyen-Kim,  Egbert F. Smit,  Hugo J. Aerts and  Regina G. Beets-Tan; _Prognostic value of deep learning mediated treatment monitoring in lung cancer patients receiving immunotherapy_, Frontiers in Oncology, Cancer Imaging and Imaging directed Interventions, 2021 doi: 10.3389/fonc.2021.609054 [(it's open access!)](https://www.frontiersin.org/articles/10.3389/fonc.2021.609054)
