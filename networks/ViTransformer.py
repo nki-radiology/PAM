@@ -16,7 +16,7 @@ from einops                 import rearrange, reduce, repeat
 from einops.layers.torch    import Rearrange, Reduce
 
 import os 
-from config                 import visiontransformer, deformation
+from general_config         import visiontransformer, deformation
 
 
 """
