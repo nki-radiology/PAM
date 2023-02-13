@@ -9,13 +9,13 @@ parser.add_argument("-f", "--fff",               default="1",                   
 general_choices = parser.parse_args()
 
 # These choices define the model to train and the folders where to save checkpoints:
-if general_choices.adversarial_choice == 'no' and general_choices.ViT == 'no':
+if general_choices.adversarial_choice == 'no' and general_choices.ViT_choice == 'no':
     experiment_folder = '/projects/pam_valerio/results_Experiment_1'
-if general_choices.adversarial_choice == 'yes' and general_choices.ViT == 'no':
+if general_choices.adversarial_choice == 'yes' and general_choices.ViT_choice == 'no':
     experiment_folder = '/projects/pam_valerio/results_Experiment_2'
-if general_choices.adversarial_choice == 'no' and general_choices.ViT == 'yes':
+if general_choices.adversarial_choice == 'no' and general_choices.ViT_choice == 'yes':
     experiment_folder = '/projects/pam_valerio/results_Experiment_3'
-if general_choices.adversarial_choice == 'yes' and general_choices.ViT == 'yes':
+if general_choices.adversarial_choice == 'yes' and general_choices.ViT_choice == 'yes':
     experiment_folder = '/projects/pam_valerio/results_Experiment_4'
 
 if general_choices.size_choice == 'big':
