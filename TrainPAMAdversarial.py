@@ -320,7 +320,7 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
                 # Display in tensorboard
                 # ========
 
-                 wandb.log({'Iteration': it_valid_counter, 
+                wandb.log({'Iteration': it_valid_counter, 
                        'Valid: Similarity Affine loss': registration_affine_loss.item(),
                        'Valid: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
                        'Valid: Similarity Elastic loss': registration_deform_loss.item(),
