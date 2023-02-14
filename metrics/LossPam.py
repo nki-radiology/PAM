@@ -1,6 +1,7 @@
 import math
 import torch
 import numpy as np
+import torch.nn as nn
 import torch.nn.functional as F
 
 
@@ -158,10 +159,10 @@ class Energy_Loss(nn.Module):
 
     def energy_loss(self, flows):
 
-        if len(fixed.size()) == 4:  # (N, C, H, W)
-            reg_loss = energy_loss.elastic_loss_2D(flows)
+        if len(flows.size()) == 4:  # (N, C, H, W)
+            reg_loss = self.elastic_loss_2D(flows)
         else:
-            reg_loss = sum([energy_loss.elastic_loss_3D(flow) for flow in flows])
+            reg_loss = sum([self.elastic_loss_3D(flow) for flow in flows])
         
         return reg_loss
 
@@ -170,11 +171,11 @@ class Total_Loss(nn.Module):
 
     def __init__(self):
         super(Total_Loss, self).__init__()
-        pearson_correlation = Cross_Correlation_Loss()
-        penalty_deformation = Energy_Loss()
+        self.pearson_correlation = Cross_Correlation_Loss()
+        self.penalty_deformation = Energy_Loss()
 
 
-    def total_loss(fixed, moving, flows):
+    def total_loss(self, fixed, moving, flows):
         """
         Deformation network loss
         :param fixed : fixed image
@@ -182,10 +183,10 @@ class Total_Loss(nn.Module):
         :param flows : flows
         :return      : correlation coefficient loss plus total variation loss
         """
-        sim_loss = pearson_correlation(fixed, moving)
+        sim_loss = self.pearson_correlation.pearson_correlation(fixed, moving)
 
         # Regularize all flows
-        energy_loss = penalty_deformation.energy_loss(flows)
+        energy_loss = self.penalty_deformation.energy_loss(flows)
 
         return sim_loss, energy_loss
 

@@ -395,7 +395,7 @@ def start_retraining():
     make_directory_to_save_chkp()
     cuda_seeds()
     pam_net, dis_net, device           = load_model_weights() #model_init()
-    disc_loss, l2_loss, nn_loss, energy_loss = get_loss_functions()
+    disc_loss, l2_loss, nn_loss, energy_loss = init_loss_functions()
     pam_optimizer, dis_optimizer       = get_optimizers(pam_net, dis_net)
     train_dataloader, valid_dataloader = load_dataloader()
     training(pam_net, dis_net, device,disc_loss, l2_loss, nn_loss, energy_loss, pam_optimizer, dis_optimizer,
