@@ -112,10 +112,11 @@ print(f'Out: {transformation0.shape}, Flow: {registered0.shape}')
 """
 
 
-# To summarize the complete model
+"""# To summarize the complete model
 from torchsummary import summary
 model  = DeformationNetwork(2,3,[16, 32, 64, 128, 256],(192,192,300))
 print(model)
 device = torch.device("cuda:0")
 model  = model.to(device)
 summary = summary(model, [(1, 192, 192, 300), (1, 192, 192, 300)], device='cuda')
+"""
