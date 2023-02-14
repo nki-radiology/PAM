@@ -1,20 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-def reconstruction_loss(x, x_recon, distribution):
-    batch_size = x.size(0)
-    assert batch_size != 0
-
-    if distribution == 'bernoulli':
-        recon_loss = F.binary_cross_entropy_with_logits(x_recon, x, size_average=False).div(batch_size)
-    elif distribution == 'gaussian':
-        #x_recon    = F.sigmoid(x_recon)
-        recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
-    else:
-        recon_loss = None
-
-    return recon_loss
-
+def reconstruction_loss(x, x_recon):
+    return F.mse_loss(x_recon, x)
+    
 
 def kl_divergence(mu, logvar):
     batch_size = mu.size(0)

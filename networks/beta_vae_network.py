@@ -14,7 +14,7 @@ from   networks.spatial_transformer  import SpatialTransformer
 def reparametrize(mu, logvar):
     std = torch.exp(0.5 * logvar)
     eps = torch.randn_like(std)
-    return mu + std * eps
+    return eps * std + mu
    
 def dim_after_n_layers(size, n_layers):
     for _ in range(n_layers):
@@ -47,18 +47,18 @@ class Encoder(nn.Module):
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
                 nn.GELU()
             )
+            input_ch = layer_filters
         
-        self.convnet = nn.Sequential(modules)
+        self.conv_net = nn.Sequential(modules)
 
-        #COM you can compute the output dimensions and number of elements after flattening
-        output_dim = [dim_after_n_layers(i, layer_i) for i in input_dim]
+        output_dim = [dim_after_n_layers(i, layer_i+1) for i in input_dim]
         self.elem  = int(layer_filters * np.prod(output_dim))
             
         self.fc_mu  = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
         self.fc_var = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
 
     def forward(self, x):
-        x = self.convnet(x)
+        x = self.conv_net(x)
         x = x.view(-1, self.elem)
         mu, sigma = self.fc_mu(x), self.fc_var(x)
         return mu, sigma
@@ -78,95 +78,72 @@ class Decoder(nn.Module):
             - input_ch   : Number of input channels of the image. For medical images, this parameter usually is 1
             - latent_dim : Dimensionality of the latent space (Z)
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
-        """          
+        """        
+
         modules = OrderedDict()
 
-        for layer_i, layer_filters in enumerate(filters[::-1]):
+        filters    = filters[::-1]
+        num_layers = len(filters)
+        input_dec  = [dim_after_n_layers(i, num_layers) for i in input_dim]
+        self.elem  = int(filters[0] * np.prod(input_dec))
 
+        self.input_layer = nn.Sequential(
+            nn.Linear(in_features=latent_dim, out_features=self.elem)
+        )
+
+        for layer_i in range(len(filters) - 1):
+            modules['decoder_block' + str(layer_i)] = nn.Sequential(
+                conv_up_layer(len(input_dim))(
+                    in_channels=filters[layer_i], out_channels=filters[layer_i+1], kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
+                nn.GroupNorm(num_groups=group_num, num_channels=filters[layer_i+1]),
+                nn.GELU()
+            )
+        self.conv_up_net = nn.Sequential(modules)
+
+        self.final_layer = nn.Sequential(
+                conv_up_layer(len(input_dim))(
+                    in_channels=filters[layer_i+1], out_channels=output_ch, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
+        )
         
-        self.linear = nn.Sequential(OrderedDict([
-            ('decoder_linear_1'       , nn.Linear(self.latent_dim, self.latent_dim*3)), 
-            ('decoder_act_fn_linear_1', nn.GELU()), 
-            ('decoder_linear_2'       , nn.Linear(self.latent_dim*3, self.latent_dim*3)), 
-            ('decoder_act_fn_linear_2', nn.GELU()), 
-            ('decoder_linear_3'       , nn.Linear(self.latent_dim*3, self.input_linear * self.filters[4])), 
-            ('decoder_act_fn_linear_3', nn.GELU()), 
-        ]))
-        
-        self.decoder_net =  nn.Sequential(OrderedDict([
-            ('decoder_conv_256'   , conv_up_layer(self.data_dim)(in_channels=self.filters[4], out_channels=self.filters[3], 
-                                                              kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)), 
-            ('decoder_gnorm_256'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[3])),
-            ('decoder_act_fn_256' , nn.GELU()), # 8 x 8 => 16 x 16
-            
-            ('decoder_conv_128'   , conv_up_layer(self.data_dim)(in_channels=self.filters[3], out_channels=self.filters[2], 
-                                                              kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
-            ('decoder_gnorm_128'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[2])),
-            ('decoder_act_fn_128' , nn.GELU()), # 16 x 16 => 32 x 32
-            
-            ('decoder_conv_64'    , conv_up_layer(self.data_dim)(in_channels=self.filters[2], out_channels=self.filters[1], 
-                                                              kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
-            ('decoder_gnorm_64'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[1])),
-            ('decoder_act_fn_64'  , nn.GELU()), # 32 x 32 => 64 x 64
-            
-            ('decoder_conv_32'    , conv_up_layer(self.data_dim)(in_channels=self.filters[1], out_channels=self.filters[0], 
-                                                              kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
-            ('decoder_gnorm_32'  , nn.GroupNorm(num_groups=self.group_num, num_channels=self.filters[0])),
-            ('decoder_act_fn_32'  , nn.GELU()), # 64 x 64 => 128 x 128
-            
-            ('decoder_conv_16'    , conv_up_layer(self.data_dim)(in_channels=self.filters[0], out_channels=self.output_ch, 
-                                                              kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)),
-        ]))
     
     def forward(self, x):
-        x = self.linear(x)
-        
-        if self.data_dim == 2:
-            x = x.view(-1, self.filters[4], 8, 8)
-        elif self.data_dim == 3:
-            x = x.view(-1, self.filters[4], 8, 8, 8)
-        else: 
-            NotImplementedError('only support 2D and 3D data')
-        x = self.decoder_net(x)
+        x = self.input_layer(x)
+        x = x.view(-1, self.elem)
+        x = self.conv_up_net(x)
+        x = self.final_layer(x)
         return x
      
 
 
 class Beta_VAE(nn.Module):
+
     def __init__(self, 
-                 data_dim          : int,
-                 z_latent_dim      : int,
-                 num_input_channels: int,
-                 num_outpt_channels: int, 
-                 filters            : object=[32, 32, 32, 32, 32]
+                 input_ch  : int = 1,
+                 input_dim : int = [256, 256, 512],
+                 latent_dim: int = 512,
+                 output_ch : int = 3,
+                 filters   : object = [32, 64, 128, 256],
+                 group_num : int = 8
                  ):
         super(Beta_VAE, self).__init__()
         """
         Inputs:
             - num_input_channels: Number of input channels of the image. For medical images, this parameter usually is 1
             - z_latent_dim      : Dimensionality of the latent space (Z)
-        """
-        self.data_dim       = data_dim
-        self.z_latent_dim   = z_latent_dim
-        self.input_channels = num_input_channels
-        self.output_channels= num_outpt_channels
-        self.filters        = filters
-        
+        """     
         # Encoder Block
-        self.encoder  = Encoder(self.input_channels, self.data_dim, self.z_latent_dim, self.filters)
+        self.encoder  = Encoder(input_ch=input_ch, input_dim=input_dim, latent_dim=latent_dim, group_num=group_num, filters=filters)
                          
         # Decoder Block
-        self.decoder  = Decoder(self.input_channels, self.output_channels, self.data_dim, self.z_latent_dim, self.filters)
+        self.decoder  = Decoder(output_ch=output_ch, input_dim=input_dim, latent_dim=latent_dim, group_num=group_num, filters=filters)
         
     
     def forward(self, x):
-        distributions  = self.encoder(x)
-        mu             = distributions[:, :self.z_latent_dim]
-        logvar         = distributions[:, self.z_latent_dim:]
-        z              = reparametrize(mu, logvar)      
+        mu, log_var = self.encoder(x)
+        z              = reparametrize(mu, log_var)      
         x_hat          = self.decoder(z)
         x_hat          = x_hat.view(x.size())
-        return x_hat, mu, logvar
+        return x_hat, mu, log_var
 
 
 
