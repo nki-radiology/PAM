@@ -83,9 +83,9 @@ class Decoder(nn.Module):
         modules = OrderedDict()
 
         filters    = filters[::-1]
-        num_layers = len(filters)
-        input_dec  = [dim_after_n_layers(i, num_layers) for i in input_dim]
-        self.input_dec  = list(map(int, input_dec))
+        self.last_feature = filters[0]
+        input_dec  = [dim_after_n_layers(i, len(filters)) for i in input_dim]
+        self.input_decoder  = list(map(int, input_dec))
         elem  = int(filters[0] * np.prod(input_dec))
 
         self.input_layer = nn.Sequential(
@@ -109,9 +109,16 @@ class Decoder(nn.Module):
     
     def forward(self, x):
         x = self.input_layer(x)
-        x = x.view(-1, self.elem)
+
+        if len(self.input_decoder) == 2:
+            x = x.view(-1, self.last_feature, self.input_decoder[0], self.input_decoder[1])
+        elif len(self.input_decoder) == 3:
+            x = x.view(-1, self.last_feature, self.input_decoder[0], self.input_decoder[1], self.input_decoder[2])
+        else:
+            NotImplementedError('only support 2d and 3d')
         x = self.conv_up_net(x)
         x = self.final_layer(x)
+        
         return x
      
 
