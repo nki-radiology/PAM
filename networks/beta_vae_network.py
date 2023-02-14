@@ -67,7 +67,7 @@ class Encoder(nn.Module):
     
 class Decoder(nn.Module):
     def __init__(self,
-                 output_ch : int = 3,
+                 output_ch : int = 1,
                  input_dim : int = [256, 256, 512],
                  latent_dim: int = 512,
                  group_num : int = 8, 
@@ -85,10 +85,11 @@ class Decoder(nn.Module):
         filters    = filters[::-1]
         num_layers = len(filters)
         input_dec  = [dim_after_n_layers(i, num_layers) for i in input_dim]
-        self.elem  = int(filters[0] * np.prod(input_dec))
+        self.input_dec  = list(map(int, input_dec))
+        elem  = int(filters[0] * np.prod(input_dec))
 
         self.input_layer = nn.Sequential(
-            nn.Linear(in_features=latent_dim, out_features=self.elem)
+            nn.Linear(in_features=latent_dim, out_features=elem)
         )
 
         for layer_i in range(len(filters) - 1):
