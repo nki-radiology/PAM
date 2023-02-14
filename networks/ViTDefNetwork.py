@@ -4,7 +4,7 @@ import os
 from   general_config              import deformation, visiontransformer
 from   networks.SpatialTransformer import SpatialTransformer  
 from   networks.DeformationNetwork import DeformationNetwork
-from   ViTransformer      import *                
+from   networks.ViTransformer      import *                
 from   networks.layers    import *    
 
 if deformation.skip_choice == 'yes':
