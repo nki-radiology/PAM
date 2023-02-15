@@ -1,9 +1,3 @@
-""" THIS TRAINING SCRIPT IS USED FOR THE EXPERIMENT 1 TRAINING:
-    the network can be small, medium or big size and the adversarial learning is not used. 
-    So, PAM network is based on the Affine Network and on the Deformation Network, and the losses used are the
-    similarity (Pearson Correlation) and the regularization (total variation) ones. """
-
-
 # Importing general lybraries
 import os
 import wandb                           
