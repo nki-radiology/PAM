@@ -54,16 +54,27 @@ Who wants to run it should change the virtual environment.
 ## Requirements
 
 conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+
 conda install -c simpleitk simpleitk
+
 conda install -c conda-forge nibabel
+
 conda install -c conda-forge tqdm
+
 conda install -c conda-forge matplotlib
+
 conda install -c anaconda scikit-learn
+
 conda install -c conda-forge scikit-learn-intelex
+
 conda install -c anaconda pandas
+
 conda install -c conda-forge glob2
+
 pip install torchsummary
+
 conda install -c conda-forge wandb
+
 conda install -c conda-forge einops
 
 
