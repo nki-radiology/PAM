@@ -50,6 +50,23 @@ source /home/v.pugliese/miniconda3/bin/activate pytorch2
 python /projects/pam_valerio/code/PAM/TrainPAM_noAdversarial.py 
 ```
 Who wants to run it should change the virtual environment.
+
+## Requirements
+
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install -c simpleitk simpleitk
+conda install -c conda-forge nibabel
+conda install -c conda-forge tqdm
+conda install -c conda-forge matplotlib
+conda install -c anaconda scikit-learn
+conda install -c conda-forge scikit-learn-intelex
+conda install -c anaconda pandas
+conda install -c conda-forge glob2
+pip install torchsummary
+conda install -c conda-forge wandb
+conda install -c conda-forge einops
+
+
 ## Publications
 
 Stefano Trebeschi, Zuhir Bodalal, Thierry N. Boellaard,  Teresa M. Tareco Bucho, Silvia G. Drago, Ieva Kurilova, Adriana M. Calin-Vainak,  Andrea Delli Pizzi, Mirte Muller, Karlijn Hummelink, Koen J. Hartemink, Thi Dan Linh Nguyen-Kim,  Egbert F. Smit,  Hugo J. Aerts and  Regina G. Beets-Tan; _Prognostic value of deep learning mediated treatment monitoring in lung cancer patients receiving immunotherapy_, Frontiers in Oncology, Cancer Imaging and Imaging directed Interventions, 2021 doi: 10.3389/fonc.2021.609054 [(it's open access!)](https://www.frontiersin.org/articles/10.3389/fonc.2021.609054)
