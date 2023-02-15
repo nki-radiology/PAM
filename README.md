@@ -27,14 +27,14 @@ Example of sbatch file:
 
 ```ruby
 #!/bin/bash
-#SBATCH --job-name=exp1_small                       # Job name
+#SBATCH --job-name=experiment                       # Job name
 #SBATCH --partition=rtx8000                         # Partition
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
-#SBATCH --mem=64G                                   # Memory
+#SBATCH --mem=60G                                   # Memory
 #SBATCH --cpus-per-task=10                          # Number of cores
-#SBATCH --time=96:00:00                             # Time limit hrs:min:sec
+#SBATCH --time=120:00:00                            # Time limit hrs:min:sec
 #SBATCH --output=/projects/pam_valerio/outputjobs/slurm_%j.log   # Standard output and error log
 pwd; hostname; date
 
