@@ -192,11 +192,11 @@ class Affine_Beta_VAE(nn.Module):
         
         self.encoder_net = nn.Sequential(modules)
         
-        self.last_linear = nn.Sequential(OrderedDict([
+        self.last_layer = nn.Sequential(OrderedDict([
             ('affine_gl_avg_pool' , conv_gl_avg_pool_layer(len(self.input_dim))(output_size=1)),
             ('affine_ft_vec_all'  , nn.Flatten()),
             ('affine_last_linear' , nn.Linear(in_features=self.filters[-1], out_features=features_linear_layer, bias=False)),
-            ('affine_last__act_fn', nn.GELU()), 
+            ('affine_last_act_fn', nn.GELU()), 
         ]))
         
         # Affine Transformation Blocks
@@ -218,13 +218,11 @@ class Affine_Beta_VAE(nn.Module):
         
         # Encoding Block
         x = self.encoder_net(x)
-        x = self.last_linear(x)
+        x = self.last_layer(x)
         
         # Get the degrees of freedom of the affine transformation
         W = self.dense_w(x).view(-1, len(self.input_dim), len(self.input_dim))
         b = self.dense_b(x).view(-1, len(self.input_dim))      
-        I = torch.eye(len(self.input_dim), dtype=torch.float32, device='cuda')
-        A = W + I
         
         # Input for the Spatial Transformer Network
         transformation = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
@@ -236,48 +234,48 @@ class Affine_Beta_VAE(nn.Module):
         else:
             NotImplementedError('only support 2d and 3d')
         
-        flow = F.affine_grid(transformation, moving.size(), align_corners=False)
+        transformation = F.affine_grid(transformation, moving.size(), align_corners=False)
         
         if len(self.input_dim)   == 2:
-            flow = flow.permute(0, 3, 1, 2)
+            flow = transformation.permute(0, 3, 1, 2)
         elif len(self.input_dim) == 3:
-            flow = flow.permute(0, 4, 1, 2, 3)
+            flow = transformation.permute(0, 4, 1, 2, 3)
         else:
             NotImplementedError('only support 2d and 3d')
         
-        affine_img = self.spatial_transformer(moving, flow)
+        affine_registered_image = self.spatial_transformer(moving, flow)
         
-        return A, affine_img 
+        return transformation, affine_registered_image
 
 
 
 class Elastic_Beta_VAE(nn.Module):
     def __init__(self,
-                 input_ch  : int,
-                 output_ch : int,
-                 data_dim  : int,
-                 latent_dim: int,
-                 group_num : int,
-                 img_shape : object = (256, 256),
-                 filters   : object = [16, 32, 64, 128, 256]):
+                 input_ch  : int = 1,
+                 input_dim : int = [256, 256, 512],
+                 latent_dim: int = 512,
+                 output_ch : int = 3,
+                 filters   : object = [16, 32, 64, 128, 256],
+                 group_num : int = 8):
         super(Elastic_Beta_VAE, self).__init__()
-        
+
         self.input_ch   = input_ch
-        self.output_ch  = output_ch
-        self.data_dim   = data_dim
+        self.input_dim  = input_dim
         self.latent_dim = latent_dim
-        self.group_num  = group_num
-        self.image_shape= img_shape
+        self.output_ch  = output_ch
         self.filters    = filters
+        self.group_num  = group_num
         
         # Encoder Block
-        self.encoder  = Encoder(self.input_ch, self.data_dim, self.latent_dim, self.group_num, self.filters)
+        self.encoder  = Encoder(input_ch=self.input_ch, input_dim=self.input_dim, latent_dim=self.latent_dim,
+                                group_num=self.group_num, filters=self.filters)
         
         # Decoder Block
-        self.decoder  = Decoder(self.input_ch, self.output_ch, self.data_dim, self.latent_dim, self.group_num, self.filters)
+        self.decoder  = Decoder(output_ch=self.output_ch, input_dim=self.input_dim, latent_dim=self.latent_dim,
+                                group_num=self.group_num, filters=self.filters)
 
         # Spataial Transformer Network
-        self.spatial_transformer = SpatialTransformer(self.image_shape)
+        self.spatial_transformer = SpatialTransformer(tuple(self.input_dim))
         
         
     def forward(self, fixed: torch.tensor, moving: torch.tensor):
@@ -285,51 +283,34 @@ class Elastic_Beta_VAE(nn.Module):
         x = torch.cat((fixed, moving), dim=1)
         
         # Encoder Block
-        distributions = self.encoder(x)
+        mu, log_var = self.encoder(x)
+        z           = reparametrize(mu, log_var)      
         
         # Decoder Block
-        mu                = distributions[:, :self.latent_dim]
-        logvar            = distributions[:, self.latent_dim:]
-        z                 = reparametrize(mu, logvar)      
-        deformation_field = self.decoder(z)
-        deformation_field = deformation_field.view(moving.size())
+        transformation = self.decoder(z)
         
         # Spatial Transformer
-        elastic_img = self.spatial_transformer(moving, deformation_field)
+        elastic_registered_image = self.spatial_transformer(moving, transformation)
                
-        return deformation_field, elastic_img, mu, logvar
+        return transformation, elastic_registered_image, mu, log_var
         
 
 
         
 from torchsummary import summary
 
-"""model = Beta_AE(data_dim = 2,
-                z_latent_dim      = 256,
-                 num_input_channels= 1,
-                 num_outpt_channels= 1,
-                 filters    = [32, 32, 32, 32, 32])
-model = model.to('cuda')
-print(model)
-summary = summary(model,(1,  256, 256), device='cuda')"""
+"""model =  Affine_Beta_VAE(input_ch = 2,
+                    input_dim = (256, 256),
+                    latent_dim= 512,
+                    filters  = [8, 16, 32, 64, 128],
+                    group_num = 8)
+summary = summary(model.to('cuda'), [(1, 256, 256), (1, 256, 256)])"""
 
-"""model = Affine_Beta_VAE(input_ch   = 2,
-               data_dim   = 2,
-               latent_dim = 256,
-               img_shape  = (256, 256),
-               filters    = [16, 32, 64, 128, 256])
-model = model.to('cuda')
-print(model)
-summary = summary(model, [(1, 256, 256), (1, 256, 256)], device='cuda')"""
-
-"""model = Elastic_Beta_VAE(input_ch   = 2,
-                output_ch  = 1,
-                data_dim   = 2,
-                latent_dim = 256,
-                img_shape  = (256, 256),
-                filters    = [16, 32, 64, 128, 256])
-model = model.to('cuda')
-print(model)
-summary = summary(model, [(1,  256, 256), (1,  256, 256)], device='cuda')"""
-
-      
+"""from torchsummary import summary
+model =  Elastic_Beta_VAE(input_ch = 2,
+                    input_dim = (256, 256),
+                    latent_dim= 512,
+                    output_ch = 2,
+                    filters  = [8, 16, 32, 64, 128],
+                    group_num = 8)
+summary = summary(model.to('cuda'), [(1, 256, 256), (1, 256, 256)])"""      
