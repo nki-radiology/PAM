@@ -179,7 +179,7 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, CC_loss, TV_loss, pam
     wandb.init(project=args_pam_fts_sit.wb_project_name, entity='valeriopugliese')
 
     # initialize the early_stopping object
-    early_stopping = EarlyStopping(patience=7, verbose=True, path='PAM_' + args_pam_fts_sit.wb_project_name + '_earlystopping.pth')
+    early_stopping = EarlyStopping(patience=7, verbose=True, path=args_pam_fts_sit.checkpoints_folder + 'PAM_' + args_pam_fts_sit.wb_project_name + '_earlystopping.pth')
 
     # Saving model inputs and hyperparameters
     config          = wandb.config
