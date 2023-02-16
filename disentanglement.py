@@ -163,24 +163,9 @@ class Disentanglement(object):
         alpha_value = 0.01
         
         for epoch in range(self.start_epoch, self.n_epochs):
-            # Affine losses for the training stage
-            loss_affine_train      = 0
-            
-            # Elastic losses for the training stage: Beta-VAE loss
-            loss_beta_vae_train    = 0
-            loss_reconst_train     = 0
-            loss_kl_diver_train    = 0
-            
+                        
             # Total loss 
             loss_pam_beta_vae_train= 0
-            
-            # Affine losses for the validation stage
-            loss_affine_valid      = 0
-            
-            # Elastic losses for the validation stage: Beta-VAE loss
-            loss_beta_vae_valid    = 0
-            loss_reconst_valid     = 0
-            loss_kl_diver_valid    = 0
             
             # Total loss 
             loss_pam_beta_vae_valid= 0
@@ -265,8 +250,6 @@ class Disentanglement(object):
                             'Valid: KL-divergence Loss': kl_divergence_loss.item(),
                             'Valid: Beta-VAE Loss': reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
                             'Valid: Total loss': loss.item()})
-                    
-            
         
             # Save checkpoints
             if epoch % 10 == 0:
