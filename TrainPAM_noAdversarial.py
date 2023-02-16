@@ -170,7 +170,7 @@ def training(pam_net, device, CC_loss, TV_loss, pam_optimizer,
     wandb.init(project=args_pam_fts_sit.wb_project_name, entity='pam_ablation_study')
 
     # initialize the early_stopping object
-    early_stopping = EarlyStopping(patience=7, verbose=True, path=args_pam_fts_sit.checkpoints_folder + 'PAM_' + args_pam_fts_sit.wb_project_name + '_earlystopping.pth')
+    #early_stopping = EarlyStopping(patience=7, verbose=True, path=args_pam_fts_sit.checkpoints_folder + 'PAM_' + args_pam_fts_sit.wb_project_name + '_earlystopping.pth')
 
     # Saving model inputs and hyperparameters
     config          = wandb.config
@@ -311,11 +311,11 @@ def training(pam_net, device, CC_loss, TV_loss, pam_optimizer,
             #save_table('Training_examples', fixed_tr, moving_tr, w0_tr, w1_tr, t1_tr)
             #save_table('Validation_examples', fixed_val, moving_val, w0_val, w1_val, t1_val)
 
-            early_stopping(loss_pam_valid, pam_net)
+            """early_stopping(loss_pam_valid, pam_net)
         
             if early_stopping.early_stop:
                 print("Early stopping")
-                break
+                break"""
 
             # Print the train and validation losses
             print("Train epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, n_epochs, loss_pam_train)) # epoch + 1, n_epochs

@@ -393,9 +393,9 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, CC_loss, TV_loss, pam
 
             #early_stopping(loss_pam_valid, pam_net, dis_net)
         
-            if early_stopping.early_stop:
+            """if early_stopping.early_stop:
                 print("Early stopping")
-                break
+                break"""
 
             # Print the train and validation losses
             print("Train epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, n_epochs, loss_pam_train)) # epoch + 1, n_epochs
