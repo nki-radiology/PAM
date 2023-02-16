@@ -160,8 +160,8 @@ class Affine_Beta_VAE(nn.Module):
                     input_ch  : int = 2,
                     input_dim : int = [256, 256, 512],
                     latent_dim: int = 512,
-                    filters   : object = [32, 64, 128, 256],
-                    group_num : int = 8):
+                    group_num : int = 8,
+                    filters   : object = [32, 64, 128, 256],):
 
         super(Affine_Beta_VAE, self).__init__()
         """
@@ -173,8 +173,8 @@ class Affine_Beta_VAE(nn.Module):
         self.input_ch   = input_ch
         self.input_dim  = input_dim
         self.latent_dim = latent_dim
-        self.filters    = filters
         self.group_num  = group_num
+        self.filters    = filters
         features_linear_layer = 1024
         
         # Encoder Block
@@ -255,16 +255,16 @@ class Elastic_Beta_VAE(nn.Module):
                  input_dim : int = [256, 256, 512],
                  latent_dim: int = 512,
                  output_ch : int = 3,
-                 filters   : object = [16, 32, 64, 128, 256],
-                 group_num : int = 8):
+                 group_num : int = 8,
+                 filters   : object = [16, 32, 64, 128, 256]):
         super(Elastic_Beta_VAE, self).__init__()
 
         self.input_ch   = input_ch
         self.input_dim  = input_dim
         self.latent_dim = latent_dim
         self.output_ch  = output_ch
-        self.filters    = filters
         self.group_num  = group_num
+        self.filters    = filters
         
         # Encoder Block
         self.encoder  = Encoder(input_ch=self.input_ch, input_dim=self.input_dim, latent_dim=self.latent_dim,
@@ -302,8 +302,8 @@ from torchsummary import summary
 """model =  Affine_Beta_VAE(input_ch = 2,
                     input_dim = (256, 256),
                     latent_dim= 512,
-                    filters  = [8, 16, 32, 64, 128],
-                    group_num = 8)
+                    group_num = 8,
+                    filters   = [8, 16, 32, 64, 128])
 summary = summary(model.to('cuda'), [(1, 256, 256), (1, 256, 256)])"""
 
 """from torchsummary import summary
@@ -311,6 +311,6 @@ model =  Elastic_Beta_VAE(input_ch = 2,
                     input_dim = (256, 256),
                     latent_dim= 512,
                     output_ch = 2,
-                    filters  = [8, 16, 32, 64, 128],
-                    group_num = 8)
+                    group_num = 8,
+                    filters  = [8, 16, 32, 64, 128])
 summary = summary(model.to('cuda'), [(1, 256, 256), (1, 256, 256)])"""      
