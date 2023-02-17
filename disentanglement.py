@@ -265,7 +265,7 @@ class Disentanglement(object):
             loss_pam_beta_vae_valid/= data_loader_len
         
             # Print the train and validation losses
-            print("Train epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, self.beta)) # epoch + 1, n_epochs
+            print("Train epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, self.beta)) 
             print("Valid epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, self.beta))
 
 
@@ -527,35 +527,22 @@ class Disentanglement(object):
                 t_0, w_0, t_1, w_1, z = self.net(fixed, moving)
                 
                 # Computing the affine loss
-                sim_af, reg_af = total_loss(fixed, w_0, w_0)
-                total_affine   = sim_af + reg_af
+                registration_affine_loss = self.nn_loss.pearson_correlation(fixed, w_0)
+                penalty_affine_loss      = self.energy_loss.energy_loss(t_0)
                 
-                loss_affine_sim_train += sim_af.item()
-                loss_affine_reg_train += reg_af.item()
-                loss_affine_train     += total_affine.item()
-                
-                               
                 # Computing the elastic loss
-                sim_ela, reg_ela = total_loss(fixed, w_1, t_1)
-                total_elastic    = sim_ela + reg_ela
-                
-                loss_elastic_sim_train += sim_ela.item()
-                loss_elastic_reg_train += reg_ela.item()
-                loss_elastic_train     += total_elastic.item()
+                registration_deform_loss = self.nn_loss.pearson_correlation(fixed, w_1)
+                penalty_deform_loss      = self.energy_loss.energy_loss(t_1)
                 
                 # Computing the WAE loss
                 z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.latent_dim) * 1)
                 z_fake.to(self.device)
-                recon_loss           = torch.nn.MSELoss(t_1, fixed)
+                reconstruction_loss           = torch.nn.MSELoss(t_1, fixed)
                 mmd_loss             = imq_kernel(z, z_fake, h_dim=self.latent_dim)
-                total_loss_wae       = recon_loss + mmd_loss
-                loss_reconst_train  += recon_loss.item()
-                loss_mmd_train      += mmd_loss.item()
-                loss_wae_train      += total_loss_wae.item()
                 
-                # Total loss
-                loss = total_affine + total_elastic + total_loss_wae
-                loss_pam_wae_train += loss
+                # Total loss: affine + deformation + wae
+                loss = (registration_affine_loss + penalty_affine_loss) + (registration_deform_loss + penalty_deform_loss) + (reconstruction_loss + mmd_loss)
+                loss_pam_wae_train += loss.item()
                 
                 # one backward pass
                 loss.backward()
@@ -563,20 +550,15 @@ class Disentanglement(object):
                 # Update the parameters
                 self.optim.step()
                 
-                
-                # Display in tensorboard
+                # Weights and biases visualization
                 # ========
-                wandb.log({'Iteration': epoch, 'Train: Similarity Affine loss': sim_af.item(),
-                        'Train: Regression Affine loss': reg_af.item(),
-                        'Train: Affine loss': total_affine.item(),
-                        'Train: Similarity Elastic loss': sim_ela.item(),
-                        'Train: Regression Elastic loss': reg_ela.item(),
-                        'Train: Elastic loss':  total_elastic.item(),
-                        'Train: Reconstruction loss': recon_loss.item(),
+                wandb.log({'Iteration': i, 'Train: Similarity Affine loss': registration_affine_loss.item(), # Shall we consider to visualize the total loss affine, 
+                        'Train: Penalty Affine loss': penalty_affine_loss.item(),                            # total loss elastic and total loss WAE as well?
+                        'Train: Similarity Elastic loss': registration_deform_loss.item(),
+                        'Train: Penalty Elastic loss': penalty_deform_loss.item(),
+                        'Train: Reconstruction loss': reconstruction_loss.item(),
                         'Train: MMD Loss': mmd_loss.item(),
-                        'Train: WAE Loss': total_loss_wae.item(),
                         'Train: Total loss': loss.item()})
-            
             
             
             with torch.no_grad():
@@ -590,83 +572,52 @@ class Disentanglement(object):
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                     
                     # Computing the affine loss
-                    #sim_af, reg_af = total_loss(fixed, w_0, w_0)
-                    # total_affine   = sim_af + reg_af
-                    
-                    loss_affine_sim_valid += sim_af.item()
-                    loss_affine_reg_valid += reg_af.item()
-                    loss_affine_valid     += total_affine.item()
+                    registration_affine_loss = self.nn_loss.pearson_correlation(fixed, w_0)
+                    penalty_affine_loss      = self.energy_loss.energy_loss(t_0)
                     
                     # Computing the elastic loss
-                    sim_ela, reg_ela = total_loss(fixed, w_1, t_1)
-                    total_elastic    = sim_ela + reg_ela
-                    
-                    loss_elastic_sim_valid += sim_ela.item()
-                    loss_elastic_reg_valid += reg_ela.item()
-                    loss_elastic_valid     += total_elastic.item()
+                    registration_deform_loss = self.nn_loss.pearson_correlation(fixed, w_1)
+                    penalty_deform_loss      = self.energy_loss.energy_loss(t_1)
                     
                     # Computing the WAE loss
                     z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.latent_dim) * 1)
                     z_fake.to(self.device)
-                    recon_loss           = torch.nn.MSELoss(t_1, fixed)
+                    reconstruction_loss           = torch.nn.MSELoss(t_1, fixed)
                     mmd_loss             = imq_kernel(z, z_fake, h_dim=self.latent_dim)
-                    total_loss_wae       = recon_loss + mmd_loss
-                    loss_reconst_valid  += recon_loss.item()
-                    loss_mmd_valid      += mmd_loss.item()
-                    loss_wae_valid      += total_loss_wae.item()
                     
-                    # Total loss
-                    loss = total_affine + total_elastic + total_loss_wae
-                    loss_pam_wae_valid  += loss
+                    # Total loss: affine + deformation + wae
+                    loss = (registration_affine_loss + penalty_affine_loss) + (registration_deform_loss + penalty_deform_loss) + (reconstruction_loss + mmd_loss)
+                    loss_pam_wae_valid  += loss.item()
                                      
                     
-                    # Display in tensorboard
+                    # Weights and biases visualization
                     # ========
-                    wandb.log({'Iteration': epoch, 'Valid: Similarity Affine loss': sim_af.item(),
-                            'Valid: Regression Affine loss': reg_af.item(),
-                            'Valid: Affine loss': total_affine.item(),
-                            'Valid: Similarity Elastic loss': sim_ela.item(),
-                            'Valid: Regression Elastic loss': reg_ela.item(),
-                            'Valid: Elastic loss':  total_elastic.item(),
-                            'Valid: Reconstruction loss': recon_loss.item(),
+                    wandb.log({'Iteration': i, 'Train: Similarity Affine loss': registration_affine_loss.item(), # Shall we consider to visualize the total loss affine, 
+                            'Valid: Penalty Affine loss': penalty_affine_loss.item(),                            # total loss elastic and total loss WAE as well?
+                            'Valid: Similarity Elastic loss': registration_deform_loss.item(),
+                            'Valid: Penalty Elastic loss': penalty_deform_loss.item(),
+                            'Valid: Reconstruction loss': reconstruction_loss.item(),
                             'Valid: MMD Loss': mmd_loss.item(),
-                            'Valid: WAE Loss': total_loss_wae.item(),
                             'Valid: Total loss': loss.item()})
-        
-            
-        # Compute the loss per epoch
-        data_loader_len         = len(self.train_dataloader)
-        loss_affine_sim_train  /= data_loader_len
-        loss_affine_reg_train  /= data_loader_len
-        loss_affine_train      /= data_loader_len
-        loss_elastic_sim_train /= data_loader_len
-        loss_elastic_reg_train /= data_loader_len
-        loss_elastic_train     /= data_loader_len
-        loss_reconst_train     /= data_loader_len
-        loss_mmd_train         /= data_loader_len
-        loss_wae_train         /= data_loader_len
-        loss_pam_wae_train     /= data_loader_len
         
         # Save checkpoints
         if epoch % 10 == 0:
             name_pam = 'PAMModel_WAE_' + str(epoch) + '.pth'
             torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
             print('Saving model')
+            
+        # Train loss per epoch
+        loss_pam_wae_train = loss_pam_wae_train / len(self.train_dataloader)
         
-         # Compute the loss per epoch
-        data_loader_len         = len(self.valid_dataloader)
-        loss_affine_sim_valid  /= data_loader_len
-        loss_affine_reg_valid  /= data_loader_len
-        loss_affine_valid      /= data_loader_len
-        loss_elastic_sim_valid /= data_loader_len
-        loss_elastic_reg_valid /= data_loader_len
-        loss_elastic_valid     /= data_loader_len
-        loss_reconst_valid     /= data_loader_len
-        loss_mmd_valid         /= data_loader_len
-        loss_wae_valid         /= data_loader_len
-        loss_pam_wae_valid     /= data_loader_len
+         # Valid loss per epoch
+        loss_pam_wae_valid = loss_pam_wae_valid / len(self.valid_dataloader)
+
+        # Print the train and validation losses
+        print("Train epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_train)) 
+        print("Valid epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_valid))
     
     
+
     def train_disentanglement_method(self):
         self.model_init()
         self.set_optimizer()
