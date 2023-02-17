@@ -47,39 +47,35 @@ class Registration_Beta_VAE(nn.Module):
 
 class Registration_Wasserstein_AE(nn.Module):   
     def __init__(self,
-                 input_ch   : int,
-                 output_ch  : int,
-                 data_dim   : int,
-                 latent_dim : int,
-                 group_num  : int,
-                 img_shape  : object = (256, 256),
-                 filters    : object = [16, 32, 64, 128, 256]):
+                 input_ch   : int = 2,
+                 output_ch  : int = 2,
+                 input_dim  : int = [256, 256, 512],
+                 latent_dim : int = 512,
+                 group_num  : int = 8,
+                 filters    : object = [32, 64, 128, 256]):
         
         super(Registration_Wasserstein_AE, self).__init__()
         
         self.input_ch   = input_ch
         self.output_ch  = output_ch
-        self.data_dim   = data_dim
+        self.input_dim  = input_dim
         self.latent_dim = latent_dim
         self.group_num  = group_num
-        self.img_shape  = img_shape
         self.filters    = filters
         
         # Affine Network
-        self.affine_net = Affine_WAE(input_ch=self.input_ch,
-                                     data_dim=self.data_dim,
-                                     latent_dim=self.latent_dim,
+        self.affine_net = Affine_WAE(input_ch   = self.input_ch,
+                                     input_dim  = self.input_dim,
+                                     latent_dim = self.latent_dim,
                                      group_num  = self.group_num,
-                                     img_shape=self.img_shape,
-                                     filters=self.filters)
-        
+                                     filters    = self.filters)
+       
         # Deformation/Elastic Network
         self.elastic_net = Elastic_WAE(input_ch   = self.input_ch,
-                                       output_ch  = self.output_ch,
-                                       data_dim   = self.data_dim,
+                                       input_dim   = self.input_dim,
                                        latent_dim = self.latent_dim,
+                                       output_ch  = self.output_ch,
                                        group_num  = self.group_num,
-                                       img_shape  = self.img_shape,
                                        filters    = self.filters)
         
     def forward(self, fixed:torch.tensor, moving:torch.tensor):
