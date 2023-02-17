@@ -146,7 +146,7 @@ class Affine_Beta_VAE(nn.Module):
 
 class Elastic_Beta_VAE(nn.Module):
     def __init__(self,
-                 input_ch  : int = 1,
+                 input_ch  : int = 2,
                  input_dim : int = [256, 256, 512],
                  latent_dim: int = 512,
                  output_ch : int = 3,
