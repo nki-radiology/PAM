@@ -2,8 +2,8 @@ import torch
 import torch.nn             as     nn
 import torch.nn.functional  as     F
 from   collections          import OrderedDict
-from   networks.layer                import conv_layer
-from   networks.layer                import conv_gl_avg_pool_layer
+from   networks.network                import conv_layer
+from   networks.network                import conv_gl_avg_pool_layer
 from   networks.network              import Encoder_WAE
 from   networks.network              import Decoder
 from   networks.spatial_transformer  import SpatialTransformer
