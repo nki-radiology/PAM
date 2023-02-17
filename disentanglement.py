@@ -21,15 +21,15 @@ class Disentanglement(object):
     def __init__(self, args):
 
         self.input_ch   = args.input_ch
-        self.input_dim  = args.data_dim
-        self.latent_dim = args.z_dim
+        self.input_dim  = args.input_dim
+        self.latent_dim = args.latent_dim
         self.output_ch  = args.output_ch
         self.group_num  = args.group_num
-        self.filters    = [32, 64, 128, 256]
+        self.filters    = args.filters
         self.input_ch_discriminator = args.input_ch_d
         
         # Model
-        self.model        = args.model
+        self.model             = args.model
         self.add_discriminator = args.add_disc
         
         # Model Parameters
@@ -103,7 +103,7 @@ class Disentanglement(object):
                 data_dim   = self.input_dim,
                 latent_dim = self.latent_dim,
                 group_num  = self.group_num,
-                filters    = self.filters)
+                filters    = self.filters)  # Shall we include different number of filters for the discriminator??????????????????????????
             
             self.discriminator_net.to(self.device)
             # Handle multi-gpu if desired
@@ -355,7 +355,7 @@ class Disentanglement(object):
                 self.optim_disc.zero_grad()
                 
                 # Measure discriminator's ability to classify real from generated samples
-                real, _  = self.discriminator_net(TF.rotate(fixed, angle))  # Shall we compare the features as well?
+                real, _  = self.discriminator_net(TF.rotate(fixed, angle))  # Shall we compare the features as well?????????????????????????????????????????????
                 fake, _  = self.discriminator_net(w_1.detach())
                 b_size   = real.shape
                 label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
@@ -422,7 +422,7 @@ class Disentanglement(object):
                     # ----------- 1. Update the Discriminator -----------
 
                     # Measure discriminator's ability to classify real from generated samples
-                    real, _ = self.discriminator_net(TF.rotate(fixed, angle))#(fixed)  # (w_0)
+                    real, _ = self.discriminator_net(TF.rotate(fixed, angle))#(fixed)  # (w_0) Shall we keep the rotation??????????????????????????????
                     fake, _ = self.discriminator_net(w_1.detach())
                     b_size = real.shape
                     label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
@@ -477,41 +477,12 @@ class Disentanglement(object):
         wandb.watch(self.net)
         
         for epoch in range(self.start_epoch, self.n_epochs):
-            # Affine losses for the training stage
-            loss_affine_train      = 0
-            loss_affine_sim_train  = 0
-            loss_affine_reg_train  = 0
+
+            # Train Total loss 
+            loss_pam_wae_train = 0
             
-            # Elastic losses for the training stage
-            loss_elastic_train     = 0
-            loss_elastic_sim_train = 0
-            loss_elastic_reg_train = 0
-            
-            # Beta-VAE loss for the training stage
-            loss_wae_train         = 0
-            loss_reconst_train     = 0
-            loss_mmd_train         = 0
-            
-            # Total loss 
-            loss_pam_wae_train     = 0
-            
-            # Affine losses for the validation stage
-            loss_affine_valid      = 0
-            loss_affine_sim_valid  = 0
-            loss_affine_reg_valid  = 0
-            
-            # Elastic losses for the validation stage
-            loss_elastic_valid     = 0
-            loss_elastic_sim_valid = 0
-            loss_elastic_reg_valid = 0
-            
-            # Beta-VAE loss for the validation stage
-            loss_wae_valid        = 0
-            loss_reconst_valid    = 0
-            loss_mmd_valid        = 0
-            
-            # Total loss 
-            loss_pam_wae_valid    = 0
+            # ValidTotal loss 
+            loss_pam_wae_valid = 0
             
             # Set the training mode
             self.net.train()
@@ -537,7 +508,7 @@ class Disentanglement(object):
                 # Computing the WAE loss
                 z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.latent_dim) * 1)
                 z_fake.to(self.device)
-                reconstruction_loss           = torch.nn.MSELoss(t_1, fixed)
+                reconstruction_loss  = torch.nn.MSELoss(t_1, fixed)
                 mmd_loss             = imq_kernel(z, z_fake, h_dim=self.latent_dim)
                 
                 # Total loss: affine + deformation + wae
@@ -622,7 +593,7 @@ class Disentanglement(object):
         self.model_init()
         self.set_optimizer()
         self.load_dataloader()
-        
+
         if self.add_discriminator:
             self.train_Beta_VAE_Adversarial()
         if self.model == 'WAE':
