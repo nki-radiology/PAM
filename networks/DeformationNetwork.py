@@ -52,16 +52,31 @@ class DeformationNetwork(nn.Module):
         self.filters = filters       # [16, 32, 64, 128, 256]
         self.img_dim = img_dim
 
-        self.Maxpool1 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.Maxpool2 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.Maxpool3 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.Maxpool4 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.Maxpool1 = nn.MaxPool3d(kernel_size=2, stride=2) # 96, 80
+        self.Maxpool2 = nn.MaxPool3d(kernel_size=2, stride=2) # 48, 40
+        self.Maxpool3 = nn.MaxPool3d(kernel_size=2, stride=2) # 24, 20
+        self.Maxpool4 = nn.MaxPool3d(kernel_size=2, stride=2) # 12, 10
 
-        self.Conv1    = Conv   (2,               self.filters[0])
+        self.Conv1    = Conv   (1,               self.filters[0])
         self.Conv2    = Conv   (self.filters[0], self.filters[1])
         self.Conv3    = Conv   (self.filters[1], self.filters[2])
         self.Conv4    = Conv   (self.filters[2], self.filters[3])
         self.Conv5    = Conv   (self.filters[3], self.filters[4])
+
+        self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+        self.Fc       = nn.Linear(self.filters[4], self.filters[4])
+        self.FcAct    = nn.Tanh 
+
+        self.encoder = nn.Sequential(
+            self.Conv1, self.Maxpool1,
+            self.Conv2, self.Maxpool2,
+            self.Conv3, self.Maxpool3,
+            self.Conv4, self.Maxpool4,
+            self.Conv5, 
+            self.AvgPool,
+            self.Fc #, 
+            #self.FcAct
+        )        
 
         self.Up5      = Up_Conv(self.filters[4], self.filters[3])
         self.Up_conv5 = Conv   (self.filters[4], self.filters[3])
@@ -75,43 +90,33 @@ class DeformationNetwork(nn.Module):
         self.Up2      = Up_Conv(self.filters[1], self.filters[0])
         self.Up_conv2 = Conv   (self.filters[1], self.filters[0])
 
-        self.Conv     = nn.Conv3d(self.filters[0], len(self.img_dim), kernel_size=1, stride=1, padding=0, bias=False)
+        self.Conv     = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
         self.spat_trs = SpatialTransformer(self.img_dim)  #((192, 192, 160))
 
 
     def forward(self, fixed, moving):
 
-        x = torch.cat((fixed, moving), dim=1)
-        e1  = self.Conv1(x)
+        z_fixed     = self.encoder(fixed)
+        z_moving    = self.encoder(moving)
 
-        e2  = self.Maxpool1(e1)
-        e2  = self.Conv2   (e2)
+        z           = z_fixed - z_moving
 
-        e3  = self.Maxpool2(e2)
-        e3  = self.Conv3   (e3)
+        # tiling the feature vector to feature map
+        z = z[..., None, None, None]
+        s = [int(s/(2**4)) for s in self.img_dim]
+        z = z.tile((1, 1, s[0], s[1], s[2]))
 
-        e4  = self.Maxpool3(e3)
-        e4  = self.Conv4   (e4)
-
-        e5  = self.Maxpool4(e4)
-        e5  = self.Conv5   (e5)
-
-
-        d5  = self.Up5     (e5)
-        d5  = torch.cat((e4, d5), dim=1)
+        d5  = self.Up5     (z)
         d5  = self.Up_conv5(d5)
 
         d4  = self.Up4     (d5)
-        d4  = torch.cat((e3, d4), dim=1)
         d4  = self.Up_conv4(d4)
 
         d3  = self.Up3     (d4)
-        d3  = torch.cat((e2, d3), dim=1)
         d3  = self.Up_conv3(d3)
 
         d2  = self.Up2     (d3)
-        d2  = torch.cat((e1, d2), dim=1)
         d2  = self.Up_conv2(d2)
 
         transformation = self.Conv(d2)
