@@ -72,7 +72,7 @@ class CropThorax(SmartCrop):
     def __call__(self, image):
         outputs   = None
         image_arr = GetArrayFromImage(image)
-        pelvis, diaphram = self._SmartCrop__get_coordinates(image_arr, 10, 80) # Initially: (image_arr, 20, 70)
+        pelvis, diaphram = self._SmartCrop__get_coordinates(image_arr, 10, 80) 
 
         if (pelvis >= 0) and (diaphram <= image_arr.shape[0]) and (pelvis < diaphram):
             outputs = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - diaphram)])
@@ -96,6 +96,10 @@ class CropAbdomen(SmartCrop):
         return outputs
 
 
+class SplitAbdomenThorax(SmartCrop):
+    def __init__ (self, margin=0.):
+        super(SplitAbdomenThorax, self).__init__(margin)
+        
 # uncomment to test the functions
 """
 if __name__ == '__main__':
