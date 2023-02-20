@@ -2,8 +2,8 @@ import argparse
 
 # ------------------------------------------ General choices of the model -----------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('--adversarial_choice', type=str, default='yes',               help='yes=Adversarial, no=no_Adversarial')
-parser.add_argument('--ViT_choice',         type=str, default='no',              help='yes=ViT_PAM,     no=PAM')
+parser.add_argument('--adversarial_choice', type=str, default='no',               help='yes=Adversarial, no=no_Adversarial')
+parser.add_argument('--ViT_choice',         type=str, default='yes',              help='yes=ViT_PAM,     no=PAM')
 parser.add_argument('--size_choice',        type=str, default='big',              help='big, small or big_noskip')
 parser.add_argument("-f", "--fff",               default="1",                     help="a dummy argument to fool ipython")
 general_choices = parser.parse_args()
@@ -86,7 +86,8 @@ wandb_name = str(model_folder.split('/')[3].split('_')[1]) + str(model_folder.sp
 
 pam_fts_sit = argparse.ArgumentParser()
 pam_fts_sit.add_argument('--train_folder',      type=str,
-                             default="/processing/valerio/dataset/train/",                             
+                             default="/processing/valerio/dataset/train/",             # if using roentgen
+                             #default="/data/groups/beets-tan/l.estacio/train/",         # if using mariecurie                             
                              help   ='folder that contains the training dataset')
 pam_fts_sit.add_argument('--checkpoints_folder',   type=str,
                              default=model_folder,               
@@ -95,7 +96,7 @@ pam_fts_sit.add_argument('--wb_project_name',   type=str,
                              default=wandb_name, 
                              help   ="name of the project on wandb website")
 pam_fts_sit.add_argument('--pam_checkpoint', type=str,
-                             default= model_folder + 'PAM_Model_big_outch3_90.pth',     # pay attention only if you have to retrain                   
+                             default= model_folder + 'PAM_Experiment1_big_noskip_50.pth',     # pay attention only if you have to retrain                   
                              help   ="folder that contains the PAM model checkpoints")
 pam_fts_sit.add_argument("-f", "--fff",
                              default="1",
