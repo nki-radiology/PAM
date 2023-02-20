@@ -30,7 +30,7 @@ def read_train_data():
     data_index= []
 
     for f in filenames:
-        data_index.append(int(str(f).split('/')[8].split('_')[0]))
+        data_index.append(int(str(f).split('/')[8].split('_')[0])) # Number 8 can vary according to the path of the images
 
     train_data = list(zip(data_index, filenames))
     train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
@@ -262,8 +262,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
         with torch.no_grad():
 
-            #BUG this code below is the same, with minor changes, to the one above: fix without repetitions! 
-
             train_flag = False
 
             pam_net.eval()
@@ -277,7 +275,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
                 # Forward pass generator (1)
                 t_0, w_0, t_1, w_1 = pam_net(fixed, moving)
 
-
                 # Loss measures generator's ability to fool the discriminator
                 _, features_w1 = dis_net(w_1) 
                 _, features_w0 = dis_net(w_0) 
@@ -288,11 +285,9 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
                 registration_affine_loss = nn_loss.pearson_correlation(fixed, w_0)
                 penalty_affine_loss      = energy_loss.energy_loss(t_0)
 
-
                 # Deformation network loss
                 registration_deform_loss = nn_loss.pearson_correlation(fixed, w_1)
                 penalty_deform_loss = energy_loss.energy_loss(t_1)
-
 
                 # PAM loss
                 # total loss
@@ -317,7 +312,7 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
                 loss_disc_valid += loss_d_v.item()
 
 
-                # Display in tensorboard
+                # Display in weights and biases
                 # ========
 
                 wandb.log({'Iteration': it_valid_counter, 
@@ -394,7 +389,7 @@ def load_model_weights():
 def start_retraining():
     make_directory_to_save_chkp()
     cuda_seeds()
-    pam_net, dis_net, device           = load_model_weights() #model_init()
+    pam_net, dis_net, device           = load_model_weights() 
     disc_loss, l2_loss, nn_loss, energy_loss = init_loss_functions()
     pam_optimizer, dis_optimizer       = get_optimizers(pam_net, dis_net)
     train_dataloader, valid_dataloader = load_dataloader()
