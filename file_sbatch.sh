@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=exp2_big                        # Job name
+#SBATCH --job-name=exp2_small                        # Job name
 #SBATCH --partition=rtx8000                         # Partition
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
@@ -19,4 +19,4 @@ source /home/l.estacio/miniconda3/bin/activate pytorch2
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /projects/pam_valerio/code/PAM/TrainPAMAdversarial.py
+python /projects/disentanglement_methods/PAM/TrainPAMAdversarial.py

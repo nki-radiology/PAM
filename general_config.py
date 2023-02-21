@@ -2,9 +2,9 @@ import argparse
 
 # ------------------------------------------ General choices of the model -----------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('--adversarial_choice', type=str, default='no',               help='yes=Adversarial, no=no_Adversarial')
-parser.add_argument('--ViT_choice',         type=str, default='yes',              help='yes=ViT_PAM,     no=PAM')
-parser.add_argument('--size_choice',        type=str, default='big',              help='big, small or big_noskip')
+parser.add_argument('--adversarial_choice', type=str, default='yes',               help='yes=Adversarial, no=no_Adversarial')
+parser.add_argument('--ViT_choice',         type=str, default='no',              help='yes=ViT_PAM,     no=PAM')
+parser.add_argument('--size_choice',        type=str, default='small',              help='big, small or big_noskip')
 parser.add_argument("-f", "--fff",               default="1",                     help="a dummy argument to fool ipython")
 general_choices = parser.parse_args()
 
@@ -96,8 +96,11 @@ pam_fts_sit.add_argument('--wb_project_name',   type=str,
                              default=wandb_name, 
                              help   ="name of the project on wandb website")
 pam_fts_sit.add_argument('--pam_checkpoint', type=str,
-                             default= model_folder + 'PAM_Experiment1_big_noskip_50.pth',     # pay attention only if you have to retrain                   
+                             default= model_folder + 'PAM_Experiment2_big_noskip_110.pth',     # pay attention only if you have to retrain                   
                              help   ="folder that contains the PAM model checkpoints")
+pam_fts_sit.add_argument('--dis_checkpoint', type=str,
+                             default= model_folder + 'Dis_Experiment2_big_noskip_110.pth',     # pay attention only if you have to retrain                   
+                             help   ="folder that contains the PAM model checkpoints")                            
 pam_fts_sit.add_argument("-f", "--fff",
                              default="1",
                              help="a dummy argument to fool ipython")
