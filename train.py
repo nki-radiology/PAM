@@ -49,6 +49,12 @@ class Train(object):
         
         # Beta value for Beta_VAE
         self.beta = 0
+
+        # Values of the regularization parameters
+        self.alpha_value  = 0.01
+        self.gamma_value  = 0.1 
+        self.lambda_value = 0.001 # regularization for the reconstruction loss
+    
         
         # Data folder
         self.data_folder = args.dset_dir
@@ -160,7 +166,7 @@ class Train(object):
         wandb.init(project='Beta-VAE', entity='ljestaciocerquin')
         config = wandb.config
         wandb.watch(self.net, log="all")
-        alpha_value = 0.01
+        
         
         for epoch in range(self.start_epoch, self.n_epochs):
                         
@@ -169,7 +175,6 @@ class Train(object):
             
             # Total loss 
             loss_pam_beta_vae_valid= 0
-            lambda_value           = 0.001
             
             # Set the training mode
             self.net.train()
@@ -190,16 +195,16 @@ class Train(object):
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                 
                 # Computing the affine loss
-                affine_mse_loss  = self.mse_loss(w_0, fixed)
-                #registration_affine_cc_loss = nn_loss.pearson_correlation(fixed, w_0)
-                #penalty_affine_loss = energy_loss.energy_loss(t_0)
+                affine_mse_loss             = self.mse_loss(w_0, fixed)
+                registration_affine_cc_loss = self.nn_loss.pearson_correlation(fixed, w_0)
+                penalty_affine_loss         = self.energy_loss.energy_loss(t_0)
                 
                 # Computing the elastic loss: Beta-VAE loss
-                reconstruction_loss = lambda_value * reconstruction_loss(fixed, w_1) 
+                reconstruction_loss = reconstruction_loss(fixed, w_1)  # ????????????????????????????????????
                 kl_divergence_loss  = kl_divergence(mu, log_var)
                               
                 # Total loss
-                loss = affine_mse_loss + (reconstruction_loss + self.beta * kl_divergence_loss)
+                loss = (self.lambda_value * affine_mse_loss + registration_affine_cc_loss + penalty_affine_loss) + (self.lambda_value * reconstruction_loss + self.beta * kl_divergence_loss)
                 loss_pam_beta_vae_train += loss.item()
                 
                 # one backward pass
@@ -211,9 +216,11 @@ class Train(object):
                 # Weights and biases visualization
                 wandb.log({'Iteration': i,
                         'Train: Affine loss': affine_mse_loss.item(),
+                        'Train: Cross Correlation loss': registration_affine_cc_loss.item(),
+                        'Train: Penalty loss': penalty_affine_loss.item(),
                         'Train: Reconstruction loss': reconstruction_loss.item(),
                         'Train: KL-divergence Loss': kl_divergence_loss.item(),
-                        'Train: Beta-VAE Loss': reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
+                        'Train: Beta-VAE Loss': self.lambda_value * reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
                         'Train: Total loss': loss.item()})
                 
             
@@ -233,7 +240,7 @@ class Train(object):
                     #penalty_affine_loss = energy_loss.energy_loss(t_0)
                     
                     # Computing the elastic loss: Beta-VAE loss
-                    reconstruction_loss = lambda_value * reconstruction_loss(fixed, w_1) 
+                    reconstruction_loss = self.lambda_value * reconstruction_loss(fixed, w_1) 
                     kl_divergence_loss  = kl_divergence(mu, log_var)
                     
                                                    
@@ -276,11 +283,7 @@ class Train(object):
         wandb.init(project='Beta-VAE-Adversarial', entity='ljestaciocerquin')
         config = wandb.config
         wandb.watch(self.net, log="all")
-        
-        # Assign lambda and gamma values to regularize the reconstruction 
-        lambda_value = 0.001
-        gamma_value  = 0.1
-                
+                      
         # Establish convention for real and fake labels during training
         real_label   = 1.
         fake_label   = 0.
@@ -328,13 +331,13 @@ class Train(object):
                 _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle)) 
                 
                 # Compute generator loss
-                generator_mse_penalty  = gamma_value * self.disc_loss_fts(features_w1, features_fixed)
+                generator_mse_penalty  = self.gamma_value * self.disc_loss_fts(features_w1, features_fixed)
                 
                 # Computing the affine loss
                 affine_mse_loss    = self.mse_loss(w_0, fixed)
                 
                 # Computing the elastic loss: Beta-VAE loss
-                reconstruction_loss = lambda_value * reconstruction_loss(fixed, w_1) 
+                reconstruction_loss = self.lambda_value * reconstruction_loss(fixed, w_1) 
                 kl_divergence_loss  = kl_divergence(mu, log_var)
 
                 # Total loss Beta-VAE train
@@ -406,13 +409,13 @@ class Train(object):
                     _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle))
                     
                     # Compute the generator loss
-                    generator_mse_penalty = gamma_value * self.disc_loss_fts(features_w1, features_fixed)
+                    generator_mse_penalty = self.gamma_value * self.disc_loss_fts(features_w1, features_fixed)
                     
                     # Computing the affine loss
                     affine_mse_loss    = self.mse_loss(w_0, fixed)
 
                     # Computing the elastic loss: Beta-VAE loss
-                    reconstruction_loss = lambda_value * reconstruction_loss(fixed, w_1)
+                    reconstruction_loss = self.lambda_value * reconstruction_loss(fixed, w_1)
                     kl_divergence_loss  = kl_divergence(mu, log_var)
                     
                     # Total loss Beta-VAE valid (Generator)
