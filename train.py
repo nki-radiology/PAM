@@ -109,7 +109,7 @@ class Train(object):
                 data_dim   = self.input_dim,
                 latent_dim = self.latent_dim,
                 group_num  = self.group_num,
-                filters    = self.filters)  # Shall we include different number of filters for the discriminator??????????????????????????
+                filters    = self.filters)  
             
             self.discriminator_net.to(self.device)
             # Handle multi-gpu if desired
@@ -196,15 +196,17 @@ class Train(object):
                 
                 # Computing the affine loss
                 affine_mse_loss             = self.mse_loss(w_0, fixed)
-                registration_affine_cc_loss = self.nn_loss.pearson_correlation(fixed, w_0)
                 penalty_affine_loss         = self.energy_loss.energy_loss(t_0)
                 
                 # Computing the elastic loss: Beta-VAE loss
-                reconstruction_loss = reconstruction_loss(fixed, w_1)  # ????????????????????????????????????
+                elastic_mse_loss = self.mse_loss(fixed, w_1)  
+                penalty_elastic_loss         = self.energy_loss.energy_loss(t_1)
                 kl_divergence_loss  = kl_divergence(mu, log_var)
                               
-                # Total loss
-                loss = (self.lambda_value * affine_mse_loss + registration_affine_cc_loss + penalty_affine_loss) + (self.lambda_value * reconstruction_loss + self.beta * kl_divergence_loss)
+                
+                loss = self.alpha_value * (penalty_affine_loss + penalty_elastic_loss) +\
+                    self.beta_value * (kl_divergence_loss) +\
+                    self.lambda_value * (elastic_mse_loss + affine_mse_loss)
                 loss_pam_beta_vae_train += loss.item()
                 
                 # one backward pass
@@ -236,16 +238,15 @@ class Train(object):
 
                     # Computing the affine loss
                     affine_mse_loss  = self.mse_loss(w_0, fixed)
-                    #registration_affine_cc_loss = nn_loss.pearson_correlation(fixed, w_0)
-                    #penalty_affine_loss = energy_loss.energy_loss(t_0)
+                    registration_affine_cc_loss = self.nn_loss.pearson_correlation(fixed, w_0)
+                    penalty_affine_loss         = self.energy_loss.energy_loss(t_0)
                     
                     # Computing the elastic loss: Beta-VAE loss
-                    reconstruction_loss = self.lambda_value * reconstruction_loss(fixed, w_1) 
+                    reconstruction_loss = reconstruction_loss(fixed, w_1) 
                     kl_divergence_loss  = kl_divergence(mu, log_var)
                     
-                                                   
                     # Computing the elastic loss: Beta-VAE loss
-                    loss = affine_mse_loss + (reconstruction_loss + self.beta * kl_divergence_loss)
+                    loss = (self.lambda_value * affine_mse_loss + registration_affine_cc_loss + penalty_affine_loss) + (self.lambda_value * reconstruction_loss + self.beta * kl_divergence_loss)
                     
                     # Total loss
                     loss_pam_beta_vae_valid += loss.item()
@@ -253,10 +254,13 @@ class Train(object):
                     # Weights and biases visualization
                     wandb.log({'Iteration': i,
                             'Valid: Affine loss': affine_mse_loss.item(),
+                            'Valid: Cross Correlation loss': registration_affine_cc_loss.item(),
+                        	'Valid: Penalty loss': penalty_affine_loss.item(),
                             'Valid: Reconstruction loss': reconstruction_loss.item(),
                             'Valid: KL-divergence Loss': kl_divergence_loss.item(),
-                            'Valid: Beta-VAE Loss': reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
+                            'Valid: Beta-VAE Loss': self.lambda_value * reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
                             'Valid: Total loss': loss.item()})
+        
         
             # Save checkpoints
             if epoch % 10 == 0:
