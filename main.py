@@ -1,15 +1,15 @@
 import os
 import argparse
 import torch
-from   utils           import str2bool
-from   disentanglement import Disentanglement
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+from   utils import str2bool
+from   train import Train
+
 def main(args):
     seed = args.seed
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     
-    net = Disentanglement(args=args)
+    net = Train(args=args)
     if args.train:
         net.train_disentanglement_method()
         print("Training!!!!")

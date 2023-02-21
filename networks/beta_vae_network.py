@@ -43,9 +43,9 @@ class Beta_VAE(nn.Module):
     
     def forward(self, x):
         mu, log_var = self.encoder(x)
-        z              = reparametrize(mu, log_var)      
-        x_hat          = self.decoder(z)
-        x_hat          = x_hat.view(x.size())
+        z           = reparametrize(mu, log_var)      
+        x_hat       = self.decoder(z)
+        x_hat       = x_hat.view(x.size())
         return x_hat, mu, log_var
 
 

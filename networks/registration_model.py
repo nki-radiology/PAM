@@ -72,7 +72,7 @@ class Registration_Wasserstein_AE(nn.Module):
        
         # Deformation/Elastic Network
         self.elastic_net = Elastic_WAE(input_ch   = self.input_ch,
-                                       input_dim   = self.input_dim,
+                                       input_dim  = self.input_dim,
                                        latent_dim = self.latent_dim,
                                        output_ch  = self.output_ch,
                                        group_num  = self.group_num,

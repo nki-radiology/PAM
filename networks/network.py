@@ -56,6 +56,12 @@ class Encoder(nn.Module):
             - groups     : Number of groups in the normalization layers
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
         """
+        self.input_ch   = input_ch
+        self.input_dim  = input_dim
+        self.latent_dim = latent_dim
+        self.group_num  = group_num
+        self.filters    = filters 
+
         modules = OrderedDict()
         
         for layer_i, layer_filters in enumerate(filters):
@@ -98,6 +104,11 @@ class Decoder(nn.Module):
             - latent_dim : Dimensionality of the latent space (Z)
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
         """        
+        self.output_ch  = output_ch
+        self.input_dim  = input_dim
+        self.latent_dim = latent_dim
+        self.group_num  = group_num
+        self.filters    = filters 
 
         modules = OrderedDict()
 
@@ -157,6 +168,12 @@ class Encoder_WAE(nn.Module):
             - groups     : Number of groups in the normalization layers
             - filters    : Number of channels or filters to use in the convolutional convolutional layers
         """
+        self.input_ch   = input_ch
+        self.input_dim  = input_dim
+        self.latent_dim = latent_dim
+        self.group_num  = group_num
+        self.filters    = filters
+
         modules = OrderedDict()
         
         for layer_i, layer_filters in enumerate(filters):

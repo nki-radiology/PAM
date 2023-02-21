@@ -17,7 +17,7 @@ import numpy                        as     np
 import torchvision.transforms.functional as TF
 from random import randint
 
-class Disentanglement(object):
+class Train(object):
     def __init__(self, args):
 
         self.input_ch   = args.input_ch
