@@ -331,7 +331,7 @@ class Train(object):
                 _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle)) 
                 
                 # Compute generator loss
-                generator_mse_penalty  = self.disc_loss_fts(features_w1, features_fixed)
+                generator_mse_penalty = self.disc_loss_fts(features_w1, features_fixed)
                 
                 # Computing the affine loss
                 affine_mse_loss     = self.mse_loss(w_0, fixed)
@@ -570,7 +570,7 @@ class Train(object):
                     # Computing the WAE loss
                     z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.latent_dim) * 1)
                     z_fake.to(self.device)
-                    reconstruction_loss           = torch.nn.MSELoss(t_1, fixed)
+                    reconstruction_loss  = torch.nn.MSELoss(t_1, fixed)
                     mmd_loss             = imq_kernel(z, z_fake, h_dim=self.latent_dim)
                     
                     # Total loss: affine + deformation + wae
