@@ -47,13 +47,13 @@ class Train(object):
         self.num_gpus = args.num_gpus
         self.device   = torch.device("cuda:0" if (torch.cuda.is_available() and self.num_gpus > 0) else "cpu")
         
-        # Beta value for Beta_VAE
-        self.beta = 0
-
+        
         # Values of the regularization parameters
-        self.alpha_value  = 0.01
-        self.gamma_value  = 0.1 
-        self.lambda_value = 0.001 # regularization for the reconstruction loss
+        self.alpha_value  = args.alpha_value            # regularization for the penalty loss
+        self.beta_value   = args.beta_value             # regularization for the KL-divergence loss
+        self.beta_value_max = args.beta_value_max       # regularization for the KL-divergence loss
+        self.gamma_value  = args.gamma_value            # regularization for the discriminator (feature matching loss: MSE)
+        self.lambda_value = args.lambda_value           # regularization for the reconstruction loss
     
         
         # Data folder
@@ -167,7 +167,6 @@ class Train(object):
         config = wandb.config
         wandb.watch(self.net, log="all")
         
-        
         for epoch in range(self.start_epoch, self.n_epochs):
                         
             # Total loss 
@@ -180,8 +179,8 @@ class Train(object):
             self.net.train()
             
             if epoch >= 50: 
-                self.beta = np.maximum(self.beta, 1e-10)
-                self.beta = np.minimum(self.beta*2, 4.)      
+                self.beta_value = np.maximum(self.beta_value, 1e-10)
+                self.beta_value = np.minimum(self.beta_value*2, self.beta_value_max)      
                                         
             
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
@@ -195,18 +194,18 @@ class Train(object):
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                 
                 # Computing the affine loss
-                affine_mse_loss             = self.mse_loss(w_0, fixed)
-                penalty_affine_loss         = self.energy_loss.energy_loss(t_0)
+                affine_mse_loss     = self.mse_loss(w_0, fixed)
+                penalty_affine_loss = self.energy_loss.energy_loss(t_0)
                 
                 # Computing the elastic loss: Beta-VAE loss
-                elastic_mse_loss = self.mse_loss(fixed, w_1)  
-                penalty_elastic_loss         = self.energy_loss.energy_loss(t_1)
-                kl_divergence_loss  = kl_divergence(mu, log_var)
+                elastic_mse_loss     = self.mse_loss(w_1, fixed)  
+                penalty_elastic_loss = self.energy_loss.energy_loss(t_1)
+                kl_divergence_loss   = kl_divergence(mu, log_var)
                               
                 
-                loss = self.alpha_value * (penalty_affine_loss + penalty_elastic_loss) +\
-                    self.beta_value * (kl_divergence_loss) +\
-                    self.lambda_value * (elastic_mse_loss + affine_mse_loss)
+                loss = self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
+                       self.beta_value   * (kl_divergence_loss) +\
+                       self.lambda_value * (elastic_mse_loss + affine_mse_loss)
                 loss_pam_beta_vae_train += loss.item()
                 
                 # one backward pass
@@ -217,12 +216,11 @@ class Train(object):
 
                 # Weights and biases visualization
                 wandb.log({'Iteration': i,
-                        'Train: Affine loss': affine_mse_loss.item(),
-                        'Train: Cross Correlation loss': registration_affine_cc_loss.item(),
-                        'Train: Penalty loss': penalty_affine_loss.item(),
-                        'Train: Reconstruction loss': reconstruction_loss.item(),
+                        'Train: Affine MSE loss': affine_mse_loss.item(),
+                        'Train: Penalty Affine loss': penalty_affine_loss.item(),
+                        'Train: Elastic MSE loss': elastic_mse_loss.item(),
+                        'Train: Penalty Elastic loss': penalty_elastic_loss.item(),
                         'Train: KL-divergence Loss': kl_divergence_loss.item(),
-                        'Train: Beta-VAE Loss': self.lambda_value * reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
                         'Train: Total loss': loss.item()})
                 
             
@@ -235,32 +233,30 @@ class Train(object):
                                         
                     # Forward pass through the registration model
                     t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
-
+                    
                     # Computing the affine loss
-                    affine_mse_loss  = self.mse_loss(w_0, fixed)
-                    registration_affine_cc_loss = self.nn_loss.pearson_correlation(fixed, w_0)
-                    penalty_affine_loss         = self.energy_loss.energy_loss(t_0)
+                    affine_mse_loss     = self.mse_loss(w_0, fixed)
+                    penalty_affine_loss = self.energy_loss.energy_loss(t_0)
                     
                     # Computing the elastic loss: Beta-VAE loss
-                    reconstruction_loss = reconstruction_loss(fixed, w_1) 
-                    kl_divergence_loss  = kl_divergence(mu, log_var)
-                    
-                    # Computing the elastic loss: Beta-VAE loss
-                    loss = (self.lambda_value * affine_mse_loss + registration_affine_cc_loss + penalty_affine_loss) + (self.lambda_value * reconstruction_loss + self.beta * kl_divergence_loss)
+                    elastic_mse_loss     = self.mse_loss(w_1, fixed)  
+                    penalty_elastic_loss = self.energy_loss.energy_loss(t_1)
+                    kl_divergence_loss   = kl_divergence(mu, log_var)
                     
                     # Total loss
+                    loss = self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
+                           self.beta_value   * (kl_divergence_loss) +\
+                           self.lambda_value * (elastic_mse_loss + affine_mse_loss)
                     loss_pam_beta_vae_valid += loss.item()
-
+                    
                     # Weights and biases visualization
-                    wandb.log({'Iteration': i,
-                            'Valid: Affine loss': affine_mse_loss.item(),
-                            'Valid: Cross Correlation loss': registration_affine_cc_loss.item(),
-                        	'Valid: Penalty loss': penalty_affine_loss.item(),
-                            'Valid: Reconstruction loss': reconstruction_loss.item(),
-                            'Valid: KL-divergence Loss': kl_divergence_loss.item(),
-                            'Valid: Beta-VAE Loss': self.lambda_value * reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
-                            'Valid: Total loss': loss.item()})
-        
+                    wandb.log({ 'Iteration': i,
+                                'Valid: Affine MSE loss': affine_mse_loss.item(),
+                                'Valid: Penalty Affine loss': penalty_affine_loss.item(),
+                                'Valid: Elastic MSE loss': elastic_mse_loss.item(),
+                                'Valid: Penalty Elastic loss': penalty_elastic_loss.item(),
+                                'Valid: KL-divergence Loss': kl_divergence_loss.item(),
+                                'Valid: Total loss': loss.item()})
         
             # Save checkpoints
             if epoch % 10 == 0:
@@ -276,8 +272,8 @@ class Train(object):
             loss_pam_beta_vae_valid/= data_loader_len
         
             # Print the train and validation losses
-            print("Train epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, self.beta)) 
-            print("Valid epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, self.beta))
+            print("Train epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, self.beta_value)) 
+            print("Valid epoch : {}/{}, loss_PAM = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, self.beta_value))
 
 
 
@@ -308,8 +304,8 @@ class Train(object):
             
             # Update the beta value gradually
             if epoch >= 50: 
-                self.beta = np.maximum(self.beta, 1e-10)
-                self.beta = np.minimum(self.beta*2, 4.)  
+                self.beta_value = np.maximum(self.beta_value, 1e-10)
+                self.beta_value = np.minimum(self.beta_value*2, self.beta_value_max)  
             
             angle = randint(0, 20)    
                                         
@@ -335,17 +331,22 @@ class Train(object):
                 _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle)) 
                 
                 # Compute generator loss
-                generator_mse_penalty  = self.gamma_value * self.disc_loss_fts(features_w1, features_fixed)
+                generator_mse_penalty  = self.disc_loss_fts(features_w1, features_fixed)
                 
                 # Computing the affine loss
-                affine_mse_loss    = self.mse_loss(w_0, fixed)
+                affine_mse_loss     = self.mse_loss(w_0, fixed)
+                penalty_affine_loss = self.energy_loss.energy_loss(t_0)
                 
                 # Computing the elastic loss: Beta-VAE loss
-                reconstruction_loss = self.lambda_value * reconstruction_loss(fixed, w_1) 
-                kl_divergence_loss  = kl_divergence(mu, log_var)
+                elastic_mse_loss     = self.mse_loss(w_1, fixed) 
+                penalty_elastic_loss = self.energy_loss.energy_loss(t_1)
+                kl_divergence_loss   = kl_divergence(mu, log_var)
 
                 # Total loss Beta-VAE train
-                loss_generator = affine_mse_loss + (reconstruction_loss + self.beta * kl_divergence_loss) + generator_mse_penalty
+                loss_generator =    self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
+                                    self.beta_value   * (kl_divergence_loss) +\
+                                    self.lambda_value * (elastic_mse_loss + affine_mse_loss) + \
+                                    self.gamma_value  * generator_mse_penalty
                 loss_pam_beta_vae_train += loss_generator.item()
                 
                 # one backward pass
@@ -353,6 +354,7 @@ class Train(object):
                 
                 # Update the parameters
                 self.optim.step()
+                
                 
                 # ---------------------
                 #  Train Discriminator
@@ -371,8 +373,8 @@ class Train(object):
                 # Compute discriminator loss
                 loss_d_real = self.disc_loss_bce(real, label_r)
                 loss_d_fake = self.disc_loss_bce(fake, label_f)
-                loss_discriminator    = (loss_d_real + loss_d_fake) * 0.5
-                loss_disc_train += loss_discriminator.item()
+                loss_discriminator = (loss_d_real + loss_d_fake) * 0.5
+                loss_disc_train   += loss_discriminator.item()
                 
                 # one backward pass
                 loss_discriminator.backward()
@@ -385,15 +387,16 @@ class Train(object):
                     self.discriminator_net.apply(weights_init)
                     print("Reloading discriminator weights")
                 
-                wandb.log({'epoch': i,
-                            'Train: Affine loss': affine_mse_loss.item(),
-                            'Train: Reconstruction loss': reconstruction_loss.item(),
+                wandb.log({'Iteration': i,
+                            'Train: Affine MSE loss': affine_mse_loss.item(),
+                            'Train: Penalty Affine loss': penalty_affine_loss.item(),
+                            'Train: Elastic MSE loss': elastic_mse_loss.item(),
+                            'Train: Penalty Elastic loss': penalty_elastic_loss.item(),
                             'Train: KL-divergence Loss': kl_divergence_loss.item(),
-                            'Train: Beta-VAE Loss': reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
                             'Train: FTS Generator Loss': generator_mse_penalty.item(),
                             'Train: Generator Total loss': loss_generator.item(),
                             'Train: Discriminator loss': loss_discriminator,
-                            })
+                        })
                 
                 
             
@@ -413,18 +416,24 @@ class Train(object):
                     _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle))
                     
                     # Compute the generator loss
-                    generator_mse_penalty = self.gamma_value * self.disc_loss_fts(features_w1, features_fixed)
+                    generator_mse_penalty = self.disc_loss_fts(features_w1, features_fixed)
                     
                     # Computing the affine loss
-                    affine_mse_loss    = self.mse_loss(w_0, fixed)
+                    affine_mse_loss     = self.mse_loss(w_0, fixed)
+                    penalty_affine_loss = self.energy_loss.energy_loss(t_0)
 
                     # Computing the elastic loss: Beta-VAE loss
-                    reconstruction_loss = self.lambda_value * reconstruction_loss(fixed, w_1)
-                    kl_divergence_loss  = kl_divergence(mu, log_var)
+                    elastic_mse_loss     = self.mse_loss(w_1, fixed)
+                    penalty_elastic_loss = self.energy_loss.energy_loss(t_1)
+                    kl_divergence_loss   = kl_divergence(mu, log_var)
                     
-                    # Total loss Beta-VAE valid (Generator)
-                    loss_generator = affine_mse_loss + (reconstruction_loss + self.beta * kl_divergence_loss) + generator_mse_penalty
+                    # Total loss Beta-VAE valid (Generator)                   
+                    loss_generator =    self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
+                                        self.beta_value   * (kl_divergence_loss) +\
+                                        self.lambda_value * (elastic_mse_loss + affine_mse_loss) + \
+                                        self.gamma_value  * generator_mse_penalty
                     loss_pam_beta_vae_valid += loss_generator.item()
+                    
                     
                     # ----------- 1. Update the Discriminator -----------
 
@@ -441,15 +450,16 @@ class Train(object):
                     loss_discriminator = (loss_d_real + loss_d_fake) * 0.5
                     loss_disc_valid += loss_discriminator.item()
 
-                    wandb.log({'epoch': i,
-                            'Valid: Affine loss': affine_mse_loss.item(),
-                            'Valid: Reconstruction loss': reconstruction_loss.item(),
-                            'Valid: KL-divergence Loss': kl_divergence_loss.item(),
-                            'Valid: Beta-VAE Loss': reconstruction_loss.item() + self.beta * kl_divergence_loss.item(),
-                            'Valid: FTS Generator Loss': generator_mse_penalty.item(),
-                            'Valid: Generator Total loss': loss_generator.item(),
-                            'Valid: Discriminator loss': loss_discriminator,
-                            })
+                    wandb.log({ 'Iteration': i,
+                                'Valid: Affine MSE loss': affine_mse_loss.item(),
+                                'Valid: Penalty Affine loss': penalty_affine_loss.item(),
+                                'Valid: Elastic MSE loss': elastic_mse_loss.item(),
+                                'Valid: Penalty Elastic loss': penalty_elastic_loss.item(),
+                                'Valid: KL-divergence Loss': kl_divergence_loss.item(),
+                                'Valid: FTS Generator Loss': generator_mse_penalty.item(),
+                                'Valid: Generator Total loss': loss_generator.item(),
+                                'Valid: Discriminator loss': loss_discriminator,
+                        })
                     
             
             # Save checkpoints
@@ -471,8 +481,8 @@ class Train(object):
             loss_pam_beta_vae_valid/= data_loader_len
         
             # Print the train and validation losses
-            print("Train epoch : {}/{}, loss_PAM = {:.6f}, loss_Disc = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, loss_disc_train, self.beta)) # epoch + 1, n_epochs
-            print("Valid epoch : {}/{}, loss_PAM = {:.6f}, loss_Disc = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, loss_disc_valid ,self.beta))
+            print("Train epoch : {}/{}, loss_PAM = {:.6f}, loss_Disc = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_train, loss_disc_train, self.beta_value)) # epoch + 1, n_epochs
+            print("Valid epoch : {}/{}, loss_PAM = {:.6f}, loss_Disc = {:.6f}, beta_value = {:.6f}".format(epoch, self.n_epochs, loss_pam_beta_vae_valid, loss_disc_valid, self.beta_value))
 
             
     

@@ -38,8 +38,12 @@ if __name__ == '__main__':
     parser.add_argument('--group_num',  default=8,          type=int,       help='Group normalization size')
     parser.add_argument('--filters',    default=[32, 64, 128, 256], type=object,  help='dimension of the data')
     
+    parser.add_argument('--alpha_value', default=0.01,      type=float,     help='beta parameter for the penalty loss')
+    parser.add_argument('--beta_value',  default=0,         type=float,     help='beta parameter for the KL-term loss')
+    parser.add_argument('--beta_value_max', default=4,      type=float,     help='Maximum beta parameter for the KL-term loss')
+    parser.add_argument('--gamma_value', default=0.1,       type=float,     help='gamma parameter for for the discriminator (feature matching loss: MSE)')
+    parser.add_argument('--lambda_value',default=0.001,     type=float,     help='lambda parameter for the reconstruction loss')
     parser.add_argument('--lr',         default=3e-4,       type=float,     help='learning rate')
-    parser.add_argument('--beta',   	default=4,          type=float,     help='beta parameter for KL-term in original beta-VAE')
     parser.add_argument('--beta1',      default=0.5,        type=float,     help='Adam optimizer beta1')
     parser.add_argument('--beta2',      default=0.999,      type=float,     help='Adam optimizer beta2')
     

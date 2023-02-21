@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def reconstruction_loss(x, x_recon):
-    return F.mse_loss(x_recon, x)
     
 
 def kl_divergence(mu, log_var):
