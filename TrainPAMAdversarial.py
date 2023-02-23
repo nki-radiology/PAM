@@ -314,7 +314,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
                 # Display in weights and biases
                 # ========
-
                 wandb.log({'Iteration': it_valid_counter, 
                        'Valid: Similarity Affine loss': registration_affine_loss.item(),
                        'Valid: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
@@ -332,8 +331,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
         loss_pam_train     /= len(train_dataloader)
         loss_disc_train    /= len(train_dataloader)
 
-        train_losses.append(loss_pam_train)
-
         # Save checkpoints
         if epoch % 10 == 0:
             name_pam = 'PAMModel_' + str(epoch) + '.pth'
@@ -345,15 +342,20 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
         # Compute the loss per epoch
         loss_pam_valid     /= len(valid_dataloader)
         loss_disc_valid    /= len(valid_dataloader)
-        valid_losses.append(loss_pam_valid)
 
+        wandb.log({'epoch': epoch+1,
+                    'Train: Total loss by epoch': loss_pam_train,
+                    'Valid: Total loss by epoch': loss_pam_valid,
+                    'Train: Discriminator Loss by epoch': loss_disc_train,
+                    'Valid: Discriminator Loss by epoch': loss_disc_valid
+                    })
+        
         # Print the train and validation losses
         print("Train epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, n_epochs, loss_pam_train)) 
         print("Train epoch : {}/{}, loss_Dis = {:.6f},".format(epoch, n_epochs, loss_disc_train))
         print("Valid epoch : {}/{}, loss_PAM = {:.6f},".format(epoch, n_epochs, loss_pam_valid))
         print("Valid epoch : {}/{}, loss_Dis = {:.6f},".format(epoch, n_epochs, loss_disc_valid))
 
-    draw_curve(train_losses, valid_losses)
 
 
 def start_training():
