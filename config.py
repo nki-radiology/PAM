@@ -40,13 +40,13 @@ args_pam_thorax = pam_thorax.parse_args()
 # Abdomen
 pam_adv_fts_sit = argparse.ArgumentParser()
 pam_adv_fts_sit.add_argument('--train_folder',      type=str,
-                             default='/DATA/laura/tcia_abdomen/train/',
+                             default='/data/groups/beets-tan/l.estacio/data_tcia/train/',
                              help   ='folder that contains the training dataset')
 pam_adv_fts_sit.add_argument('--checkpoints_folder',   type=str,
-                             default="/DATA/iris/models/",
+                             default="/projects/disentanglement_methods/temp/PAM/checkpoints_thorax/",
                              help   ="folder to save the model checkpoints")
 pam_adv_fts_sit.add_argument('--wb_project_name',   type=str,
-                             default="'exp_pam_adv_abdomen'",
+                             default="'exp_pam_thorax'",
                              help   ="folder to save the model checkpoints")
 pam_adv_fts_sit.add_argument('--pam_checkpoint', type=str,
                              default='/DATA/laura/tcia_abdomen/models/PAMModel_50.pth',
