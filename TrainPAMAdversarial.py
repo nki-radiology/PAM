@@ -175,8 +175,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
     epoch        = 0
     n_epochs     = 10001
-    train_losses = []
-    valid_losses = []
     alpha_value  = 0.01
     beta_value   = 0.01
     gamma_value  = 0.1
@@ -192,10 +190,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
     config          = wandb.config
     wandb.watch(pam_net, log='all')
 
-    it_train_counter = 0
-    it_valid_counter = 0
-    train_flag = True
-    
     fixed_draw = None
     moving_draw = None
     w_0_draw    = None
@@ -214,8 +208,6 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
         dis_net.train()
 
         for i, (x_1, x_2) in enumerate(train_dataloader):
-
-            train_flag = True
 
             # send to device (GPU or CPU)
             fixed  = x_1.to(device)
@@ -289,7 +281,8 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
             # Display in tensorboard
             # ========
-            wandb.log({'Iteration': it_train_counter, 
+            it_train_counter = len(train_dataloader)
+            wandb.log({'Iteration': epoch * it_train_counter + i, 
                        'Train: Similarity Affine loss': registration_affine_loss.item(),
                        'Train: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
                        'Train: Similarity Elastic loss': registration_deform_loss.item(),
@@ -298,13 +291,8 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
                        'Train: Total loss': loss.item(),
                        'Train: Discriminator Loss': loss_d_t.item()})
 
-            if train_flag:
-                it_train_counter += 1
-
 
         with torch.no_grad():
-
-            train_flag = False
 
             pam_net.eval()
             dis_net.eval()
@@ -356,7 +344,8 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
                 # Display in weights and biases
                 # ========
-                wandb.log({'Iteration': it_valid_counter, 
+                it_valid_counter = len(valid_dataloader)
+                wandb.log({'Iteration': epoch * it_valid_counter + i, 
                        'Valid: Similarity Affine loss': registration_affine_loss.item(),
                        'Valid: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
                        'Valid: Similarity Elastic loss': registration_deform_loss.item(),
@@ -364,10 +353,7 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
                        'Valid: Generator Adversarial Loss': generator_adv_loss.item(),
                        'Valid: Total loss': loss.item(),
                        'Valid: Discriminator Loss': loss_d_t.item()})
-
-                if not train_flag:
-                    it_valid_counter += 1
-                
+               
                 fixed_draw = fixed
                 moving_draw = moving
                 w_0_draw    = w_0
