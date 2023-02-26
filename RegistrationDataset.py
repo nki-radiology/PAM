@@ -40,12 +40,13 @@ class RegistrationDataSet(data.Dataset):
 
         # Select the sample
         image_path = self.dataset.iloc[index]
-        print("Image Path: ", image_path)
-        fx    = np.zeros(self.input_shape)
-        mv    = np.zeros(self.input_shape)
+        #print("Image Path: ", image_path)
+        fx = np.zeros(self.input_shape)
+        mv = np.zeros(self.input_shape)
 
         fixed_path  = str(image_path.squeeze().dicom_path)
-        fx   = self.loader(fixed_path)
+        fx = self.loader(fixed_path)
+        fx = fx[:160, :, :]
 
         fx[:,  :,  0]  = 0
         fx[:,  :, -1]  = 0
@@ -56,6 +57,7 @@ class RegistrationDataSet(data.Dataset):
 
         moving_path = str(self.dataset.sample(n=1).squeeze().dicom_path)
         mv = self.loader(moving_path)
+        mv = mv[:160, :, :]
         mv[:,  :,  0] = 0
         mv[:,  :, -1] = 0
         mv[:,  0,  :] = 0
