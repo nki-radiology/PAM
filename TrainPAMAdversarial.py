@@ -7,7 +7,8 @@ from   pathlib                    import Path
 from   torch.utils.data           import DataLoader
 from   sklearn.model_selection    import train_test_split
 
-
+import torchvision.transforms     as     T
+from   PIL                        import Image
 # Importing model classes
 from networks.PAMNetwork           import PAMNetwork
 from networks.DiscriminatorNetwork import DiscriminatorNetwork
@@ -30,7 +31,7 @@ def read_train_data():
     data_index= []
 
     for f in filenames:
-        data_index.append(int(str(f).split('/')[8].split('_')[0])) # Number 8 can vary according to the path of the images
+        data_index.append(int(str(f).split('/')[7].split('_')[0])) # Number 8 can vary according to the path of the images
 
     train_data = list(zip(data_index, filenames))
     train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
@@ -116,12 +117,12 @@ def load_dataloader():
 
     # Training dataset
     train_dataset = RegistrationDataSet(path_dataset = inputs_train,
-                                        input_shape  = (160, 192, 192, 1),
+                                        input_shape  = (300, 192, 192, 1),
                                         transform    = None)
 
     # Validation dataset
     valid_dataset = RegistrationDataSet(path_dataset = inputs_valid,
-                                        input_shape  = (160, 192, 192, 1),
+                                        input_shape  = (300, 192, 192, 1),
                                         transform    = None)
 
     # Training dataloader
@@ -132,6 +133,41 @@ def load_dataloader():
 
     return train_dataloader, valid_dataloader
 
+
+def save_table(table_name, fixed_img, moving_img, w0_img, w1_img, t1_img):
+    table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image', 'Deformation Field'], allow_mixed_types = True)
+    
+    saving_examples_folder = '/projects/disentanglement_methods/temp/PAM/results_thorax/images_PAM/'
+    
+    #PIL VERSION
+    transform = T.ToPILImage()    
+    fixed_img = transform(fixed_img[:,:,:,:,50].squeeze())
+    moving_img = transform(moving_img[:,:,:,:,50].squeeze())
+    affine_img = transform(w0_img[:,:,:,:,50].squeeze())
+    deformation_img = transform(w1_img[:,:,:,:,50].squeeze())
+    deformation_field = transform(t1_img[:,:,:,:,50].squeeze())
+
+    fixed_img.show()                              
+    fixed_img.save(saving_examples_folder + "fixed_image.jpg")    
+    moving_img.show() 
+    moving_img.save(saving_examples_folder + "moving_image.jpg")    
+    affine_img.show() 
+    affine_img.save(saving_examples_folder + "affine_image.jpg")    
+    deformation_img.show()
+    deformation_img.save(saving_examples_folder + "deformation_image.jpg")    
+    deformation_field.show()
+    deformation_field.save(saving_examples_folder + "deformation_field.jpg")  
+    
+    table.add_data(
+        wandb.Image(Image.open(saving_examples_folder + "fixed_image.jpg")),
+        wandb.Image(Image.open(saving_examples_folder + "moving_image.jpg")),
+        wandb.Image(Image.open(saving_examples_folder + "affine_image.jpg")),
+        wandb.Image(Image.open(saving_examples_folder + "deformation_image.jpg")),
+        wandb.Image(Image.open(saving_examples_folder + "deformation_field.jpg"))
+    )
+    
+    wandb.log({table_name: table})
+    
 
 def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss, pam_optimizer, dis_optimizer,
              train_dataloader, valid_dataloader):
@@ -150,15 +186,21 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
     fake_label   = 0.
 
     # wandb Initialization
-    wandb.init(project='Adversarial-PAM', entity='lau-est')
+    wandb.init(project='Adversarial-PAM', entity='ljestaciocerquin')
 
     # Saving model inputs and hyperparameters
     config          = wandb.config
-    wandb.watch(pam_net)
+    wandb.watch(pam_net, log='all')
 
     it_train_counter = 0
     it_valid_counter = 0
     train_flag = True
+    
+    fixed_draw = None
+    moving_draw = None
+    w_0_draw    = None
+    w_1_draw   = None
+    deform_draw = None
 
 
     for epoch in range(epoch, n_epochs):
@@ -325,8 +367,16 @@ def training(pam_net, dis_net, device, disc_loss, l2_loss, nn_loss, energy_loss,
 
                 if not train_flag:
                     it_valid_counter += 1
+                
+                fixed_draw = fixed
+                moving_draw = moving
+                w_0_draw    = w_0
+                w_1_draw    = w_1
+                deform_draw = t_1
 
-
+        # Visualization of images
+        save_table('Validation Images' ,fixed_draw, moving_draw, w_0_draw, w_1_draw, deform_draw)
+        
         # Compute the loss per epoch
         loss_pam_train     /= len(train_dataloader)
         loss_disc_train    /= len(train_dataloader)
@@ -398,6 +448,6 @@ def start_retraining():
     training(pam_net, dis_net, device,disc_loss, l2_loss, nn_loss, energy_loss, pam_optimizer, dis_optimizer,
              train_dataloader, valid_dataloader)
 
-#start_training()
-start_retraining()
+start_training()
+#start_retraining()
 print("End Training :)")
