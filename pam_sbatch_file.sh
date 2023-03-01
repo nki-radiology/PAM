@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=pam_thorax                       # Job name
+#SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
+#SBATCH --job-name=pam_abdomen                      # Job name
 #SBATCH --partition=p6000                           # Partition
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
 #SBATCH --mem=20G                                   # Memory
 #SBATCH --cpus-per-task=5                           # Number of cores
-#SBATCH --time=96:00:00                             # Time limit hrs:min:sec
-#SBATCH --output=/projects/disentanglement_methods/temp/PAM/outputjobs/slurm_%j.log   # Standard output and error log
+#SBATCH --output=/projects/disentanglement_methods/temp/PAM/outputjobs_abdomen/slurm_%j.log   # Standard output and error log
 pwd; hostname; date
 
 # Source bashrc, such that the shell is setup properly

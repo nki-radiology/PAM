@@ -1,7 +1,10 @@
-__pycache__/
-checkpoints_thorax/
-metrics/__pycache__/
-outputjobs/
-results_thorax/
-utils/__pycache__/
 wandb/
+__pycache__/
+metrics/__pycache__/
+utils/__pycache__/
+checkpoints_abdomen/
+checkpoints_thorax/
+outputjobs_abdomen/
+outputjobs_thorax/
+results_abdomen/
+results_thorax/
