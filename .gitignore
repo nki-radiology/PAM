@@ -13,3 +13,4 @@ processing_QoL/B01_ScanPairs.csv
 processing_QoL/outputjobs/
 processing_QoL/unprocessed_abdomen_data.csv
 processing_QoL/unprocessed_thorax_data.csv
+B01_ScanPairs.csv
