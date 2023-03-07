@@ -10,7 +10,7 @@ from   SimpleITK import WriteImage
 from   SimpleITK import ClampImageFilter
 from   Localizer import *
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def get_data_file(filename: str):
@@ -19,10 +19,10 @@ def get_data_file(filename: str):
     data               = pd.read_csv(filename)
 
     # Changing for the right path
-    data['PRIOR_PATH'] = data['PRIOR_PATH'].replace('Z:', '/IMMUNOTEAM', regex=True)
-    data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace('Z:', '/IMMUNOTEAM', regex=True)
-    data['PRIOR_PATH'] = data['PRIOR_PATH'].replace(r'\\', '/',  regex=True)
     data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace(r'\\', '/', regex=True)
+    data['PRIOR_PATH'] = data['PRIOR_PATH'].replace(r'\\', '/',  regex=True)
+    data['PRIOR_PATH'] = data['PRIOR_PATH'].replace('Z:/NKI-d21243/', '/data/groups/beets-tan/s.trebeschi/QOL_dicoms/', regex=True)
+    data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace('Z:/NKI-d21243/', '/data/groups/beets-tan/s.trebeschi/QOL_dicoms/', regex=True)
 
     # Removing duplicate paths
     new_prior = data[~data.duplicated('PRIOR_PATH')]
@@ -68,7 +68,7 @@ def apply_localizer(tcia_proc: list, crop: str):
         )
         print('Applying crop of Abdomen!')
 
-    name_f = "/DATA/laura/data_melda/unprocessed_" + crop + "_data.csv"
+    name_f = "/projects/disentanglement_methods/temp/PAM/processing_QoL/unprocessed_" + crop + "_data.csv"
     f      = open(name_f, 'w') 
     writer = csv.writer(f)
     header = ['dicom_path']
@@ -79,15 +79,16 @@ def apply_localizer(tcia_proc: list, crop: str):
         for path in tcia_proc:
             print(' My Path is: ---------------------------------')
             print(path)
+            
             try:
                 processed_ct_scan = loader(path)
                 processed_ct_scan = processed_ct_scan + 120
                 processed_ct_scan = processed_ct_scan / 2
                 processed_ct_scan = SimpleITK.Cast(processed_ct_scan, sitk.sitkUInt8)
 
-                path_1 = path.replace("/IMMUNOTEAM", "/DATA/laura/data_melda/" + crop)
+                path_1 = path.replace("/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM", "/data/groups/beets-tan/l.estacio/QOL_nrrd/" + crop)
                 verify_path_to_save(path_1)
-                ct_path = path_1 + '/' + path.split('/')[6] + '.nrrd'
+                ct_path = path_1 + '/' + path.split('/')[9] + '.nrrd'
                 print(' My New Path is: ---------------------------------')
                 print(ct_path)
                 WriteImage(processed_ct_scan, ct_path)
@@ -101,7 +102,8 @@ def apply_localizer(tcia_proc: list, crop: str):
     print("Done!")
 
 
-path                     = "/SHARED/active_Laura/Features_Melda/ScanPairs.csv"
+path                     = "/projects/disentanglement_methods/temp/PAM/processing_QoL/B01_ScanPairs.csv"
 data, non_repeating_data = get_data_file(path)
-apply_localizer(non_repeating_data, 'abdomen')
+#apply_localizer(non_repeating_data, 'abdomen')
+apply_localizer(non_repeating_data, 'thorax')
 
