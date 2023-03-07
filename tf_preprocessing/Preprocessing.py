@@ -55,7 +55,6 @@ def get_data_file(filename: str, path_to_select: str):
            tcia.apply(lambda x: safe_difference(x.first_axial_coord, x.second_axial_coord) >= 0.1, axis=1) &
            tcia.apply(lambda x: safe_difference(x.first_axial_coord, x.second_axial_coord) <= 5.0, axis=1) &
            tcia.number_of_slices.apply(lambda x: x >= 50), :]
-
     return tcia
 
 

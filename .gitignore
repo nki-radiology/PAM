@@ -1,5 +1,6 @@
 wandb/
 __pycache__/
+processing_QoL/__pycache__/
 metrics/__pycache__/
 utils/__pycache__/
 checkpoints_abdomen/
