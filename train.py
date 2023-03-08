@@ -5,6 +5,7 @@ from   utils                        import create_directory
 from   utils                        import cuda_seeds
 from   utils                        import weights_init
 from   utils                        import read_train_data
+from   utils                        import save_images_weights_and_biases
 from   losses                       import *
 from   registration_dataset         import RegistrationDataSet
 from   networks.registration_model  import Registration_Beta_VAE
@@ -62,6 +63,12 @@ class Train(object):
         # Number of epochs to train the model
         self.n_epochs    = args.n_epochs
         self.start_epoch = args.start_ep #1
+        
+        # Variables to save weights and biases images
+        self.fixed_draw  = None
+        self.moving_draw = None
+        self.w_0_draw    = None
+        self.w_1_draw    = None
         
         # Directory to save checkpoints
         create_directory(self.checkpoints_folder)
@@ -257,6 +264,14 @@ class Train(object):
                                 'Valid: Penalty Elastic loss': penalty_elastic_loss.item(),
                                 'Valid: KL-divergence Loss': kl_divergence_loss.item(),
                                 'Valid: Total loss': loss.item()})
+                    
+                    self.fixed_draw = fixed
+                    self.moving_draw = moving
+                    self.w_0_draw    = w_0
+                    self.w_1_draw    = w_1
+
+            # Visualization of images
+            save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw)
         
             # Save checkpoints
             if epoch % 10 == 0:
@@ -364,7 +379,7 @@ class Train(object):
                 self.optim_disc.zero_grad()
                 
                 # Measure discriminator's ability to classify real from generated samples
-                real, _  = self.discriminator_net(TF.rotate(fixed, angle))  # Shall we compare the features as well?????????????????????????????????????????????
+                real, _  = self.discriminator_net(TF.rotate(fixed, angle))  
                 fake, _  = self.discriminator_net(w_1.detach())
                 b_size   = real.shape
                 label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
@@ -438,7 +453,7 @@ class Train(object):
                     # ----------- 1. Update the Discriminator -----------
 
                     # Measure discriminator's ability to classify real from generated samples
-                    real, _ = self.discriminator_net(TF.rotate(fixed, angle))#(fixed)  # (w_0) Shall we keep the rotation??????????????????????????????
+                    real, _ = self.discriminator_net(TF.rotate(fixed, angle))
                     fake, _ = self.discriminator_net(w_1.detach())
                     b_size = real.shape
                     label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
@@ -461,7 +476,14 @@ class Train(object):
                                 'Valid: Discriminator loss': loss_discriminator,
                         })
                     
-            
+                    self.fixed_draw = fixed
+                    self.moving_draw = moving
+                    self.w_0_draw    = w_0
+                    self.w_1_draw    = w_1
+
+            # Visualization of images
+            save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw)
+        
             # Save checkpoints
             if epoch % 10 == 0:
                 name_pam = 'PAMModel_BetaVAE_Adversarial_' + str(epoch) + '.pth'
@@ -587,22 +609,30 @@ class Train(object):
                             'Valid: Reconstruction loss': reconstruction_loss.item(),
                             'Valid: MMD Loss': mmd_loss.item(),
                             'Valid: Total loss': loss.item()})
-        
-        # Save checkpoints
-        if epoch % 10 == 0:
-            name_pam = 'PAMModel_WAE_' + str(epoch) + '.pth'
-            torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
-            print('Saving model')
-            
-        # Train loss per epoch
-        loss_pam_wae_train = loss_pam_wae_train / len(self.train_dataloader)
-        
-         # Valid loss per epoch
-        loss_pam_wae_valid = loss_pam_wae_valid / len(self.valid_dataloader)
+                    self.fixed_draw = fixed
+                    self.moving_draw = moving
+                    self.w_0_draw    = w_0
+                    self.w_1_draw    = w_1
 
-        # Print the train and validation losses
-        print("Train epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_train)) 
-        print("Valid epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_valid))
+            # Visualization of images
+            save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw)
+            
+            
+            # Save checkpoints
+            if epoch % 10 == 0:
+                name_pam = 'PAMModel_WAE_' + str(epoch) + '.pth'
+                torch.save(self.net.state_dict(), os.path.join(self.checkpoints_folder, name_pam))
+                print('Saving model')
+                
+            # Train loss per epoch
+            loss_pam_wae_train = loss_pam_wae_train / len(self.train_dataloader)
+            
+            # Valid loss per epoch
+            loss_pam_wae_valid = loss_pam_wae_valid / len(self.valid_dataloader)
+
+            # Print the train and validation losses
+            print("Train epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_train)) 
+            print("Valid epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_valid))
     
     
 
