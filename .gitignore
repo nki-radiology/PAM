@@ -1,4 +1,12 @@
 wandb/
 __pycache__/
 networks/__pycache__/
-Beta-VAE/ 
+Beta-VAE/
+B01_ScanPairs.csv
+checkpoints_abdomen/
+checkpoints_thorax/
+outputjobs_abdomen/
+outputjobs_thorax/
+processing_QoL/
+results_abdomen/
+results_thorax/
