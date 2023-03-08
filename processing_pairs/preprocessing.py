@@ -115,10 +115,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Disentanglement Methods: Wassertein Autoencoder, Beta-VAE')
     
-    parser.add_argument('--preprocessing_nki',  default=True,       type=bool,      help='Preprocessing or ...')
+    parser.add_argument('--preprocessing_nki',  default=True, type=bool,  help='Preprocessing or ...')
     parser.add_argument('--YADS_file_to_read',  default='/projects/disentanglement_methods/files_nki/YADSRequestResult.csv', type=str, help='YADS file path')
-    parser.add_argument('--min_days_inclusion', default=30,       type=int,       help='Minimum days between prior and subsquent CTs')
-    parser.add_argument('--max_days_inclusion', default=120,          type=int,       help='Maximum days between prior and subsquent CTs')
+    parser.add_argument('--min_days_inclusion', default=30,   type=int,   help='Minimum days between prior and subsquent CTs')
+    parser.add_argument('--max_days_inclusion', default=120,  type=int,   help='Maximum days between prior and subsquent CTs')
     parser.add_argument('--path_to_save_file',  default='/projects/disentanglement_methods/files_nki/', type=str, help='Path to save the preprocessed file of YADS')
     parser.add_argument('--path_to_cts_in_yads',default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM/', type=str, help='Path to add to the AnonymizedName in yalds to read the CTs')
     
