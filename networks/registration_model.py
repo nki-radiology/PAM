@@ -8,7 +8,7 @@ from   networks.wasserstein_network import Elastic_WAE
 class Registration_Beta_VAE(nn.Module):   
     def __init__(self,
                  input_ch   : int = 2,
-                 output_ch  : int = 2,
+                 output_ch  : int = 3,
                  input_dim  : int = [256, 256, 512],
                  latent_dim : int = 512,
                  group_num  : int = 8,
@@ -48,7 +48,7 @@ class Registration_Beta_VAE(nn.Module):
 class Registration_Wasserstein_AE(nn.Module):   
     def __init__(self,
                  input_ch   : int = 2,
-                 output_ch  : int = 2,
+                 output_ch  : int = 3,
                  input_dim  : int = [256, 256, 512],
                  latent_dim : int = 512,
                  group_num  : int = 8,

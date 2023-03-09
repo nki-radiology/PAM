@@ -7,7 +7,8 @@ from   utils                        import weights_init
 from   utils                        import read_train_data
 from   utils                        import save_images_weights_and_biases
 from   losses                       import *
-from   registration_dataset         import RegistrationDataSet
+from   registration_dataset         import Registration2DDataSet
+from   registration_dataset         import Registration3DDataSet
 from   networks.registration_model  import Registration_Beta_VAE
 from   networks.registration_model  import Registration_Wasserstein_AE
 from   networks.discriminator       import Discriminator
@@ -150,13 +151,18 @@ class Train(object):
         )
 
         print("total: ", len(filenames), " train: ", len(inputs_train), " valid: ", len(inputs_valid))
+        
+        if len(self.input_dim) == 2:
+            registration_dataset = Registration2DDataSet
+        else:
+            registration_dataset = Registration3DDataSet
 
         # Training dataset
-        train_dataset = RegistrationDataSet(path_dataset = inputs_train,
+        train_dataset = registration_dataset(path_dataset = inputs_train,
                                             transform    = None)
 
         # Validation dataset
-        valid_dataset = RegistrationDataSet(path_dataset = inputs_valid,
+        valid_dataset = registration_dataset(path_dataset = inputs_valid,
                                             transform    = None)
 
         # Training dataloader
