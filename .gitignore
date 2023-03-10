@@ -5,6 +5,7 @@ Beta-VAE/
 B01_ScanPairs.csv
 checkpoints_abdomen/
 checkpoints_thorax/
+/outputjobs
 outputjobs_abdomen/
 outputjobs_thorax/
 processing_QoL/
