@@ -46,7 +46,7 @@ class Registration2DDataSet(data.Dataset):
 class Registration3DDataSet(data.Dataset):
     def __init__(self,
                  path_dataset: str,
-                 input_shape : tuple,
+                 input_shape : tuple = (192, 192, 300),
                  transform   = None
                  ):
         self.dataset     = path_dataset
