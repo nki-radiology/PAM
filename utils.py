@@ -52,7 +52,7 @@ def weights_init(m):
             m.bias.data.fill_(0)
             
             
-def read_train_data(path_input):
+def read_2D_train_data(path_input):
     path      = Path(path_input)
     filenames = list(path.glob('*.jpeg'))
     data_index= []
@@ -64,7 +64,19 @@ def read_train_data(path_input):
 
     train_data = list(zip(data_index, filenames))
     train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
+    return train_data
 
+
+def read_3D_train_data(path_input):
+    path      = Path(path_input)
+    filenames = list(path.glob('*.nrrd'))
+    data_index= []
+
+    for f in filenames:
+        data_index.append(int(str(f).split('/')[7].split('_')[0])) # Number 8 can vary according to the path of the images
+
+    train_data = list(zip(data_index, filenames))
+    train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
     return train_data
 
 
