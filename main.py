@@ -29,14 +29,14 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=8,          type=int,       help='batch size')
 
     parser.add_argument('--model',      default='Beta-VAE', type=str,       help='Wasserstein Autoencoder (WAE) and Beta Variational Autoencoder (Beta-VAE)')
-    parser.add_argument('--add_disc',   default=True,       type=bool,      help='Add a discriminator network to the Beta-VAE model')
+    parser.add_argument('--add_disc',   default=False,       type=bool,      help='Add a discriminator network to the Beta-VAE model')
     parser.add_argument('--input_ch',   default=2,          type=int,       help='Number of input channels of the image')
     parser.add_argument('--input_ch_d', default=1,          type=int,       help='Number of input channels of the image for the discriminator')
     parser.add_argument('--output_ch',  default=3,          type=int,       help='Number of output channels of the image')
-    parser.add_argument('--input_dim',  default=[256, 256, 512], type=int,  help='dimension of the data')
+    parser.add_argument('--input_dim',  default=[192, 192, 300], type=int,  help='dimension of the data')
     parser.add_argument('--latent_dim', default=512,        type=int,       help='dimension of the representation z')
     parser.add_argument('--group_num',  default=8,          type=int,       help='Group normalization size')
-    parser.add_argument('--filters',    default=[32, 64, 128, 256], type=object,  help='dimension of the data')
+    parser.add_argument('--filters',    default=[32, 64, 128, 256], type=object,  help='filters to create the Beta-VAE')
     
     parser.add_argument('--alpha_value', default=0.01,      type=float,     help='beta parameter for the penalty loss')
     parser.add_argument('--beta_value',  default=0,         type=float,     help='beta parameter for the KL-term loss')
@@ -47,12 +47,14 @@ if __name__ == '__main__':
     parser.add_argument('--beta1',      default=0.5,        type=float,     help='Adam optimizer beta1')
     parser.add_argument('--beta2',      default=0.999,      type=float,     help='Adam optimizer beta2')
     
-    parser.add_argument('--dset_dir',   default='/SHARED/active_Laura/chest_xray/train/NORMAL',  type=str, help='dataset directory')
-    parser.add_argument('--num_workers',default=2,          type=int,       help='dataloader num_workers')
+    parser.add_argument('--dset_dir',   default='/data/groups/beets-tan/l.estacio/data_tcia/train/',  type=str, help='dataset directory')
+    parser.add_argument('--num_workers',default=8,          type=int,       help='dataloader num_workers')
     
-    parser.add_argument('--ckpt_dir',   default='/DATA/laura/code/PAM/Beta-VAE-adversarial-rot/checkpoints',  type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir',default='/DATA/laura/code/PAM/Beta-VAE-adversarial-rot/img_results/', type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--ckpt_dir',   default='/projects/disentanglement_methods/temp/PAM/checkpoints/Beta_VAE_whole_body/',  type=str, help='checkpoint directory')
+    parser.add_argument('--results_dir',default='/projects/disentanglement_methods/temp/PAM/results/Beta_VAE/img_results/', type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     
     main(args)
+    
+            
