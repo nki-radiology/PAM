@@ -4,7 +4,8 @@ import wandb
 from   utils                        import create_directory
 from   utils                        import cuda_seeds
 from   utils                        import weights_init
-from   utils                        import read_train_data
+from   utils                        import read_2D_train_data
+from   utils                        import read_3D_train_data
 from   utils                        import save_images_weights_and_biases
 from   losses                       import *
 from   registration_dataset         import Registration2DDataSet
@@ -49,7 +50,6 @@ class Train(object):
         self.num_gpus = args.num_gpus
         self.device   = torch.device("cuda:0" if (torch.cuda.is_available() and self.num_gpus > 0) else "cpu")
         
-        
         # Values of the regularization parameters
         self.alpha_value  = args.alpha_value            # regularization for the penalty loss
         self.beta_value   = args.beta_value             # regularization for the KL-divergence loss
@@ -57,7 +57,6 @@ class Train(object):
         self.gamma_value  = args.gamma_value            # regularization for the discriminator (feature matching loss: MSE)
         self.lambda_value = args.lambda_value           # regularization for the reconstruction loss
     
-        
         # Data folder
         self.data_folder = args.dset_dir
         
@@ -82,10 +81,8 @@ class Train(object):
     def model_init(self):
         if self.model == 'WAE':
             net = Registration_Wasserstein_AE
-            print('-------------- Running WAE Model --------------')
         elif self.model == 'Beta-VAE':
             net = Registration_Beta_VAE
-            print('-------------- Running Beta-VAE Model --------------')
         else:
             raise NotImplementedError('only support model WAE and B-VAE')
         
@@ -114,7 +111,6 @@ class Train(object):
         if self.add_discriminator:
             self.discriminator_net  = Discriminator(
                 input_ch   = self.input_ch_discriminator,
-                data_dim   = self.input_dim,
                 latent_dim = self.latent_dim,
                 group_num  = self.group_num,
                 filters    = self.filters)  
@@ -126,20 +122,22 @@ class Train(object):
             self.discriminator_net.apply(weights_init)
             self.disc_loss_bce = torch.nn.BCELoss()
             self.disc_loss_fts = torch.nn.MSELoss()
-            print('-------------- Running Adversarial Beta-VAE Model --------------')
-            
-            
+
         
     def set_optimizer(self):
         self.optim      = torch.optim.Adam(self.net.parameters(), lr=self.lr,
                                            betas=(self.beta1, self.beta2))
-        self.optim_disc = torch.optim.Adam(self.discriminator_net.parameters(), lr=self.lr, 
-                                           betas=(self.beta1, self.beta2))
+        if self.add_discriminator:
+            self.optim_disc = torch.optim.Adam(self.discriminator_net.parameters(), lr=self.lr, 
+                                            betas=(self.beta1, self.beta2))
         
                     
     def load_dataloader(self):
         # Dataset Path 
-        filenames = read_train_data(self.data_folder)
+        if len(self.input_dim) == 2:
+            filenames = read_2D_train_data(self.data_folder)
+        else:
+            filenames = read_3D_train_data(self.data_folder)
        
         # Random seed
         random_seed = 42
@@ -649,10 +647,13 @@ class Train(object):
 
         if self.add_discriminator:
             self.train_Beta_VAE_Adversarial()
+            print('-------------- Running Adversarial Beta-VAE Model --------------')
         if self.model == 'WAE':
             self.train_WAE()
+            print('----------------------- Running WAE Model ----------------------')
         elif self.model == 'Beta-VAE':
             self.train_Beta_VAE()
+            print('-------------------- Running Beta-VAE Model --------------------')
         else:
             NotImplementedError('only support WAE and Beta-VAE training!')
         
