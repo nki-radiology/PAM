@@ -22,7 +22,7 @@ class Beta_VAE(nn.Module):
 
     def __init__(self, 
                  input_ch  : int = 1,
-                 input_dim : int = [256, 256, 512],
+                 input_dim : int = [192, 192, 300],
                  latent_dim: int = 512,
                  output_ch : int = 3,
                  filters   : object = [32, 64, 128, 256],
@@ -53,7 +53,7 @@ class Beta_VAE(nn.Module):
 class Affine_Beta_VAE(nn.Module):
     def __init__(self,
                     input_ch  : int = 2,
-                    input_dim : int = [256, 256, 512],
+                    input_dim : int = [192, 192, 300],
                     latent_dim: int = 512,
                     group_num : int = 8,
                     filters   : object = [32, 64, 128, 256],):
@@ -147,7 +147,7 @@ class Affine_Beta_VAE(nn.Module):
 class Elastic_Beta_VAE(nn.Module):
     def __init__(self,
                  input_ch  : int = 2,
-                 input_dim : int = [256, 256, 512],
+                 input_dim : int = [192, 192, 300],
                  latent_dim: int = 512,
                  output_ch : int = 3,
                  group_num : int = 8,
@@ -192,20 +192,20 @@ class Elastic_Beta_VAE(nn.Module):
 
 
         
-from torchsummary import summary
+'''from torchsummary import summary
 
-"""model =  Affine_Beta_VAE(input_ch = 2,
-                    input_dim = (256, 256),
+model =  Affine_Beta_VAE(input_ch = 2,
+                    input_dim = [192, 192, 300],
                     latent_dim= 512,
                     group_num = 8,
-                    filters   = [8, 16, 32, 64, 128])
-summary = summary(model.to('cuda'), [(1, 256, 256), (1, 256, 256)])"""
-
-"""from torchsummary import summary
+                    filters   = [32, 64, 128, 256])
+summary = summary(model.to('cuda'), [(1, 192, 192, 300), (1, 192, 192, 300)])
+'''
+'''from torchsummary import summary
 model =  Elastic_Beta_VAE(input_ch = 2,
-                    input_dim = (256, 256),
+                    input_dim = [192, 192, 300],
                     latent_dim= 512,
-                    output_ch = 2,
+                    output_ch = 3,
                     group_num = 8,
-                    filters  = [8, 16, 32, 64, 128])
-summary = summary(model.to('cuda'), [(1, 256, 256), (1, 256, 256)])"""      
+                    filters  = [16, 32, 64, 128, 256])
+summary = summary(model.to('cuda'), [(1, 192, 192, 300), (1, 192, 192, 300)])  '''  

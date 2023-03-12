@@ -1,13 +1,13 @@
 import torch
 import torch.nn       as     nn
 from   collections    import OrderedDict
-from   networks.network import Encoder
+from   networks.network import Encoder_Discriminator
 from   networks.network import conv_gl_avg_pool_layer
 
 class Discriminator(nn.Module):
     def __init__(self,
                  input_ch  : int = 1,
-                 input_dim : int = [256, 256, 512],
+                 input_dim : int = [192, 192, 304],
                  latent_dim: int = 512,
                  group_num : int = 8,
                  filters   : object = [16, 32, 64, 128, 256]):
@@ -26,10 +26,10 @@ class Discriminator(nn.Module):
         features_linear_layer = 1024
         
         # Encoder Block
-        self.conv_discriminator =  Encoder(input_ch=self.input_ch, input_dim=self.input_dim, latent_dim=self.latent_dim, group_num=self.group_num, filters=self.filters)
+        self.conv_discriminator =  Encoder_Discriminator(input_ch=self.input_ch, input_dim=self.input_dim, latent_dim=self.latent_dim, group_num=self.group_num, filters=self.filters)
         
         self.linear_discriminator = nn.Sequential(OrderedDict([
-            ('disc_gl_avg_pool' , conv_gl_avg_pool_layer(self.data_dim)(output_size=1)),
+            ('disc_gl_avg_pool' , conv_gl_avg_pool_layer(len(self.input_dim))(output_size=1)),
             ('disc_ft_vec_all'  , nn.Flatten()),
             ('disc_last_linear' , nn.Linear(in_features=self.filters[-1], out_features=features_linear_layer, bias=False)),
             ('disc_last__act_fn', nn.Sigmoid()), 
@@ -37,7 +37,6 @@ class Discriminator(nn.Module):
             
     
     def forward(self, x: torch.tensor):
-                
         # Get last convolution
         fx = x = self.conv_discriminator(x)
         
@@ -45,6 +44,13 @@ class Discriminator(nn.Module):
         x = self.linear_discriminator(x)
         
         return x, fx
+    
+
+  # Last Layer
+        x = self.h(x)
+        x = torch.flatten(x, 1)
+        x = self.dense(x)
+        x = self.act(x)
 
 from torchsummary import summary
 

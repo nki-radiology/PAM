@@ -155,12 +155,12 @@ class Decoder(nn.Module):
 class Encoder_WAE(nn.Module):
     def __init__(self,
                 input_ch  : int = 1,
-                input_dim : int = [256, 256, 512],
+                input_dim : int = [192, 192, 304],
                 latent_dim: int = 512,
                 group_num : int = 8,
                 filters   : object = [32, 64, 128, 256] 
                 ):
-        super(Encoder, self).__init__()
+        super(Encoder_WAE, self).__init__()
         """
         Inputs:
             - input_dim  : Dimensionality of the input 
@@ -191,12 +191,53 @@ class Encoder_WAE(nn.Module):
         output_dim = [dim_after_n_layers(i, layer_i+1) for i in input_dim]
         self.elem  = int(layer_filters * np.prod(output_dim))
             
-        #self.flaten_layer   = nn.Flatten()
-        self.latent_space_Z = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
+        self.latent_space_z = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
 
     def forward(self, x):
         x = self.conv_net(x)
         x = x.view(-1, self.elem)
         latent_space_z = self.latent_space_z(x)
         return latent_space_z
+
+
+class Encoder_Discriminator(nn.Module):
+    def __init__(self,
+                input_ch  : int = 1,
+                input_dim : int = [192, 192, 304],
+                latent_dim: int = 512,
+                group_num : int = 8,
+                filters   : object = [32, 64, 128, 256] 
+                ):
+        super(Encoder_Discriminator, self).__init__()
+        """
+        Inputs:
+            - input_dim  : Dimensionality of the input 
+            - latent_dim : Dimensionality of the latent space (Z)
+            - groups     : Number of groups in the normalization layers
+            - filters    : Number of channels or filters to use in the convolutional convolutional layers
+        """
+        self.input_ch   = input_ch
+        self.input_dim  = input_dim
+        self.latent_dim = latent_dim
+        self.group_num  = group_num
+        self.filters    = filters
+
+        modules = OrderedDict()
+        
+        for layer_i, layer_filters in enumerate(filters):
+
+            modules['encoder_block' + str(layer_i)] = nn.Sequential(
+                conv_layer(len(input_dim))(
+                    in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
+                nn.GELU()
+            )
+            input_ch = layer_filters
+        
+        self.conv_net = nn.Sequential(modules)
+
+
+    def forward(self, x):
+        x = self.conv_net(x)
+        return x
     
