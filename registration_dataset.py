@@ -4,7 +4,7 @@ from   torch.utils            import data
 import torchvision.transforms as     transforms
 from   PIL                    import Image, ImageOps
 from   libs.frida.io         import ImageLoader, ReadVolume
-from   libs.frida.transforms import  ZeroOneScaling, ToNumpyArray
+from   libs.frida.transforms import  ZeroOneScaling, ToNumpyArray, PadAndCropTo
 
 
 class Registration2DDataSet(data.Dataset):
@@ -46,7 +46,7 @@ class Registration2DDataSet(data.Dataset):
 class Registration3DDataSet(data.Dataset):
     def __init__(self,
                  path_dataset: str,
-                 input_shape : tuple = (192, 192, 300),
+                 input_shape : tuple = (192, 192, 304),
                  transform   = None
                  ):
         self.dataset     = path_dataset
@@ -62,6 +62,7 @@ class Registration3DDataSet(data.Dataset):
     def __init_loader(self):
         return ImageLoader(
             ReadVolume(),
+            PadAndCropTo(self.input_shape, cval=-1000),
             ZeroOneScaling(),
             ToNumpyArray(add_batch_dim=False, add_singleton_dim=False)
         )
@@ -71,10 +72,8 @@ class Registration3DDataSet(data.Dataset):
 
     def __getitem__(self,
                     index: int):
-
         # Select the sample
         image_path = self.dataset.iloc[index]
-        #print("Image Path: ", image_path)
         fx = np.zeros(self.input_shape)
         mv = np.zeros(self.input_shape)
 

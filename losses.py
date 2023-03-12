@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from numpy import isnan
 
     
 
 def kl_divergence(mu, log_var):
-    kl_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
-    return kl_loss
+    #KL_loss = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
+    KL_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
+    #KL_loss = 0 if torch.isnan(KL_loss) else KL_loss
+    return KL_loss
+
 
 def imq_kernel(X: torch.Tensor,
                Y: torch.Tensor,

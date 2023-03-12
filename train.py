@@ -111,6 +111,7 @@ class Train(object):
         if self.add_discriminator:
             self.discriminator_net  = Discriminator(
                 input_ch   = self.input_ch_discriminator,
+                input_dim  = self.input_dim,
                 latent_dim = self.latent_dim,
                 group_num  = self.group_num,
                 filters    = self.filters)  
@@ -125,8 +126,9 @@ class Train(object):
 
         
     def set_optimizer(self):
-        self.optim      = torch.optim.Adam(self.net.parameters(), lr=self.lr,
-                                           betas=(self.beta1, self.beta2))
+        self.optim      = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+        #torch.optim.Adam(self.net.parameters(), lr=self.lr,
+        #                 betas=(self.beta1, self.beta2))
         if self.add_discriminator:
             self.optim_disc = torch.optim.Adam(self.discriminator_net.parameters(), lr=self.lr, 
                                             betas=(self.beta1, self.beta2))
@@ -218,6 +220,21 @@ class Train(object):
                        self.beta_value   * (kl_divergence_loss) +\
                        self.lambda_value * (elastic_mse_loss + affine_mse_loss)
                 loss_pam_beta_vae_train += loss.item()
+                
+                print(' --------------------  --------------------  --------------------  -------------------- ')
+                print('self.alpha_value: ', self.alpha_value, '   penalty_affine_loss: ', penalty_affine_loss,
+                      '   penalty_elastic_loss: ',  penalty_elastic_loss, 
+                      '   self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss): ',
+                      self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss))
+                
+                print('self.beta_value: ', self.beta_value, '   kl_divergence_loss: ', kl_divergence_loss,
+                      '   self.beta_value   * (kl_divergence_loss): ', self.beta_value   * (kl_divergence_loss))
+                
+                print('self.lambda_value: ', self.lambda_value, '   elastic_mse_loss: ', elastic_mse_loss, 
+                      '   affine_mse_loss: ', affine_mse_loss, 
+                      '   self.lambda_value * (elastic_mse_loss + affine_mse_loss):  ', 
+                      self.lambda_value * (elastic_mse_loss + affine_mse_loss))
+                print(' --------------------  --------------------  --------------------  -------------------- ')
                 
                 # one backward pass
                 loss.backward()
@@ -347,7 +364,7 @@ class Train(object):
                 
                 # Loss measures generator's ability to fool the discriminator
                 _, features_w1    = self.discriminator_net(w_1) # features_w0
-                _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle)) 
+                _, features_fixed = self.discriminator_net(fixed)#(TF.rotate(fixed, angle)) 
                 
                 # Compute generator loss
                 generator_mse_penalty = self.disc_loss_fts(features_w1, features_fixed)
@@ -383,7 +400,7 @@ class Train(object):
                 self.optim_disc.zero_grad()
                 
                 # Measure discriminator's ability to classify real from generated samples
-                real, _  = self.discriminator_net(TF.rotate(fixed, angle))  
+                real, _  = self.discriminator_net(fixed)#(TF.rotate(fixed, angle))  
                 fake, _  = self.discriminator_net(w_1.detach())
                 b_size   = real.shape
                 label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
@@ -432,7 +449,7 @@ class Train(object):
                     
                     # Loss measures generator's ability to fool the discriminator
                     _, features_w1    = self.discriminator_net(w_1)
-                    _, features_fixed = self.discriminator_net(TF.rotate(fixed, angle))
+                    _, features_fixed = self.discriminator_net(fixed)#(TF.rotate(fixed, angle))
                     
                     # Compute the generator loss
                     generator_mse_penalty = self.disc_loss_fts(features_w1, features_fixed)
@@ -457,7 +474,7 @@ class Train(object):
                     # ----------- 1. Update the Discriminator -----------
 
                     # Measure discriminator's ability to classify real from generated samples
-                    real, _ = self.discriminator_net(TF.rotate(fixed, angle))
+                    real, _ = self.discriminator_net(fixed)#(TF.rotate(fixed, angle))
                     fake, _ = self.discriminator_net(w_1.detach())
                     b_size = real.shape
                     label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)

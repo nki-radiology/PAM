@@ -4,8 +4,9 @@ import torch
 import argparse
 import pandas             as pd
 import torch.nn           as nn
-import matplotlib.pyplot  as plt
 from   pathlib        import Path
+from   PIL                          import Image, ImageOps
+import torchvision.transforms       as     T
 
 
 def str2bool(v):
@@ -24,9 +25,9 @@ def cuda(tensor, uses_cuda):
 def create_directory(path):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-        print("Directory created!")
+        print("Directory created in: ", path)
     else:
-        print("Directory already created")
+        print("Directory already created: ", path)
 
 
 def cuda_seeds():
@@ -80,32 +81,32 @@ def read_3D_train_data(path_input):
     return train_data
 
 
-def save_images_weights_and_biases(table_name, path_to_save, fixed_img, moving_img, w0_img, w1_img):
+def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_img, w1_img):
     table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image'], allow_mixed_types = True)
     
     saving_examples_folder = path_to_save
     
     #PIL VERSION
-    transform = T.ToPILImage()    
-    fixed_img = transform(fixed_img[:,:,:,:,50].squeeze())
-    moving_img = transform(moving_img[:,:,:,:,50].squeeze())
-    affine_img = transform(w0_img[:,:,:,:,50].squeeze())
-    deformation_img = transform(w1_img[:,:,:,:,50].squeeze())
-
+    transform  = T.ToPILImage()    
+    fixed_img  = transform(fixed[:,:,:,:,50].squeeze()).convert("L")
+    moving_img = transform(moving[:,:,:,:,50].squeeze()).convert("L")
+    affine_img = transform(w0_img[:,:,:,:,50].squeeze()).convert("L")
+    deformation_img = transform(w1_img[:,:,:,:,50].squeeze()).convert("L")
+    
     fixed_img.show()                              
-    fixed_img.save(saving_examples_folder + "fixed_image.jpg")    
+    fixed_img.save(saving_examples_folder + "fixed_image.png")    
     moving_img.show() 
-    moving_img.save(saving_examples_folder + "moving_image.jpg")    
+    moving_img.save(saving_examples_folder + "moving_image.png")    
     affine_img.show() 
-    affine_img.save(saving_examples_folder + "affine_image.jpg")    
+    affine_img.save(saving_examples_folder + "affine_image.png")    
     deformation_img.show()
-    deformation_img.save(saving_examples_folder + "deformation_image.jpg")    
+    deformation_img.save(saving_examples_folder + "deformation_image.png")    
     
     table.add_data(
-        wandb.Image(Image.open(saving_examples_folder + "fixed_image.jpg")),
-        wandb.Image(Image.open(saving_examples_folder + "moving_image.jpg")),
-        wandb.Image(Image.open(saving_examples_folder + "affine_image.jpg")),
-        wandb.Image(Image.open(saving_examples_folder + "deformation_image.jpg")),
+        wandb.Image(Image.open(saving_examples_folder + "fixed_image.png")),
+        wandb.Image(Image.open(saving_examples_folder + "moving_image.png")),
+        wandb.Image(Image.open(saving_examples_folder + "affine_image.png")),
+        wandb.Image(Image.open(saving_examples_folder + "deformation_image.png")),
     )
     
     wandb.log({table_name: table})
