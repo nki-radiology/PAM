@@ -204,7 +204,6 @@ class Encoder_Discriminator(nn.Module):
     def __init__(self,
                 input_ch  : int = 1,
                 input_dim : int = [192, 192, 304],
-                latent_dim: int = 512,
                 group_num : int = 8,
                 filters   : object = [32, 64, 128, 256] 
                 ):
@@ -218,7 +217,6 @@ class Encoder_Discriminator(nn.Module):
         """
         self.input_ch   = input_ch
         self.input_dim  = input_dim
-        self.latent_dim = latent_dim
         self.group_num  = group_num
         self.filters    = filters
 

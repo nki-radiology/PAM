@@ -8,7 +8,6 @@ class Discriminator(nn.Module):
     def __init__(self,
                  input_ch  : int = 1,
                  input_dim : int = [192, 192, 304],
-                 latent_dim: int = 512,
                  group_num : int = 8,
                  filters   : object = [16, 32, 64, 128, 256]):
         super(Discriminator, self).__init__()
@@ -20,13 +19,12 @@ class Discriminator(nn.Module):
         """          
         self.input_ch   = input_ch
         self.input_dim  = input_dim
-        self.latent_dim = latent_dim
         self.group_num  = group_num
         self.filters    = filters
-        features_linear_layer = 1024
+        features_linear_layer = 1
         
         # Encoder Block
-        self.conv_discriminator =  Encoder_Discriminator(input_ch=self.input_ch, input_dim=self.input_dim, latent_dim=self.latent_dim, group_num=self.group_num, filters=self.filters)
+        self.conv_discriminator =  Encoder_Discriminator(input_ch=self.input_ch, input_dim=self.input_dim, group_num=self.group_num, filters=self.filters)
         
         self.linear_discriminator = nn.Sequential(OrderedDict([
             ('disc_gl_avg_pool' , conv_gl_avg_pool_layer(len(self.input_dim))(output_size=1)),
@@ -46,11 +44,6 @@ class Discriminator(nn.Module):
         return x, fx
     
 
-  # Last Layer
-        x = self.h(x)
-        x = torch.flatten(x, 1)
-        x = self.dense(x)
-        x = self.act(x)
 
 from torchsummary import summary
 

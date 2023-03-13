@@ -112,7 +112,6 @@ class Train(object):
             self.discriminator_net  = Discriminator(
                 input_ch   = self.input_ch_discriminator,
                 input_dim  = self.input_dim,
-                latent_dim = self.latent_dim,
                 group_num  = self.group_num,
                 filters    = self.filters)  
             

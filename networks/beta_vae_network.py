@@ -25,8 +25,8 @@ class Beta_VAE(nn.Module):
                  input_dim : int = [192, 192, 300],
                  latent_dim: int = 512,
                  output_ch : int = 3,
-                 filters   : object = [32, 64, 128, 256],
-                 group_num : int = 8
+                 group_num : int = 8,
+                 filters   : object = [32, 64, 128, 256]
                  ):
         super(Beta_VAE, self).__init__()
         """
@@ -54,9 +54,8 @@ class Affine_Beta_VAE(nn.Module):
     def __init__(self,
                     input_ch  : int = 2,
                     input_dim : int = [192, 192, 300],
-                    latent_dim: int = 512,
                     group_num : int = 8,
-                    filters   : object = [32, 64, 128, 256],):
+                    filters   : object = [32, 64, 128, 256]):
 
         super(Affine_Beta_VAE, self).__init__()
         """
@@ -67,7 +66,6 @@ class Affine_Beta_VAE(nn.Module):
         """          
         self.input_ch   = input_ch
         self.input_dim  = input_dim
-        self.latent_dim = latent_dim
         self.group_num  = group_num
         self.filters    = filters
         features_linear_layer = 1024
@@ -109,7 +107,7 @@ class Affine_Beta_VAE(nn.Module):
     
     def forward(self, fixed: torch.tensor, moving: torch.tensor):
         # Concatenate fixed and moving images
-        x = torch.cat((fixed, moving), 1)
+        x = torch.cat((fixed, moving), dim=1)
         
         # Encoding Block
         x = self.encoder_net(x)
@@ -196,7 +194,6 @@ class Elastic_Beta_VAE(nn.Module):
 
 model =  Affine_Beta_VAE(input_ch = 2,
                     input_dim = [192, 192, 300],
-                    latent_dim= 512,
                     group_num = 8,
                     filters   = [32, 64, 128, 256])
 summary = summary(model.to('cuda'), [(1, 192, 192, 300), (1, 192, 192, 300)])

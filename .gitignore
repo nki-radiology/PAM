@@ -3,6 +3,7 @@ __pycache__/
 networks/__pycache__/
 Beta-VAE/
 B01_ScanPairs.csv
+checkpoints/
 checkpoints_abdomen/
 checkpoints_thorax/
 /outputjobs

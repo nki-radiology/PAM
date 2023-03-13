@@ -26,13 +26,12 @@ class Registration_Beta_VAE(nn.Module):
         # Affine Network
         self.affine_net = Affine_Beta_VAE(input_ch   = self.input_ch,
                                           input_dim  = self.input_dim,
-                                          latent_dim = self.latent_dim,
                                           group_num  = self.group_num,
                                           filters    = self.filters)
        
         # Deformation/Elastic Network
         self.elastic_net = Elastic_Beta_VAE(input_ch   = self.input_ch,
-                                            input_dim   = self.input_dim,
+                                            input_dim  = self.input_dim,
                                             latent_dim = self.latent_dim,
                                             output_ch  = self.output_ch,
                                             group_num  = self.group_num,
