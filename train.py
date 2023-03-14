@@ -50,6 +50,9 @@ class Train(object):
         self.num_gpus = args.num_gpus
         self.device   = torch.device("cuda:0" if (torch.cuda.is_available() and self.num_gpus > 0) else "cpu")
         
+        # Accumulation itertator for gradient accumulation
+        self. accum_iter_batch = args.accum_iter_b
+        
         # Values of the regularization parameters
         self.alpha_value  = args.alpha_value            # regularization for the penalty loss
         self.beta_value   = args.beta_value             # regularization for the KL-divergence loss
@@ -69,6 +72,12 @@ class Train(object):
         self.moving_draw = None
         self.w_0_draw    = None
         self.w_1_draw    = None
+        
+        # Weights & biases projects name and entity
+        self.proj_wae              = args.proj_wae
+        self.proj_bvae_vanilla     = args.proj_bvae_vanilla
+        self.proj_bvae_adversarial = args.proj_bvae_adversarial
+        self.entity_wb             = args.entity_wb
         
         # Directory to save checkpoints
         create_directory(self.checkpoints_folder)
@@ -156,18 +165,16 @@ class Train(object):
         else:
             registration_dataset = Registration3DDataSet
 
-        # Training dataset
+        # Training and validation dataset
         train_dataset = registration_dataset(path_dataset = inputs_train,
-                                            transform    = None)
-
-        # Validation dataset
+                                             input_dim    = self.input_dim,
+                                             transform    = None)
         valid_dataset = registration_dataset(path_dataset = inputs_valid,
-                                            transform    = None)
+                                             input_dim    = self.input_dim,
+                                             transform    = None)
 
-        # Training dataloader
+        # Training and validation dataloader
         self.train_dataloader = DataLoader(dataset=train_dataset, batch_size=self.batch_size, shuffle=True)
-
-        # Validation dataloader
         self.valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=self.batch_size, shuffle=True)
     
     
@@ -175,7 +182,7 @@ class Train(object):
     def train_Beta_VAE(self):
         
         # weights and biases
-        wandb.init(project='Beta-VAE', entity='ljestaciocerquin')
+        wandb.init(project=self.proj_bvae_vanilla, entity=self.entity_wb)
         config = wandb.config
         wandb.watch(self.net, log="all")
         
@@ -193,15 +200,11 @@ class Train(object):
             if epoch >= 50: 
                 self.beta_value = np.maximum(self.beta_value, 1e-10)
                 self.beta_value = np.minimum(self.beta_value*2, self.beta_value_max)      
-                                        
             
-            for i, (x_1, x_2) in enumerate (self.train_dataloader):
+            for batch_idx, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
                 moving = x_2.to(self.device)
                
-                # zero-grad the net parameters
-                self.optim.zero_grad()
-                
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
                 
@@ -218,31 +221,23 @@ class Train(object):
                 loss = self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
                        self.beta_value   * (kl_divergence_loss) +\
                        self.lambda_value * (elastic_mse_loss + affine_mse_loss)
+                
+                loss = loss / self.accum_iter_batch
                 loss_pam_beta_vae_train += loss.item()
                 
-                print(' --------------------  --------------------  --------------------  -------------------- ')
-                print('self.alpha_value: ', self.alpha_value, '   penalty_affine_loss: ', penalty_affine_loss,
-                      '   penalty_elastic_loss: ',  penalty_elastic_loss, 
-                      '   self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss): ',
-                      self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss))
-                
-                print('self.beta_value: ', self.beta_value, '   kl_divergence_loss: ', kl_divergence_loss,
-                      '   self.beta_value   * (kl_divergence_loss): ', self.beta_value   * (kl_divergence_loss))
-                
-                print('self.lambda_value: ', self.lambda_value, '   elastic_mse_loss: ', elastic_mse_loss, 
-                      '   affine_mse_loss: ', affine_mse_loss, 
-                      '   self.lambda_value * (elastic_mse_loss + affine_mse_loss):  ', 
-                      self.lambda_value * (elastic_mse_loss + affine_mse_loss))
-                print(' --------------------  --------------------  --------------------  -------------------- ')
+                print(' --------------------  -------------------- KL Loss: ', kl_divergence_loss.item())
                 
                 # one backward pass
                 loss.backward()
                 
-                # Update the parameters
-                self.optim.step()
+                if ( (batch_idx + 1) % self.accum_iter_batch == 0) or (batch_idx + 1 == len(self.train_dataloader)):
+                    # Update the parameters
+                    self.optim.step()
+                    # zero-grad the net parameters
+                    self.optim.zero_grad()
 
                 # Weights and biases visualization
-                wandb.log({'Iteration': i,
+                wandb.log({'Iteration': batch_idx,
                         'Train: Affine MSE loss': affine_mse_loss.item(),
                         'Train: Penalty Affine loss': penalty_affine_loss.item(),
                         'Train: Elastic MSE loss': elastic_mse_loss.item(),
@@ -254,7 +249,7 @@ class Train(object):
             with torch.no_grad():
                 self.net.eval()
                 
-                for i, (x_1, x_2) in enumerate (self.valid_dataloader):
+                for batch_idx, (x_1, x_2) in enumerate (self.valid_dataloader):
                     fixed  = x_1.to(self.device)
                     moving = x_2.to(self.device)
                                         
@@ -277,7 +272,7 @@ class Train(object):
                     loss_pam_beta_vae_valid += loss.item()
                     
                     # Weights and biases visualization
-                    wandb.log({ 'Iteration': i,
+                    wandb.log({ 'Iteration': batch_idx,
                                 'Valid: Affine MSE loss': affine_mse_loss.item(),
                                 'Valid: Penalty Affine loss': penalty_affine_loss.item(),
                                 'Valid: Elastic MSE loss': elastic_mse_loss.item(),
@@ -315,7 +310,7 @@ class Train(object):
     def train_Beta_VAE_Adversarial(self):
         
         # weights and biases
-        wandb.init(project='Beta-VAE-Adversarial', entity='ljestaciocerquin')
+        wandb.init(project=self.proj_bvae_adversarial, entity=self.entity_wb)
         config = wandb.config
         wandb.watch(self.net, log="all")
                       
@@ -531,7 +526,7 @@ class Train(object):
     def train_WAE(self):
 
         # weights and biases
-        wandb.init(project='WAE', entity='ljestaciocerquin')
+        wandb.init(project=self.proj_wae, entity=self.entity_wb)
         config = wandb.config
         wandb.watch(self.net)
         

@@ -8,7 +8,7 @@
 #SBATCH --ntasks=1                                  # Run on a single node
 #SBATCH --mem=20G                                   # Memory
 #SBATCH --cpus-per-task=5                           # Number of cores
-#SBATCH --output=/projects/disentanglement_methods/temp/PAM/outputjobs/AdvBetaVAE/slurm_%j.log   # Standard output and error log
+#SBATCH --output=/projects/disentanglement_methods/outputjobs/Beta_VAE/vanilla/slurm_%j.log   # Standard output and error log
 pwd; hostname; date
 
 # Source bashrc, such that the shell is setup properly
@@ -20,4 +20,4 @@ source /home/l.estacio/miniconda3/bin/activate pytorch
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /projects/disentanglement_methods/temp/PAM/main.py --add_disc True --ckpt_dir /projects/disentanglement_methods/temp/PAM/checkpoints/AdvBeta_VAE_whole_body/ --results_dir /projects/disentanglement_methods/temp/PAM/results/AdvBeta_VAE/img_results/
+python /projects/disentanglement_methods/temp/PAM/main.py 
