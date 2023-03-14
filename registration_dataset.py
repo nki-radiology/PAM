@@ -10,12 +10,13 @@ from   libs.frida.transforms import  ZeroOneScaling, ToNumpyArray, PadAndCropTo
 class Registration2DDataSet(data.Dataset):
     def __init__(self,
                  path_dataset: str,
+                 input_dim   : int    = [192, 192, 160],
                  transform   : object = None):
         self.dataset   = path_dataset
         self.indices   = path_dataset.index.values.copy()
         self.inp_dtype = torch.float32
         self.transform = transforms.Compose([
-            transforms.Resize([256,256]),
+            transforms.Resize(input_dim),
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5])
         ])
@@ -46,11 +47,11 @@ class Registration2DDataSet(data.Dataset):
 class Registration3DDataSet(data.Dataset):
     def __init__(self,
                  path_dataset: str,
-                 input_shape : tuple = (192, 192, 304),
-                 transform   = None
+                 input_dim   : int    = [192, 192, 160],
+                 transform   : object = None
                  ):
         self.dataset     = path_dataset
-        self.input_shape = input_shape
+        self.input_shape = tuple(input_dim + [1]) # Giving the right shape as (192, 192, 160, 1)
         self.indices     = path_dataset.index.values.copy()
         self.transform   = transform
         self.random_seed = int(0)
