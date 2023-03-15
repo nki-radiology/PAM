@@ -1,7 +1,8 @@
 # Prognostic AI-monitoring
 
-## Experiment 2 - Disentanglement of the feature space 
+## from 
+- prognostic-ai-monitoring
 
-Tested architecture:
-* Beta-Variational autoencoders;
-* Wasserstein autoencoders.
+## modifications
+* elastic deformation implemented with beta-variational autoencoders;
+* elastic deformation implemented with wasserstein autoencoders.
