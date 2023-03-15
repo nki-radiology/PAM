@@ -12,6 +12,7 @@ class Preprocessing(object):
         self.min_days_inclusion  = args.min_days_inclusion
         self.max_days_inclusion  = args.max_days_inclusion
         self.y1_survival_days    = args.y1_survival_days
+        self.y2_survival_days    = args.y2_survival_days
         self.path_to_save_file   = args.path_to_save_file
         self.path_to_cts_in_yads = args.path_to_cts_in_yads
         self.patients_file_to_read = args.patients_file_to_read
@@ -130,8 +131,28 @@ class Preprocessing(object):
         yads_data.insert(len(yads_data.columns), 'Event', yads_data['DateOfDeath'].apply(lambda x: isinstance(x, str)))
         # y1Survival
         yads_data.insert(len(yads_data.columns), 'Y1Survival', yads_data['DaysOfSurvival'].apply(lambda x: int(x >= self.y1_survival_days)))
+        # y2Survival
+        yads_data.insert(len(yads_data.columns), 'Y2Survival', yads_data['DaysOfSurvival'].apply(lambda x: int(x >= self.y2_survival_days)))
         
         yads_data.to_csv(self.path_to_save_file + '6.YADS_survival_data.csv', na_rep='NULL', index=False, encoding='utf-8')
+        return yads_data
+    
+    
+    def format_date_of_death(self, date_of_death):
+        
+        if isinstance(date_of_death, str):
+            date_of_death = parse(date_of_death)
+            date_of_death = date_of_death.strftime('%Y-%m-%d')
+            date_of_death = datetime.strptime(str(date_of_death), '%Y-%m-%d').strftime('%Y-%m-%d')
+        return date_of_death
+    
+    
+    def final_format_dates(self, yads_data):
+        yads_data['PRIOR_DATE']      = yads_data['PRIOR_DATE'].apply(lambda x: datetime.strptime(str(x), '%Y%m%d').strftime('%Y-%m-%d'))
+        yads_data['SUBSQ_DATE']      = yads_data['SUBSQ_DATE'].apply(lambda x: datetime.strptime(str(x), '%Y%m%d').strftime('%Y-%m-%d'))
+        yads_data['DateOfLastCheck'] = yads_data['DateOfLastCheck'].apply(lambda x: datetime.strptime(str(x), '%Y-%m-%d %H:%M:%S').strftime("%Y-%m-%d"))
+        yads_data['DateOfDeath']     = yads_data['DateOfDeath'].apply(self.format_date_of_death)
+        yads_data.to_csv(self.path_to_save_file + '7.YADS_survival_data_standardized.csv', na_rep='NULL', index=False, encoding='utf-8')
     
         
 def main(args):
@@ -146,9 +167,11 @@ def main(args):
         
         print('Preprocessing patient file... ')
         yads_including_dates_from_patients = preproc.read_and_get_included_patients(included_patients_yads)
-        preproc.get_survival_from_patients(yads_including_dates_from_patients)
+        yads_including_survival            = preproc.get_survival_from_patients(yads_including_dates_from_patients)
         print('Done :)')
         print('--------------------------------------')
+        print('Applying the last fomat to data ......')
+        preproc.final_format_dates(yads_including_survival)
         print('--------------------------------------')
         print('--------------------------------------')
         print('End Survival Data Preproprocessing! :)')
@@ -165,6 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_days_inclusion', default=30,   type=int,   help='Minimum days between prior and subsquent CTs')
     parser.add_argument('--max_days_inclusion', default=120,  type=int,   help='Maximum days between prior and subsquent CTs')
     parser.add_argument('--y1_survival_days',   default=355,  type=int,   help='Number of days to assign survival')
+    parser.add_argument('--y2_survival_days',   default=710,  type=int,   help='Number of days to assign survival')
     parser.add_argument('--path_to_save_file',  default='/projects/disentanglement_methods/files_nki/', type=str, help='Path to save the preprocessed file of YADS')
     parser.add_argument('--path_to_cts_in_yads',default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM/', type=str, help='Path to add to the AnonymizedName in yalds to read the CTs')
     
