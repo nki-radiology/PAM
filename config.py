@@ -8,17 +8,17 @@ image = parser.parse_args()
 
 # Affine Network
 parser = argparse.ArgumentParser()
-parser.add_argument('--filters',     type=list,  default=[32, 64, 128, 256, 512], help='filters number for each layer')
+parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128], help='filters number for each layer')
 affine = parser.parse_args()
 
 # Deformation Network
 parser = argparse.ArgumentParser()
-parser.add_argument('--filters',     type=list,  default=[32, 64, 128, 256, 512], help='filters number for each layer')
+parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128], help='filters number for each layer')
 deformation = parser.parse_args()
 
 # Discriminator Network
 parser = argparse.ArgumentParser()
-parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128, 256, 512], help='filters number for each layer')
+parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128, 256], help='filters number for each layer')
 discriminator = parser.parse_args()
 
 
@@ -32,16 +32,16 @@ pam_adv_fts_sit.add_argument('--train_folder',      type=str,
                              default='/data/groups/beets-tan/l.estacio/data_tcia/train/',
                              help   ='folder that contains the training dataset')
 pam_adv_fts_sit.add_argument('--checkpoints_folder',   type=str,
-                             default="/projects/disentanglement_methods/temp/PAM/checkpoints_abdomen/",
+                             default="/projects/split-encoders/checkpoints/",
                              help   ="folder to save the model checkpoints")
 pam_adv_fts_sit.add_argument('--wb_project_name',   type=str,
-                             default="'exp_pam_thorax'",
+                             default="'split-encoders'",
                              help   ="folder to save the model checkpoints")
 pam_adv_fts_sit.add_argument('--pam_checkpoint', type=str,
-                             default='/projects/disentanglement_methods/temp/PAM/checkpoints_abdomen/PAMModel_40.pth',
+                             default='/projects/split-encoders/checkpoints/PAMModel_40.pth',
                              help   ="folder that contains the PAM model checkpoints")
 pam_adv_fts_sit.add_argument('--dis_checkpoint', type=str,
-                             default='/projects/disentanglement_methods/temp/PAM/checkpoints_abdomen/DisModel_40.pth',
+                             default='/projects/split-encoders/checkpoints/DisModel_40.pth',
                              help   ="folder that contains the discriminator checkpoints")
 args_pam_adv_fts_sit = pam_adv_fts_sit.parse_args()
 

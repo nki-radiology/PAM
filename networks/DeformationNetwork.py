@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from   networks.SpatialTransformer import SpatialTransformer
+from   SpatialTransformer import SpatialTransformer
 
 
 
@@ -64,8 +64,9 @@ class DeformationNetwork(nn.Module):
         self.Conv5    = Conv   (self.filters[3], self.filters[4])
 
         self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+        self.Flatten  = nn.Flatten()
         self.Fc       = nn.Linear(self.filters[4], self.filters[4])
-        self.FcAct    = nn.Tanh 
+        self.FcAct    = nn.Tanh() 
 
         self.encoder = nn.Sequential(
             self.Conv1, self.Maxpool1,
@@ -74,21 +75,22 @@ class DeformationNetwork(nn.Module):
             self.Conv4, self.Maxpool4,
             self.Conv5, 
             self.AvgPool,
-            self.Fc #, 
-            #self.FcAct
+            self.Flatten,
+            self.Fc, 
+            self.FcAct
         )        
 
-        self.Up5      = Up_Conv(self.filters[4], self.filters[3])
-        self.Up_conv5 = Conv   (self.filters[4], self.filters[3])
+        self.Up5      = Conv   (self.filters[4], self.filters[3])
+        self.Up_conv5 = Up_Conv(self.filters[3], self.filters[3])
 
-        self.Up4      = Up_Conv(self.filters[3], self.filters[2])
-        self.Up_conv4 = Conv   (self.filters[3], self.filters[2])
+        self.Up4      = Conv   (self.filters[3], self.filters[2])
+        self.Up_conv4 = Up_Conv(self.filters[2], self.filters[2])
 
-        self.Up3      = Up_Conv(self.filters[2], self.filters[1])
-        self.Up_conv3 = Conv   (self.filters[2], self.filters[1])
+        self.Up3      = Conv   (self.filters[2], self.filters[1])
+        self.Up_conv3 = Up_Conv(self.filters[1], self.filters[1])
 
-        self.Up2      = Up_Conv(self.filters[1], self.filters[0])
-        self.Up_conv2 = Conv   (self.filters[1], self.filters[0])
+        self.Up2      = Conv   (self.filters[1], self.filters[0])
+        self.Up_conv2 = Up_Conv(self.filters[0], self.filters[0])
 
         self.Conv     = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
@@ -108,16 +110,16 @@ class DeformationNetwork(nn.Module):
         z = z.tile((1, 1, s[0], s[1], s[2]))
 
         d5  = self.Up5     (z)
-        d5  = self.Up_conv5(d5)
+        d5  = self.Up_conv5(d5) #48
 
         d4  = self.Up4     (d5)
-        d4  = self.Up_conv4(d4)
+        d4  = self.Up_conv4(d4) #96
 
         d3  = self.Up3     (d4)
-        d3  = self.Up_conv3(d3)
+        d3  = self.Up_conv3(d3) #192
 
         d2  = self.Up2     (d3)
-        d2  = self.Up_conv2(d2)
+        d2  = self.Up_conv2(d2) 
 
         transformation = self.Conv(d2)
 
@@ -125,13 +127,22 @@ class DeformationNetwork(nn.Module):
         registered_img = self.spat_trs(moving, transformation)
 
         return transformation, registered_img
+    
 
-"""
+    def get_features(self, fixed, moving):
+
+        z_fixed     = self.encoder(fixed)
+        z_moving    = self.encoder(moving)
+        
+        z           = z_fixed - z_moving
+
+        return z, (z_fixed, z_moving)
+
+
 # To summarize the complete model
 from torchsummary import summary
-model  = DeformationNetwork()
+model  = DeformationNetwork(filters = [8, 16, 32, 64, 128], img_dim= [192, 192, 192])
 print(model)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model  = model.to(device)
 summary = summary(model, [(1, 192, 192, 160), (1, 192, 192, 160)], device='cuda')
-"""
