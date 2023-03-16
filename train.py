@@ -471,7 +471,6 @@ class Train(object):
                 b_size   = real.shape
                 label_r  = torch.full(b_size, real_label, dtype=torch.float, device=self.device)
                 label_f  = torch.full(b_size, fake_label, dtype=torch.float, device=self.device)
-                #  ????????????????????????????????? Shall I include survival in the discriminator loss?????
                 
                 # Compute discriminator loss
                 loss_d_real = self.disc_loss(real, label_r)
