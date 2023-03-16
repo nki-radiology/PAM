@@ -15,7 +15,8 @@ from networks.spatial_transformer  import SpatialTransformer
 def reparametrize(mu, logvar):
     std = torch.exp(0.5 * logvar)
     eps = torch.randn_like(std)
-    return eps * std + mu
+    #return eps * std + mu
+    return eps.mul(std).add_(mu) #https://github.com/matthew-liu/beta-vae/blob/master/models.py
    
 
 class Beta_VAE(nn.Module):
@@ -79,7 +80,7 @@ class Affine_Beta_VAE(nn.Module):
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
-                nn.GELU()
+                nn.ReLU()
             )
             input_ch = layer_filters
         
@@ -89,7 +90,7 @@ class Affine_Beta_VAE(nn.Module):
             ('affine_gl_avg_pool' , conv_gl_avg_pool_layer(len(self.input_dim))(output_size=1)),
             ('affine_ft_vec_all'  , nn.Flatten()),
             ('affine_last_linear' , nn.Linear(in_features=self.filters[-1], out_features=features_linear_layer, bias=False)),
-            ('affine_last_act_fn', nn.GELU()), 
+            ('affine_last_act_fn', nn.ReLU()), 
         ]))
         
         # Affine Transformation Blocks

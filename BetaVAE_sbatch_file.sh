@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=5-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=AdvBetaVAE                       # Job name
+#SBATCH --job-name=BVAE                             # Job name
 #SBATCH --partition=rtx8000                         # Partition
 #SBATCH --nodelist=roentgen                         # Node name
 #SBATCH --gpus-per-task=1                           # Number of gpus per node

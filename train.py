@@ -15,9 +15,8 @@ from   networks.registration_model  import Registration_Wasserstein_AE
 from   networks.discriminator       import Discriminator
 from   torch.utils.data             import DataLoader
 from   sklearn.model_selection      import train_test_split
-import matplotlib.pyplot            as     plt
 import numpy                        as     np
-import torchvision.transforms.functional as TF
+import torch.nn.functional          as F             
 from random import randint
 
 class Train(object):
@@ -29,6 +28,7 @@ class Train(object):
         self.output_ch  = args.output_ch
         self.group_num  = args.group_num
         self.filters    = args.filters
+        self.filters_disc = args.filters_disc
         self.input_ch_discriminator = args.input_ch_d
         
         # Model
@@ -122,7 +122,7 @@ class Train(object):
                 input_ch   = self.input_ch_discriminator,
                 input_dim  = self.input_dim,
                 group_num  = self.group_num,
-                filters    = self.filters)  
+                filters    = self.filters_disc)  
             
             self.discriminator_net.to(self.device)
             # Handle multi-gpu if desired
@@ -134,9 +134,8 @@ class Train(object):
 
         
     def set_optimizer(self):
-        self.optim      = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
-        #torch.optim.Adam(self.net.parameters(), lr=self.lr,
-        #                 betas=(self.beta1, self.beta2))
+        # self.optim = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+        self.optim = torch.optim.Adam(self.net.parameters(), lr=self.lr, betas=(self.beta1, self.beta2))
         if self.add_discriminator:
             self.optim_disc = torch.optim.Adam(self.discriminator_net.parameters(), lr=self.lr, 
                                             betas=(self.beta1, self.beta2))
@@ -204,6 +203,10 @@ class Train(object):
             for batch_idx, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
                 moving = x_2.to(self.device)
+                
+                # zero-grad the net parameters
+                self.optim.zero_grad()
+                
                
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
@@ -221,8 +224,6 @@ class Train(object):
                 loss = self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
                        self.beta_value   * (kl_divergence_loss) +\
                        self.lambda_value * (elastic_mse_loss + affine_mse_loss)
-                
-                loss = loss / self.accum_iter_batch
                 loss_pam_beta_vae_train += loss.item()
                 
                 print(' --------------------  -------------------- KL Loss: ', kl_divergence_loss.item())
@@ -230,11 +231,15 @@ class Train(object):
                 # one backward pass
                 loss.backward()
                 
-                if ( (batch_idx + 1) % self.accum_iter_batch == 0) or (batch_idx + 1 == len(self.train_dataloader)):
-                    # Update the parameters
-                    self.optim.step()
-                    # zero-grad the net parameters
-                    self.optim.zero_grad()
+                # Update the parameters
+                self.optim.step()
+                
+                # Gradient accumulation
+                #if ( (batch_idx + 1) % self.accum_iter_batch == 0) or (batch_idx + 1 == len(self.train_dataloader)):
+                # self.optim.zero_grad()
+                # self.optim.step()
+                #loss = loss / self.accum_iter_batch
+                
 
                 # Weights and biases visualization
                 wandb.log({'Iteration': batch_idx,
@@ -280,7 +285,7 @@ class Train(object):
                                 'Valid: KL-divergence Loss': kl_divergence_loss.item(),
                                 'Valid: Total loss': loss.item()})
                     
-                    self.fixed_draw = fixed
+                    self.fixed_draw  = fixed
                     self.moving_draw = moving
                     self.w_0_draw    = w_0
                     self.w_1_draw    = w_1
@@ -364,11 +369,11 @@ class Train(object):
                 generator_mse_penalty = self.disc_loss_fts(features_w1, features_fixed)
                 
                 # Computing the affine loss
-                affine_mse_loss     = self.mse_loss(w_0, fixed)
+                affine_mse_loss     = self.nn_loss.pearson_correlation(fixed, w_0) #self.mse_loss(w_0, fixed)
                 penalty_affine_loss = self.energy_loss.energy_loss(t_0)
                 
                 # Computing the elastic loss: Beta-VAE loss
-                elastic_mse_loss     = self.mse_loss(w_1, fixed) 
+                elastic_mse_loss     = self.nn_loss.pearson_correlation(fixed, w_1) #self.mse_loss(w_1, fixed) 
                 penalty_elastic_loss = self.energy_loss.energy_loss(t_1)
                 kl_divergence_loss   = kl_divergence(mu, log_var)
 
@@ -449,19 +454,19 @@ class Train(object):
                     generator_mse_penalty = self.disc_loss_fts(features_w1, features_fixed)
                     
                     # Computing the affine loss
-                    affine_mse_loss     = self.mse_loss(w_0, fixed)
+                    affine_mse_loss     = self.nn_loss.pearson_correlation(fixed, w_0) #self.mse_loss(w_0, fixed)
                     penalty_affine_loss = self.energy_loss.energy_loss(t_0)
 
                     # Computing the elastic loss: Beta-VAE loss
-                    elastic_mse_loss     = self.mse_loss(w_1, fixed)
+                    elastic_mse_loss     = self.nn_loss.pearson_correlation(fixed, w_1) #self.mse_loss(w_1, fixed)
                     penalty_elastic_loss = self.energy_loss.energy_loss(t_1)
                     kl_divergence_loss   = kl_divergence(mu, log_var)
                     
                     # Total loss Beta-VAE valid (Generator)                   
-                    loss_generator =    self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
-                                        self.beta_value   * (kl_divergence_loss) +\
-                                        self.lambda_value * (elastic_mse_loss + affine_mse_loss) + \
-                                        self.gamma_value  * generator_mse_penalty
+                    loss_generator = self.alpha_value  * (penalty_affine_loss + penalty_elastic_loss) + \
+                                     self.beta_value   * (kl_divergence_loss) +\
+                                     self.lambda_value * (elastic_mse_loss + affine_mse_loss) + \
+                                     self.gamma_value  * generator_mse_penalty
                     loss_pam_beta_vae_valid += loss_generator.item()
                     
                     

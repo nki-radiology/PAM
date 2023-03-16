@@ -70,7 +70,7 @@ class Encoder(nn.Module):
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
-                nn.GELU()
+                nn.ReLU()
             )
             input_ch = layer_filters
         
@@ -127,13 +127,14 @@ class Decoder(nn.Module):
                 conv_up_layer(len(input_dim))(
                     in_channels=filters[layer_i], out_channels=filters[layer_i+1], kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=filters[layer_i+1]),
-                nn.GELU()
+                nn.ReLU()
             )
         self.conv_up_net = nn.Sequential(modules)
 
         self.final_layer = nn.Sequential(
                 conv_up_layer(len(input_dim))(
                     in_channels=filters[layer_i+1], out_channels=output_ch, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
+                nn.Sigmoid()
         )
         
     
@@ -182,7 +183,7 @@ class Encoder_WAE(nn.Module):
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
-                nn.GELU()
+                nn.ReLU()
             )
             input_ch = layer_filters
         
@@ -228,7 +229,7 @@ class Encoder_Discriminator(nn.Module):
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
-                nn.GELU()
+                nn.ReLU()
             )
             input_ch = layer_filters
         
