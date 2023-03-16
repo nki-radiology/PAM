@@ -283,10 +283,10 @@ class Train(object):
                                 'Valid: KL-divergence Loss': kl_divergence_loss.item(),
                                 'Valid: Total loss': loss.item()})
                     
-                    self.fixed_draw  = fixed
-                    self.moving_draw = moving
-                    self.w_0_draw    = w_0
-                    self.w_1_draw    = w_1
+                    self.fixed_draw  = fixed[0]
+                    self.moving_draw = moving[0]
+                    self.w_0_draw    = w_0[0]
+                    self.w_1_draw    = w_1[0]
 
             # Visualization of images
             save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw)
@@ -493,10 +493,10 @@ class Train(object):
                                 'Valid: Discriminator loss': loss_discriminator,
                         })
                     
-                    self.fixed_draw = fixed
-                    self.moving_draw = moving
-                    self.w_0_draw    = w_0
-                    self.w_1_draw    = w_1
+                    self.fixed_draw = fixed[0]
+                    self.moving_draw = moving[0]
+                    self.w_0_draw    = w_0[0]
+                    self.w_1_draw    = w_1[0]
 
             # Visualization of images
             save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw)

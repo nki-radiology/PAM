@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=8,          type=int,       help='batch size')
 
     parser.add_argument('--model',      default='Beta-VAE', type=str,       help='Wasserstein Autoencoder (WAE) and Beta Variational Autoencoder (Beta-VAE)')
-    parser.add_argument('--add_disc',   default=False,      type=bool,      help='Add a discriminator network to the Beta-VAE model')
+    parser.add_argument('--add_disc',   default=True,      type=bool,      help='Add a discriminator network to the Beta-VAE model')
     parser.add_argument('--input_ch',   default=2,          type=int,       help='Number of input channels of the image')
     parser.add_argument('--input_ch_d', default=1,          type=int,       help='Number of input channels of the image for the discriminator')
     parser.add_argument('--output_ch',  default=3,          type=int,       help='Number of output channels of the image')
@@ -56,8 +56,8 @@ if __name__ == '__main__':
     parser.add_argument('--entity_wb',             default='ljestaciocerquin',     type=str, help='Entity for weights and biases')
     
     parser.add_argument('--dset_dir',   default='/data/groups/beets-tan/l.estacio/data_tcia/train/',                    type=str, help='dataset directory')
-    parser.add_argument('--ckpt_dir',   default='/projects/disentanglement_methods/checkpoints/Beta_VAE/vanilla/',  type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir',default='/projects/disentanglement_methods/results/Beta_VAE/vanilla/',      type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--ckpt_dir',   default='/projects/disentanglement_methods/checkpoints/Beta_VAE/adversarial/',  type=str, help='checkpoint directory')
+    parser.add_argument('--results_dir',default='/projects/disentanglement_methods/results/Beta_VAE/adversarial/',      type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     
