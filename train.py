@@ -206,7 +206,6 @@ class Train(object):
                 
                 # zero-grad the net parameters
                 self.optim.zero_grad()
-                
                
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
@@ -238,8 +237,7 @@ class Train(object):
                 #if ( (batch_idx + 1) % self.accum_iter_batch == 0) or (batch_idx + 1 == len(self.train_dataloader)):
                 # self.optim.zero_grad()
                 # self.optim.step()
-                #loss = loss / self.accum_iter_batch
-                
+                # loss = loss / self.accum_iter_batch
 
                 # Weights and biases visualization
                 wandb.log({'Iteration': batch_idx,
@@ -343,7 +341,6 @@ class Train(object):
                 self.beta_value = np.minimum(self.beta_value*2, self.beta_value_max)  
             
             angle = randint(0, 20)    
-                                        
             
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
                 
