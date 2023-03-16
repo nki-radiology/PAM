@@ -41,9 +41,6 @@ class Registration2DDataSet(data.Dataset):
         
         return fixed, moving
 
-
-
-
 class Registration3DDataSet(data.Dataset):
     def __init__(self,
                  path_dataset: str,
