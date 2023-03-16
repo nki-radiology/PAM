@@ -120,7 +120,7 @@ class Train(object):
         self.energy_loss   = Energy_Loss()
         self.disc_loss     = torch.nn.BCELoss()
         self.l2_loss       = torch.nn.MSELoss()
-        self.survival_loss = torch.nn.L1Loss()
+        self.survival_loss = torch.nn.BCELoss()
 
         
     def set_optimizer(self):
@@ -152,23 +152,19 @@ class Train(object):
         else:
             registration_dataset = Registration3DDataSet
 
-        # Training dataset
+        # Training and Validation dataset
         train_dataset = registration_dataset(path_dataset = inputs_train,
                                              input_shape  = self.input_dim, # [160, 192, 192] -> (160, 192, 192, 1)
                                              transform    = None)
 
-        # Validation dataset
         valid_dataset = registration_dataset(path_dataset = inputs_valid,
                                              input_shape  = self.input_dim, # [160, 192, 192] -> (160, 192, 192, 1)
                                              transform    = None)
 
-        # Training dataloader
+        # Training and Validation dataloader
         self.train_dataloader = DataLoader(dataset=train_dataset, batch_size=self.batch_size, shuffle=True)
-
-        # Validation dataloader
         self.valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=self.batch_size, shuffle=True)
     
-
 
     def train_PAM_Adversarial(self):
         
@@ -446,7 +442,7 @@ class Train(object):
                 penalty_deform_loss      = self.energy_loss.energy_loss(t_1)
                 
                 # Generator: Survival Loss
-                survival_loss = self.survival_loss(surv_pred, surv_target)
+                survival_loss    = self.survival_loss(surv_pred, surv_target)
                 loss_surv_train += survival_loss.item()
                 
                 # PAM loss
