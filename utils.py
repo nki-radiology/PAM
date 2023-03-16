@@ -88,10 +88,10 @@ def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_i
     
     #PIL VERSION
     transform  = T.ToPILImage()    
-    fixed_img  = transform(fixed[:,:,:,:,50].squeeze()).convert("L")
-    moving_img = transform(moving[:,:,:,:,50].squeeze()).convert("L")
-    affine_img = transform(w0_img[:,:,:,:,50].squeeze()).convert("L")
-    deformation_img = transform(w1_img[:,:,:,:,50].squeeze()).convert("L")
+    fixed_img  = transform(fixed[:,:,:,50].squeeze()).convert("L")
+    moving_img = transform(moving[:,:,:,50].squeeze()).convert("L")
+    affine_img = transform(w0_img[:,:,:,50].squeeze()).convert("L")
+    deformation_img = transform(w1_img[:,:,:,50].squeeze()).convert("L")
     
     fixed_img.show()                              
     fixed_img.save(saving_examples_folder + "fixed_image.png")    
