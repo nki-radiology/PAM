@@ -14,3 +14,6 @@ processing_QoL/outputjobs/
 processing_QoL/unprocessed_abdomen_data.csv
 processing_QoL/unprocessed_thorax_data.csv
 B01_ScanPairs.csv
+processing_QoL/commandline_args_Abdomen.txt
+processing_QoL/commandline_args_Thorax.txt
+processing_QoL/tem.py

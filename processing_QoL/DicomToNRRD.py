@@ -68,42 +68,41 @@ def apply_localizer(tcia_proc: list, crop: str):
         )
         print('Applying crop of Abdomen!')
 
-    name_f = "/projects/disentanglement_methods/temp/PAM/processing_QoL/unprocessed_" + crop + "_data.csv"
-    f      = open(name_f, 'w') 
+    name_f = "/projects/disentanglement_methods/QoL_files/unprocessed_remaining" + crop + "_data.csv"
+    '''f      = open(name_f, 'w') 
     writer = csv.writer(f)
     header = ['dicom_path']
-    writer.writerow(header)
-
+    writer.writerow(header)'''
+    dicom_path = []
+    
     # Reading and saving preprocessed data
     with tqdm(total=len(tcia_proc)) as pbar:
         for path in tcia_proc:
-            print(' My Path is: ---------------------------------')
-            print(path)
-            
             try:
                 processed_ct_scan = loader(path)
                 processed_ct_scan = processed_ct_scan + 120
                 processed_ct_scan = processed_ct_scan / 2
                 processed_ct_scan = SimpleITK.Cast(processed_ct_scan, sitk.sitkUInt8)
 
-                path_1 = path.replace("/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM", "/data/groups/beets-tan/l.estacio/QOL_nrrd/" + crop)
+                path_1 = path.replace("/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM", "/data/groups/beets-tan/l.estacio/QOL_nrrd_remaining/" + crop)
                 verify_path_to_save(path_1)
                 ct_path = path_1 + '/' + path.split('/')[9] + '.nrrd'
-                print(' My New Path is: ---------------------------------')
-                print(ct_path)
                 WriteImage(processed_ct_scan, ct_path)
-
             except:
                 print("--------------- CT was not loaded! ---------------")
-                writer.writerow(path)
+                #writer.writerow(path)
+                dicom_path.append(path)
                 pass
             pbar.update(1)
-    f.close()
+    #f.close()
     print("Done!")
+    dict = {'dicom_path': dicom_path}
+    df   = pd.DataFrame(dict)
+    df.to_csv(name_f, na_rep='NULL', index=False, encoding='utf-8')
 
 
-path                     = "/projects/disentanglement_methods/temp/PAM/processing_QoL/B01_ScanPairs.csv"
+path                     = '/projects/disentanglement_methods/QoL_files/ScanPairs_remaning.csv' #"/projects/disentanglement_methods/QoL_files/B01_ScanPairs.csv"
 data, non_repeating_data = get_data_file(path)
-#apply_localizer(non_repeating_data, 'abdomen')
-apply_localizer(non_repeating_data, 'thorax')
-
+#apply_localizer(non_repeating_data, 'thorax')
+apply_localizer(non_repeating_data, 'abdomen')
+print('Process Done!!!!!!!!!!!!!!!!!!!!!!!')

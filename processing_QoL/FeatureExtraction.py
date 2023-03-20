@@ -4,38 +4,42 @@ import torch
 import pandas  as     pd
 from   tqdm    import tqdm
 from   pydicom import dcmread
-sys.path.append('/DATA/laura/code/prognostic-ai-monitoring/PAM/')
+sys.path.append('/projects/disentanglement_methods/PAM/')
 from networks.PAMNetFeatures       import PAMNetwork
 from networks.DiscriminatorNetwork import DiscriminatorNetwork
 from libs.frida.io                 import ImageLoader, ReadVolume
 from libs.frida.transforms         import ZeroOneScaling, ToNumpyArray
 
 
-def replace_Z_by_Immunoteam(filename: str):
+def replace_Z_by_new_location(filename: str):
 
     # Reading the original csv file
     data               = pd.read_csv(filename)
 
     # Changing for the right path
-    data['PRIOR_PATH'] = data['PRIOR_PATH'].replace('Z:', '/IMMUNOTEAM', regex=True)
-    data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace('Z:', '/IMMUNOTEAM', regex=True)
+    data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace(r'\\', '/', regex=True)
     data['PRIOR_PATH'] = data['PRIOR_PATH'].replace(r'\\', '/',  regex=True)
-    data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace(r'\\', '/',  regex=True)
-
-    prior_path_nrrd = list( data['PRIOR_PATH'].replace('/IMMUNOTEAM', '/DATA/laura/data_melda/abdomen', regex=True) )
-    subsq_path_nrrd = list( data['SUBSQ_PATH'].replace('/IMMUNOTEAM', '/DATA/laura/data_melda/abdomen', regex=True) )
+    data['PRIOR_PATH'] = data['PRIOR_PATH'].replace('Z:/NKI-d21243/', '/data/groups/beets-tan/s.trebeschi/QOL_dicoms/', regex=True)
+    data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace('Z:/NKI-d21243/', '/data/groups/beets-tan/s.trebeschi/QOL_dicoms/', regex=True)
+    
+    prior_path_nrrd = list( data['PRIOR_PATH'].replace('/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM/', '/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/', regex=True) )
+    subsq_path_nrrd = list( data['SUBSQ_PATH'].replace('/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM/', '/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/', regex=True) )
 
     for idx in range(len(prior_path_nrrd)):
+        print('Prior path: ', prior_path_nrrd[idx])
+        print('Subsq Path: ', subsq_path_nrrd[idx])
         prior_path           = prior_path_nrrd[idx] + '/' + prior_path_nrrd[idx].split('/')[9] + '.nrrd'
         subsq_path           = subsq_path_nrrd[idx] + '/' + subsq_path_nrrd[idx].split('/')[9] + '.nrrd'
         prior_path_nrrd[idx] = prior_path
         subsq_path_nrrd[idx] = subsq_path
         
+        print('Prior path Nrrd: ', prior_path_nrrd[idx])
+        print('Subsq Path Nrrd: ', subsq_path_nrrd[idx])
+        
     data['PRIOR_PATH_NRRD'] = prior_path_nrrd
     data['SUBSQ_PATH_NRRD'] = subsq_path_nrrd
-    data.to_excel('/DATA/laura/data_melda/abdomen/AbdomenScanPairs.xlsx') 
-
-
+    data.to_csv('/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/ThoraxScanPairs.csv', na_rep='NULL', index=True, encoding='utf-8')
+    
 
 class PamModel:
 
@@ -214,7 +218,7 @@ class PamFeatures():
     def get_features(self, filename: str, path_to_save_files: str, name_to_save_xlsx: str):
 
         # Reading the original csv file
-        data                    = pd.read_excel(filename)
+        data = pd.read_csv(filename)
         
         loader = ImageLoader(
             ReadVolume(),
@@ -283,9 +287,10 @@ class PamFeatures():
                     new_df_mean      = pd.concat([patient_after, prior_date_after, prior_path_after, tag_bl_all_after, subsq_date_after, subsq_path_after, tag_fu_all_after, pam_ls_all_mean], axis=1, ignore_index=False, sort=False)
                     new_df_max       = pd.concat([patient_after, prior_date_after, prior_path_after, tag_bl_all_after, subsq_date_after, subsq_path_after, tag_fu_all_after, pam_ls_all_max], axis=1, ignore_index=False, sort=False)
                     new_df_quan      = pd.concat([patient_after, prior_date_after, prior_path_after, tag_bl_all_after, subsq_date_after, subsq_path_after, tag_fu_all_after, pam_ls_all_quan], axis=1, ignore_index=False, sort=False)
-                    new_df_mean.to_excel(path_to_save_files + name_to_save_xlsx + '_mean.xlsx') 
-                    new_df_max.to_excel(path_to_save_files + name_to_save_xlsx + '_max.xlsx')
-                    new_df_quan.to_excel(path_to_save_files + name_to_save_xlsx + '_percentile.xlsx') 
+                    
+                    new_df_mean.to_csv(path_to_save_files + name_to_save_xlsx + '_mean.csv',       na_rep='NULL', index=True, encoding='utf-8')
+                    new_df_max.to_csv(path_to_save_files  + name_to_save_xlsx + '_max.csv',        na_rep='NULL', index=True, encoding='utf-8')
+                    new_df_quan.to_csv(path_to_save_files + name_to_save_xlsx + '_percentile.csv', na_rep='NULL', index=True, encoding='utf-8')
                 
                 except:
                     print(' - [failed] while loading of the NRRD images. ' )
@@ -302,7 +307,7 @@ class PamFeatures():
                     subsq_date_nr = pd.DataFrame.from_dict(self.subsq_date_list_no_read)
                     subsq_path_nr = pd.DataFrame.from_dict(self.subsq_path_list_no_read)
                     new_df_nr = pd.concat([patient_nr, prior_date_nr, prior_path_nr, subsq_date_nr, subsq_path_nr], axis=1, ignore_index=False, sort=False)
-                    new_df_nr.to_excel(path_to_save_files + name_to_save_xlsx + '_unprocessed_images.xlsx') 
+                    new_df_nr.to_csv(path_to_save_files + name_to_save_xlsx + '_unprocessed_images.csv', na_rep='NULL', index=True, encoding='utf-8')
                 pbar.update(1)
 
     
@@ -312,27 +317,26 @@ if __name__ == "__main__":
     import json
 
     parser = ArgumentParser()
-    parser.add_argument('--thorax_raw_file_path',      type=str, default='/DATA/laura/data_melda/thorax/ThoraxScanPairs.xlsx')
-    parser.add_argument('--thorax_pam_checkpoint',     type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia/models/pam_adv_fts_sit/PAMModel_50.pth')
-    parser.add_argument('--thorax_dis_checkpoint',     type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia/models/pam_adv_fts_sit/DisModel_50.pth')
-    parser.add_argument('--thorax_path_to_save_file',  type=str, default='/DATA/laura/data_melda/thorax/')
+    parser.add_argument('--thorax_raw_file_path',      type=str, default='/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/ThoraxScanPairs.csv')
+    parser.add_argument('--thorax_pam_checkpoint',     type=str, default='/projects/disentanglement_methods/checkpoints/PAM/thorax/PAMModel_60.pth')
+    parser.add_argument('--thorax_dis_checkpoint',     type=str, default='/projects/disentanglement_methods/checkpoints/PAM/thorax/DisModel_60.pth')
+    parser.add_argument('--thorax_path_to_save_file',  type=str, default='/projects/disentanglement_methods/QoL_files/thorax/')
     parser.add_argument('--thorax_name_to_save_xlsx',  type=str, default='features_pam_thorax')
-    parser.add_argument('--abdomen_raw_file_path',     type=str, default='/DATA/laura/data_melda/abdomen/AbdomenScanPairs.xlsx')
-    parser.add_argument('--abdomen_pam_checkpoint',    type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia_abdomen/models/PAMModel_50.pth')
-    parser.add_argument('--abdomen_dis_checkpoint',    type=str, default='/SHARED/active_Laura/temporal_data/DATA/tcia_abdomen/models/DisModel_50.pth')
-    parser.add_argument('--abdomen_path_to_save_file', type=str, default='/DATA/laura/data_melda/abdomen/')
+    
+    parser.add_argument('--abdomen_raw_file_path',     type=str, default='/data/groups/beets-tan/l.estacio/QOL_nrrd/abdomen/AbdomenScanPairs.csv')
+    parser.add_argument('--abdomen_pam_checkpoint',    type=str, default='/projects/disentanglement_methods/checkpoints/PAM/abdomen/PAMModel_60.pth')
+    parser.add_argument('--abdomen_dis_checkpoint',    type=str, default='/projects/disentanglement_methods/checkpoints/PAM/abdomen/DisModel_60.pth')
+    parser.add_argument('--abdomen_path_to_save_file', type=str, default='/projects/disentanglement_methods/QoL_files/abdomen/')
     parser.add_argument('--abdomen_name_to_save_xlsx', type=str, default='features_pam_abdomen')
+    
+    parser.add_argument('--region_to_get_features',    type=str, default='Abdomen')
     args = parser.parse_args()
 
     # If data is considering path with Z:\\.....
-    #path = "/DATA/laura/data_melda/ScanPairs.csv" #"/DATA/laura/external_data/B01_ScanPairs.csv"
-    #replace_Z_by_Immunoteam(path)
+    '''path = '/projects/disentanglement_methods/QoL_files/B01_ScanPairs.csv'
+    replace_Z_by_new_location(path)'''
     
-
-    # Get the input by the user:Abdomen or Thorax
-    region = str(input ("Enter the region (Thorax or Abdomen) to get the features: "))
-
-    if region =='Thorax':
+    if args.region_to_get_features =='Thorax':
         print(' ------------------------------- [THORAX] Features! ------------------------------- ' )
         pam_features = PamFeatures(args.thorax_pam_checkpoint, args.thorax_dis_checkpoint)
         pam_features.get_features(args.thorax_raw_file_path, args.thorax_path_to_save_file, args.thorax_name_to_save_xlsx)
@@ -342,6 +346,6 @@ if __name__ == "__main__":
         pam_features = PamFeatures(args.abdomen_pam_checkpoint, args.abdomen_dis_checkpoint)
         pam_features.get_features(args.abdomen_raw_file_path, args.abdomen_path_to_save_file, args.abdomen_name_to_save_xlsx)
     
-    name_file = 'commandline_args_' + region + '.txt'
+    name_file = 'commandline_args_' + args.region_to_get_features + '.txt'
     with open(name_file, 'w') as f:
         json.dump(args.__dict__, f, indent=2)
