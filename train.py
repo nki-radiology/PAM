@@ -77,6 +77,7 @@ class Train(object):
         self.moving_draw = None
         self.w_0_draw    = None
         self.w_1_draw    = None
+        self.t_1_draw    = None
         
         # Weights & biases projects name and entity
         self.proj_wae              = args.proj_wae
@@ -661,10 +662,11 @@ class Train(object):
                     self.moving_draw = moving[0]
                     self.w_0_draw    = w_0[0]
                     self.w_1_draw    = w_1[0]
+                    self.t_1_draw    = t_1[0]
 
             # Visualization of images
-            save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw)
-            
+            save_images_weights_and_biases('Validation Images', self.results_dir, self.fixed_draw, self.moving_draw, self.w_0_draw, self.w_1_draw, self.t_1_draw)
+         
             
             # Save checkpoints
             if epoch % 10 == 0:

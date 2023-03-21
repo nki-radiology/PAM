@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --time=5-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=BVAE                          # Job name
-#SBATCH --partition=a6000                         # Partition
-#SBATCH --nodelist=aristarchus                         # Node name
+#SBATCH --job-name=WAE                              # Job name
+#SBATCH --partition=rtx8000                         # Partition
+#SBATCH --nodelist=roentgen                         # Node name
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
 #SBATCH --mem=30G                                   # Memory
 #SBATCH --cpus-per-task=5                           # Number of cores
-#SBATCH --output=/projects/disentanglement_methods/outputjobs/Beta_VAE/vanilla/slurm_%j.log   # Standard output and error log
+#SBATCH --output=/projects/disentanglement_methods/outputjobs/WAE/slurm_%j.log   # Standard output and error log
 pwd; hostname; date
 
 # Source bashrc, such that the shell is setup properly

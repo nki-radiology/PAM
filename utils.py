@@ -89,8 +89,8 @@ def read_3D_train_data(path_input):
     return train_data
 
 
-def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_img, w1_img):
-    table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image'], allow_mixed_types = True)
+def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_img, w1_img, t1_img):
+    table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image', 'Deformation Field'], allow_mixed_types = True)
     
     saving_examples_folder = path_to_save
     
@@ -99,7 +99,8 @@ def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_i
     fixed_img  = transform(fixed[:,:,:,50].squeeze()).convert("L")
     moving_img = transform(moving[:,:,:,50].squeeze()).convert("L")
     affine_img = transform(w0_img[:,:,:,50].squeeze()).convert("L")
-    deformation_img = transform(w1_img[:,:,:,50].squeeze()).convert("L")
+    deformation_img   = transform(w1_img[:,:,:,50].squeeze()).convert("L")
+    deformation_field = transform(t1_img[:,:,:,50].squeeze()).convert("L")
     
     fixed_img.show()                              
     fixed_img.save(saving_examples_folder + "fixed_image.png")    
@@ -108,13 +109,16 @@ def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_i
     affine_img.show() 
     affine_img.save(saving_examples_folder + "affine_image.png")    
     deformation_img.show()
-    deformation_img.save(saving_examples_folder + "deformation_image.png")    
+    deformation_img.save(saving_examples_folder + "deformation_image.png")  
+    deformation_field.show()
+    deformation_field.save(saving_examples_folder + "deformation_field_image.png")  
     
     table.add_data(
         wandb.Image(Image.open(saving_examples_folder + "fixed_image.png")),
         wandb.Image(Image.open(saving_examples_folder + "moving_image.png")),
         wandb.Image(Image.open(saving_examples_folder + "affine_image.png")),
         wandb.Image(Image.open(saving_examples_folder + "deformation_image.png")),
+        wandb.Image(Image.open(saving_examples_folder + "deformation_field_image.png"))
     )
     
     wandb.log({table_name: table})
