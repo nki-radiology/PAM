@@ -133,8 +133,7 @@ class Decoder(nn.Module):
 
         self.final_layer = nn.Sequential(
                 conv_up_layer(len(input_dim))(
-                    in_channels=filters[layer_i+1], out_channels=output_ch, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
-                nn.Sigmoid()
+                    in_channels=filters[layer_i+1], out_channels=output_ch, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
         )
         
     
@@ -194,7 +193,7 @@ class Encoder_WAE(nn.Module):
             
         self.latent_space_z = nn.Sequential(
             nn.Linear(in_features=self.elem, out_features=latent_dim, bias=True),
-            nn.Sigmoid()
+            nn.ReLU()
         )
 
     def forward(self, x):

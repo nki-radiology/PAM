@@ -15,9 +15,8 @@ from networks.spatial_transformer  import SpatialTransformer
 def reparametrize(mu, logvar):
     std = torch.exp(0.5 * logvar)
     eps = torch.randn_like(std)
-    #return eps * std + mu
-    return eps.mul(std).add_(mu) #https://github.com/matthew-liu/beta-vae/blob/master/models.py
-   
+    return eps * std + mu
+    
 
 class Beta_VAE(nn.Module):
 

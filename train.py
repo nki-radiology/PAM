@@ -549,6 +549,7 @@ class Train(object):
         
         # Establish convention for real and fake labels during training
         one = torch.tensor(1, dtype=torch.float, device=self.device)
+        eps = 1e-5
         
         for epoch in range(self.start_epoch, self.n_epochs):
 
@@ -582,8 +583,8 @@ class Train(object):
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, z_real = self.net(fixed, moving)
                 d_real                     = self.discriminator_net(z_real)
-                loss_d_fake = self.lambda_value * torch.log(d_fake).mean()
-                loss_d_real = self.lambda_value * torch.log(1 - d_real).mean()
+                loss_d_fake = self.lambda_value * torch.log(d_fake + eps).mean()
+                loss_d_real = self.lambda_value * torch.log(1 - d_real + eps).mean()
                 loss_d_fake.backward(-one)
                 loss_d_real.backward(-one)
                 print('loss_d_fake: ', loss_d_fake)
@@ -600,8 +601,8 @@ class Train(object):
                 d_real                = self.discriminator_net(z_real)
                 reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
                 print(z_real)
-                print('z_real: ', z_real.min(), z_real.max(), (torch.log(z_real)).mean())
-                d_loss               = self.lambda_value * (torch.log(z_real)).mean()
+                print('z_real: ', z_real.min(), z_real.max(), (torch.log(z_real + eps)).mean())
+                d_loss               = self.lambda_value * (torch.log(z_real + eps)).mean()
                 reconstruction_loss.backward(one, retain_graph=True)
                 d_loss.backward(-one)
                 print('reconstruction_loss: ', reconstruction_loss)
@@ -637,15 +638,15 @@ class Train(object):
                     # Forward pass through the registration model
                     t_0, w_0, t_1, w_1, z_real = self.net(fixed, moving)
                     d_real                     = self.discriminator_net(z_real)
-                    loss_d_fake = self.lambda_value * torch.log(d_fake).mean()
-                    loss_d_real = self.lambda_value * torch.log(1 - d_real).mean()
+                    loss_d_fake = self.lambda_value * torch.log(d_fake + eps).mean()
+                    loss_d_real = self.lambda_value * torch.log(1 - d_real + eps).mean()
                     loss_disc_valid += (loss_d_fake.item() + loss_d_real.item())
                 
                     # Train Generator
                     t_0, w_0, t_1, w_1, z_real  = self.net(fixed, moving)
                     d_real                      = self.discriminator_net(z_real)
                     reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
-                    d_loss               = self.lambda_value * (torch.log(z_real)).mean()
+                    d_loss               = self.lambda_value * (torch.log(z_real + eps)).mean()
                     loss_pam_wae_valid  += reconstruction_loss.item() + d_loss.item()
                 
                     
