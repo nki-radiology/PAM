@@ -38,13 +38,13 @@ class Wasserstein_AE(nn.Module):
         # Decoder Block
         self.decoder  = Decoder(output_ch=self.output_ch, input_dim=self.input_dim, latent_dim=self.latent_dim,
                                 group_num=self.group_num, filters=self.filters)
-        self.activation_func = nn.Tanh()
+        #self.activation_func = nn.Tanh()
         
     
     def forward(self, x):
         z     = self.encoder(x)
         x_hat = self.decoder(z)
-        x_hat = self.activation_func(x_hat)
+        #x_hat = self.activation_func(x_hat)
         return x_hat
 
 

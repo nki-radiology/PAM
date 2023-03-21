@@ -66,7 +66,7 @@ class Encoder(nn.Module):
         
         for layer_i, layer_filters in enumerate(filters):
 
-            modules['encoder_block' + str(layer_i)] = nn.Sequential(
+            modules['encoder_block_' + str(layer_i)] = nn.Sequential(
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
@@ -112,18 +112,18 @@ class Decoder(nn.Module):
 
         modules = OrderedDict()
 
-        filters    = filters[::-1]
-        self.last_feature = filters[0]
-        input_dec  = [dim_after_n_layers(i, len(filters)) for i in input_dim]
+        filters             = filters[::-1]
+        self.last_feature   = filters[0]
+        input_dec           = [dim_after_n_layers(i, len(filters)) for i in input_dim]
         self.input_decoder  = list(map(int, input_dec))
-        elem  = int(filters[0] * np.prod(input_dec))
+        elem                = int(filters[0] * np.prod(input_dec))
 
         self.input_layer = nn.Sequential(
             nn.Linear(in_features=latent_dim, out_features=elem)
         )
 
         for layer_i in range(len(filters) - 1):
-            modules['decoder_block' + str(layer_i)] = nn.Sequential(
+            modules['decoder_block_' + str(layer_i)] = nn.Sequential(
                 conv_up_layer(len(input_dim))(
                     in_channels=filters[layer_i], out_channels=filters[layer_i+1], kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=filters[layer_i+1]),
@@ -179,7 +179,7 @@ class Encoder_WAE(nn.Module):
         
         for layer_i, layer_filters in enumerate(filters):
 
-            modules['encoder_block' + str(layer_i)] = nn.Sequential(
+            modules['encoder_block_' + str(layer_i)] = nn.Sequential(
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
@@ -192,7 +192,10 @@ class Encoder_WAE(nn.Module):
         output_dim = [dim_after_n_layers(i, layer_i+1) for i in input_dim]
         self.elem  = int(layer_filters * np.prod(output_dim))
             
-        self.latent_space_z = nn.Linear(in_features=self.elem, out_features=latent_dim, bias=False)
+        self.latent_space_z = nn.Sequential(
+            nn.Linear(in_features=self.elem, out_features=latent_dim, bias=True),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
         x = self.conv_net(x)
@@ -225,7 +228,7 @@ class Encoder_Discriminator(nn.Module):
         
         for layer_i, layer_filters in enumerate(filters):
 
-            modules['encoder_block' + str(layer_i)] = nn.Sequential(
+            modules['encoder_block_' + str(layer_i)] = nn.Sequential(
                 conv_layer(len(input_dim))(
                     in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),

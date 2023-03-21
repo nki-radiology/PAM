@@ -52,7 +52,15 @@ def weights_init(m):
         if m.bias is not None:
             m.bias.data.fill_(0)
             
-            
+        
+def frozen_params(module: nn.Module):
+    for p in module.parameters():
+        p.requires_grad = False
+
+def free_params(module: nn.Module):
+    for p in module.parameters():
+        p.requires_grad = True
+
 def read_2D_train_data(path_input):
     path      = Path(path_input)
     filenames = list(path.glob('*.jpeg'))

@@ -44,6 +44,33 @@ class Discriminator(nn.Module):
         return x, fx
     
 
+class Discriminator_Linear(nn.Module):
+    def __init__(self, latent_dim  : int = 512):
+        super(Discriminator_Linear, self).__init__()
+        """
+        Inputs:
+            - latent_dim : Dimensionality of the latent space (Z)
+        """          
+
+        self.latent_z   = latent_dim
+
+        self.main = nn.Sequential(
+            nn.Linear(self.latent_z, self.latent_z * 4),
+            nn.ReLU(True),
+            nn.Linear(self.latent_z * 4, self.latent_z * 4),
+            nn.ReLU(True),
+            nn.Linear(self.latent_z * 4, self.latent_z * 4),
+            nn.ReLU(True),
+            nn.Linear(self.latent_z * 4, self.latent_z * 4),
+            nn.ReLU(True),
+            nn.Linear(self.latent_z * 4, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x: torch.tensor):
+        x = self.main(x)
+        return x
+
 
 from torchsummary import summary
 

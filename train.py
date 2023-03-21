@@ -4,6 +4,8 @@ import wandb
 from   utils                        import create_directory
 from   utils                        import cuda_seeds
 from   utils                        import weights_init
+from   utils                        import frozen_params
+from   utils                        import free_params
 from   utils                        import read_2D_train_data
 from   utils                        import read_3D_train_data
 from   utils                        import save_images_weights_and_biases
@@ -13,10 +15,12 @@ from   registration_dataset         import Registration3DDataSet
 from   networks.registration_model  import Registration_Beta_VAE
 from   networks.registration_model  import Registration_Wasserstein_AE
 from   networks.discriminator       import Discriminator
+from   networks.discriminator       import Discriminator_Linear
 from   torch.utils.data             import DataLoader
 from   sklearn.model_selection      import train_test_split
 import numpy                        as     np
-import torch.nn.functional          as F             
+import torch.nn.functional          as F   
+from torch.optim.lr_scheduler import StepLR          
 from random import randint
 
 class Train(object):
@@ -59,6 +63,7 @@ class Train(object):
         self.beta_value_max = args.beta_value_max       # regularization for the KL-divergence loss
         self.gamma_value  = args.gamma_value            # regularization for the discriminator (feature matching loss: MSE)
         self.lambda_value = args.lambda_value           # regularization for the reconstruction loss
+        self.sigma_value  = args.sigma_value            # regularizer for WAE
     
         # Data folder
         self.data_folder = args.dset_dir
@@ -131,12 +136,22 @@ class Train(object):
             self.discriminator_net.apply(weights_init)
             self.disc_loss_bce = torch.nn.BCELoss()
             self.disc_loss_fts = torch.nn.MSELoss()
+        
+        if self.model == 'WAE':
+            self.discriminator_net = Discriminator_Linear(latent_dim=self.latent_dim)
+            self.discriminator_net.to(self.device)
+            # Handle multi-gpu if desired
+            if (self.device.type == 'cuda') and (self.num_gpus > 1):
+                self.discriminator_net = torch.nn.DataParallel(self.discriminator_net, list(range(self.num_gpus)))
+            self.discriminator_net.apply(weights_init)
+            self.disc_loss_bce = torch.nn.BCEWithLogitsLoss()
+            self.disc_loss_rec = torch.nn.MSELoss()
 
         
     def set_optimizer(self):
         # self.optim = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
         self.optim = torch.optim.Adam(self.net.parameters(), lr=self.lr, betas=(self.beta1, self.beta2))
-        if self.add_discriminator:
+        if self.add_discriminator or self.model == 'WAE':
             self.optim_disc = torch.optim.Adam(self.discriminator_net.parameters(), lr=self.lr, 
                                             betas=(self.beta1, self.beta2))
         
@@ -532,100 +547,115 @@ class Train(object):
         config = wandb.config
         wandb.watch(self.net)
         
+        # Establish convention for real and fake labels during training
+        one = torch.tensor(1, dtype=torch.float, device=self.device)
+        
         for epoch in range(self.start_epoch, self.n_epochs):
 
             # Train Total loss 
             loss_pam_wae_train = 0
+            loss_disc_train    = 0
             
             # ValidTotal loss 
             loss_pam_wae_valid = 0
+            loss_disc_valid    = 0
             
             # Set the training mode
             self.net.train()
-            
+            self.discriminator_net.train()
+                        
             for i, (x_1, x_2) in enumerate (self.train_dataloader):
                 fixed  = x_1.to(self.device)
                 moving = x_2.to(self.device)
                 
                 # zero-grad the net parameters
                 self.optim.zero_grad()
+                self.optim_disc.zero_grad()
+                
+                # Train Discriminator
+                frozen_params(self.net)
+                free_params(self.discriminator_net)
+                
+                z_fake = torch.rand(fixed.size()[0], self.latent_dim, device=self.device) * self.sigma_value
+                d_fake = self.discriminator_net(z_fake)
                 
                 # Forward pass through the registration model
-                t_0, w_0, t_1, w_1, z = self.net(fixed, moving)
+                t_0, w_0, t_1, w_1, z_real = self.net(fixed, moving)
+                d_real                     = self.discriminator_net(z_real)
+                loss_d_fake = self.lambda_value * torch.log(d_fake).mean()
+                loss_d_real = self.lambda_value * torch.log(1 - d_real).mean()
+                loss_d_fake.backward(-one)
+                loss_d_real.backward(-one)
+                print('loss_d_fake: ', loss_d_fake)
+                print('loss_d_real: ', loss_d_real)
                 
-                # Computing the affine loss
-                registration_affine_loss = self.nn_loss.pearson_correlation(fixed, w_0)
-                penalty_affine_loss      = self.energy_loss.energy_loss(t_0)
+                loss_disc_train += (loss_d_fake.item() + loss_d_real.item())
+                self.optim_disc.step()
                 
-                # Computing the elastic loss
-                registration_deform_loss = self.nn_loss.pearson_correlation(fixed, w_1)
-                penalty_deform_loss      = self.energy_loss.energy_loss(t_1)
+                # Train Generator
+                free_params(self.net)
+                frozen_params(self.discriminator_net)
                 
-                # Computing the WAE loss
-                z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.latent_dim) * 1)
-                z_fake.to(self.device)
-                reconstruction_loss  = torch.nn.MSELoss(t_1, fixed)
-                mmd_loss             = imq_kernel(z, z_fake, h_dim=self.latent_dim)
-                
-                # Total loss: affine + deformation + wae
-                loss = (registration_affine_loss + penalty_affine_loss) + (registration_deform_loss + penalty_deform_loss) + (reconstruction_loss + mmd_loss)
-                loss_pam_wae_train += loss.item()
+                _, _, _, w_1, z_real  = self.net(fixed, moving)
+                d_real                = self.discriminator_net(z_real)
+                reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
+                print(z_real)
+                print('z_real: ', z_real.min(), z_real.max(), (torch.log(z_real)).mean())
+                d_loss               = self.lambda_value * (torch.log(z_real)).mean()
+                reconstruction_loss.backward(one, retain_graph=True)
+                d_loss.backward(-one)
+                print('reconstruction_loss: ', reconstruction_loss)
+                print('d_loss: ', d_loss)
                 
                 # one backward pass
-                loss.backward()
+                # loss_generator.backward()
+                loss_pam_wae_train  += reconstruction_loss.item() + d_loss.item()
                 
                 # Update the parameters
                 self.optim.step()
                 
                 # Weights and biases visualization
                 # ========
-                wandb.log({'Iteration': i, 'Train: Similarity Affine loss': registration_affine_loss.item(), # Shall we consider to visualize the total loss affine, 
-                        'Train: Penalty Affine loss': penalty_affine_loss.item(),                            # total loss elastic and total loss WAE as well?
-                        'Train: Similarity Elastic loss': registration_deform_loss.item(),
-                        'Train: Penalty Elastic loss': penalty_deform_loss.item(),
+                wandb.log({'Iteration': i, 
                         'Train: Reconstruction loss': reconstruction_loss.item(),
-                        'Train: MMD Loss': mmd_loss.item(),
-                        'Train: Total loss': loss.item()})
+                        'Train: MMD Loss': d_loss.item(),
+                        'Train: Discriminator Loss': loss_d_fake.item() + loss_d_real.item()})
             
             
             with torch.no_grad():
                 self.net.eval()
+                self.discriminator_net.eval()
                 
                 for i, (x_1, x_2) in enumerate (self.valid_dataloader):
                     fixed  = x_1.to(self.device)
                     moving = x_2.to(self.device)
                     
+                     # Train Discriminator
+                    z_fake = torch.rand(fixed.size()[0], self.latent_dim, device=self.device) * self.sigma_value
+                    d_fake = self.discriminator_net(z_fake)
+                    
                     # Forward pass through the registration model
-                    t_0, w_0, t_1, w_1, mu, log_var = self.net(fixed, moving)
-                    
-                    # Computing the affine loss
-                    registration_affine_loss = self.nn_loss.pearson_correlation(fixed, w_0)
-                    penalty_affine_loss      = self.energy_loss.energy_loss(t_0)
-                    
-                    # Computing the elastic loss
-                    registration_deform_loss = self.nn_loss.pearson_correlation(fixed, w_1)
-                    penalty_deform_loss      = self.energy_loss.energy_loss(t_1)
-                    
-                    # Computing the WAE loss
-                    z_fake = torch.autograd.Variable(torch.rand(fixed.size()[0], self.latent_dim) * 1)
-                    z_fake.to(self.device)
-                    reconstruction_loss  = torch.nn.MSELoss(t_1, fixed)
-                    mmd_loss             = imq_kernel(z, z_fake, h_dim=self.latent_dim)
-                    
-                    # Total loss: affine + deformation + wae
-                    loss = (registration_affine_loss + penalty_affine_loss) + (registration_deform_loss + penalty_deform_loss) + (reconstruction_loss + mmd_loss)
-                    loss_pam_wae_valid  += loss.item()
-                                     
+                    t_0, w_0, t_1, w_1, z_real = self.net(fixed, moving)
+                    d_real                     = self.discriminator_net(z_real)
+                    loss_d_fake = self.lambda_value * torch.log(d_fake).mean()
+                    loss_d_real = self.lambda_value * torch.log(1 - d_real).mean()
+                    loss_disc_valid += (loss_d_fake.item() + loss_d_real.item())
+                
+                    # Train Generator
+                    t_0, w_0, t_1, w_1, z_real  = self.net(fixed, moving)
+                    d_real                      = self.discriminator_net(z_real)
+                    reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
+                    d_loss               = self.lambda_value * (torch.log(z_real)).mean()
+                    loss_pam_wae_valid  += reconstruction_loss.item() + d_loss.item()
+                
                     
                     # Weights and biases visualization
                     # ========
-                    wandb.log({'Iteration': i, 'Train: Similarity Affine loss': registration_affine_loss.item(), # Shall we consider to visualize the total loss affine, 
-                            'Valid: Penalty Affine loss': penalty_affine_loss.item(),                            # total loss elastic and total loss WAE as well?
-                            'Valid: Similarity Elastic loss': registration_deform_loss.item(),
-                            'Valid: Penalty Elastic loss': penalty_deform_loss.item(),
+                    wandb.log({'Iteration': i, 
                             'Valid: Reconstruction loss': reconstruction_loss.item(),
-                            'Valid: MMD Loss': mmd_loss.item(),
-                            'Valid: Total loss': loss.item()})
+                            'Valid: MMD Loss': d_loss.item(),
+                            'Valid: Discriminator Loss': loss_d_fake.item() + loss_d_real.item()})
+                        
                     self.fixed_draw = fixed
                     self.moving_draw = moving
                     self.w_0_draw    = w_0
@@ -643,13 +673,15 @@ class Train(object):
                 
             # Train loss per epoch
             loss_pam_wae_train = loss_pam_wae_train / len(self.train_dataloader)
+            loss_disc_train    = loss_disc_train / len(self.train_dataloader)
             
             # Valid loss per epoch
             loss_pam_wae_valid = loss_pam_wae_valid / len(self.valid_dataloader)
+            loss_disc_valid    = loss_disc_valid / len(self.train_dataloader)
 
             # Print the train and validation losses
-            print("Train epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_train)) 
-            print("Valid epoch : {}/{}, loss_PAM_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_valid))
+            print("Train epoch : {}/{}, loss_PAM_WAE = {:.6f}, loss_Disc_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_train, loss_disc_train)) 
+            print("Valid epoch : {}/{}, loss_PAM_WAE = {:.6f}, loss_Disc_WAE = {:.6f}".format(epoch, self.n_epochs, loss_pam_wae_valid, loss_disc_valid))
     
     
 
