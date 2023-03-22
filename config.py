@@ -9,17 +9,17 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--filters-affine',    
                     type = list,  
-                    default = [8, 16, 32, 64, 128],      
+                    default = [8, 16, 32, 64, 128, 256, 512],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-deformation',     
                     type = list,  
-                    default = [8, 16, 32, 64, 128],      
+                    default = [8, 16, 32, 64, 128, 256, 512],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256],    
+                    default = [8, 16, 32, 64, 128, 256, 512],    
                     help = 'filters number for each layer')
 
 parser.add_argument('--train-folder',      
