@@ -46,8 +46,8 @@ class RegistrationDataSet(data.Dataset):
 
         fixed_path  = str(image_path.squeeze().dicom_path)
         fx = self.loader(fixed_path)
-        fx = fx[:160, :, :]    # abdomen
-        ##fx = fx[140:, :, :]  # thorax
+        ##fx = fx[:160, :, :]    # abdomen
+        fx = fx[140:, :, :]  # thorax
 
         fx[:,  :,  0]  = 0
         fx[:,  :, -1]  = 0
@@ -58,8 +58,8 @@ class RegistrationDataSet(data.Dataset):
 
         moving_path = str(self.dataset.sample(n=1).squeeze().dicom_path)
         mv = self.loader(moving_path)
-        mv = mv[:160, :, :]    # abdomen
-        ##mv = mv[140:, :, :]  # thorax
+        ##mv = mv[:160, :, :]    # abdomen
+        mv = mv[140:, :, :]  # thorax
         mv[:,  :,  0] = 0
         mv[:,  :, -1] = 0
         mv[:,  0,  :] = 0
