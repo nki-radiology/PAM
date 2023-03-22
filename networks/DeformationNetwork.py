@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from   SpatialTransformer import SpatialTransformer
+from networks.SpatialTransformer import SpatialTransformer
 
 """
 Convolution Class for the U-Net generator
