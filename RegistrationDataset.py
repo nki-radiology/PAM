@@ -11,6 +11,7 @@ class RegistrationDataSet(data.Dataset):
                  input_shape : tuple,
                  transform   = None
                  ):
+        
         self.dataset     = path_dataset
         self.input_shape = input_shape
         self.indices     = path_dataset.index.values.copy()

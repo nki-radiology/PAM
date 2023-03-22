@@ -13,7 +13,7 @@ pwd; hostname; date
 # Source bashrc, such that the shell is setup properly
 source ~/.bashrc
 # Activate conda environment pyenv
-source /home/s.trebeschi/miniconda3/bin/activate pytorch
+source /home/s.trebeschi/miniconda3/bin/activate pytorch2
 
 # Load cuda and cudnn (make sure versions match)
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
