@@ -1,66 +1,48 @@
 import argparse
-#DONE removed all inputs for channel dimensions and output dimensions, as these should be standards
-#DONE changed all image dimensions to be the same for all networks 
-# Image variables
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--img_dim',     type=tuple, default=(192, 192, 160),         help='Image dimension')
-image = parser.parse_args()
 
-# Affine Network
-parser = argparse.ArgumentParser()
-parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128], help='filters number for each layer')
-affine = parser.parse_args()
+parser.add_argument('--img-dim',    
+                    type = tuple, 
+                    default = (192, 192, 160), 
+                    help = 'Image dimension')
 
-# Deformation Network
-parser = argparse.ArgumentParser()
-parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128], help='filters number for each layer')
-deformation = parser.parse_args()
+parser.add_argument('--filters-affine',    
+                    type = list,  
+                    default = [8, 16, 32, 64, 128],      
+                    help = 'filters number for each layer')
 
-# Discriminator Network
-parser = argparse.ArgumentParser()
-parser.add_argument('--filters',     type=list,  default=[8, 16, 32, 64, 128, 256], help='filters number for each layer')
-discriminator = parser.parse_args()
+parser.add_argument('--filters-deformation',     
+                    type = list,  
+                    default = [8, 16, 32, 64, 128],      
+                    help = 'filters number for each layer')
+
+parser.add_argument('--filters-discriminator',     
+                    type = list,  
+                    default = [8, 16, 32, 64, 128, 256],    
+                    help = 'filters number for each layer')
+
+parser.add_argument('--train-folder',      
+                    type = str,
+                    default = '/data/groups/beets-tan/l.estacio/data_tcia/train/',
+                    help = 'folder that contains the training dataset')
+
+parser.add_argument('--test-folder',      
+                    type = str,
+                    default = '/data/groups/beets-tan/l.estacio/data_tcia/test/',
+                    help = 'folder that contains the testing dataset')
+
+parser.add_argument('--project-folder',      
+                    type = str,
+                    default = '/projects/split-encoders/',
+                    help = 'folder that contains checkpoints and log files')
+
+parser.add_argument('--wandb',   
+                    type = str,
+                    default = "split-encoders",
+                    help = "folder to save the model checkpoints")
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-# ------------------------------------------ Adversarial PAM training variables ----------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-# Abdomen
-pam_adv_fts_sit = argparse.ArgumentParser()
-pam_adv_fts_sit.add_argument('--train_folder',      type=str,
-                             default='/data/groups/beets-tan/l.estacio/data_tcia/train/',
-                             help   ='folder that contains the training dataset')
-pam_adv_fts_sit.add_argument('--checkpoints_folder',   type=str,
-                             default="/projects/split-encoders/checkpoints/",
-                             help   ="folder to save the model checkpoints")
-pam_adv_fts_sit.add_argument('--wb_project_name',   type=str,
-                             default="'split-encoders'",
-                             help   ="folder to save the model checkpoints")
-pam_adv_fts_sit.add_argument('--pam_checkpoint', type=str,
-                             default='/projects/split-encoders/checkpoints/PAMModel_40.pth',
-                             help   ="folder that contains the PAM model checkpoints")
-pam_adv_fts_sit.add_argument('--dis_checkpoint', type=str,
-                             default='/projects/split-encoders/checkpoints/DisModel_40.pth',
-                             help   ="folder that contains the discriminator checkpoints")
-args_pam_adv_fts_sit = pam_adv_fts_sit.parse_args()
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-# ------------------------------------------ Adversarial PAM testing variables ----------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-adv_pam_fts_sit_test = argparse.ArgumentParser()
-adv_pam_fts_sit_test.add_argument('--test_folder', type=str,
-                             default='../../../../DATA/laura/tcia_abdomen/test/',
-                             help   ='folder that contains the testing dataset')
-adv_pam_fts_sit_test.add_argument('--results_folder', type=str,
-                             default='../../../../DATA/laura/tcia_abdomen/results/',
-                             help   ="folder to save the visual results")
-adv_pam_fts_sit_test.add_argument('--pam_checkpoint', type=str,
-                             default='../../../../../DATA/laura/tcia_abdomen/models/PAMModel_50.pth',
-                             help   ="folder that contains the PAM model checkpoints")
-adv_pam_fts_sit_test.add_argument('--dis_checkpoint', type=str,
-                             default='../../../../../DATA/laura/tcia_abdomen/models/DisModel_50.pth',
-                             help   ="folder that contains the discriminator checkpoints")
-arg_pam_fts_sit_test = adv_pam_fts_sit_test.parse_args()
+PARAMS = parser.parse_args()

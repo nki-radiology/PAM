@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 from   SpatialTransformer import SpatialTransformer
 
-
-
 """
 Convolution Class for the U-Net generator
 """
@@ -139,6 +137,7 @@ class DeformationNetwork(nn.Module):
         return z, (z_fixed, z_moving)
 
 
+"""
 # To summarize the complete model
 from torchsummary import summary
 model  = DeformationNetwork(filters = [8, 16, 32, 64, 128], img_dim= [192, 192, 192])
@@ -146,3 +145,4 @@ print(model)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model  = model.to(device)
 summary = summary(model, [(1, 192, 192, 160), (1, 192, 192, 160)], device='cuda')
+"""

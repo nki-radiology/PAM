@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from   networks.SpatialTransformer import SpatialTransformer
 
-
 """
 Simple convolution class
 """

@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import sys
-sys.path.append('../')
-from config import discriminator
 
 
 """
@@ -24,9 +22,10 @@ class S_Conv(nn.Module):
 
 class DiscriminatorNetwork(nn.Module):
 
-    def __init__(self):
+    def __init__(self, img_dim, filters):
         super(DiscriminatorNetwork, self).__init__()
-        self.filters = discriminator.filters     # [8, 16, 32, 64, 128, 256, 512]
+        self.img_size = img_dim
+        self.filters = filters     # [8, 16, 32, 64, 128, 256, 512]
 
         self.conv1 = S_Conv(1,               self.filters[0])
         self.conv2 = S_Conv(self.filters[0], self.filters[1])

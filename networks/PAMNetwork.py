@@ -1,28 +1,24 @@
 import torch
 import torch.nn as nn
+
 from networks.DeformationNetwork import DeformationNetwork
 from networks.AffineNetwork      import AffineNetwork
-from torchsummary import summary
 
-import sys
-sys.path.append('../')
-from config import affine
-from config import deformation
-from config import image
+from torchsummary import summary
 
 
 class PAMNetwork(nn.Module):
 
-    def __init__(self):
+    def __init__(self, img_dim, filters_affine, filters_deformation):
         super(PAMNetwork, self).__init__()
-        self.img_dim = image.img_dim
+        self.img_dim = img_dim
 
         # Affine Network
-        self.filters_aff = affine.filters
+        self.filters_aff = filters_affine
         self.affine_net = AffineNetwork(self.filters_aff, self.img_dim)
 
         # Deformation Network
-        self.filters_def = deformation.filters
+        self.filters_def = filters_deformation
         self.deform_net  = DeformationNetwork(self.filters_def, self.img_dim)
 
 
