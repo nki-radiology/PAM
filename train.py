@@ -11,6 +11,8 @@ import torch.nn as nn
 from torch.utils.data               import DataLoader
 from utils.utils_torch              import weights_init
 from sklearn.model_selection        import train_test_split
+from pathlib                        import Path
+
 
 from RegistrationDataset            import RegistrationDataSet
 from networks.PAMNetwork            import PAMNetwork
@@ -20,6 +22,21 @@ from metrics.LossPam                import Energy_Loss, Cross_Correlation_Loss
 from config import PARAMS
 
 RANDOM_SEED = 42
+
+
+def read_train_data():
+    path_input= PARAMS.train_folder
+    path      = Path(path_input)
+    filenames = list(path.glob('*.nrrd'))
+    data_index= []
+
+    for f in filenames:
+        data_index.append(int(str(f).split('/')[7].split('_')[0])) 
+
+    train_data = list(zip(data_index, filenames))
+    train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
+
+    return train_data
 
 
 def cuda_seeds():
@@ -74,34 +91,23 @@ def get_optimizers(pam_net, dis_net):
 
 
 def load_dataloader():
-    # list all files 
-    filenames = os.listdir(PARAMS.train_folder)
-    filenames = [f for f in filenames if f.endswith('.nrrd')]
-    filenames = [os.path.join(PARAMS.train_folder, f) for f in filenames]
-    filenames = pd.DataFrame(filenames, index=list(range(len(filenames))), columns=['dicom_path'])
+    filenames   = read_train_data()
 
-    # Split dataset into training set and validation set
     inputs_train, inputs_valid = train_test_split(
         filenames, random_state=RANDOM_SEED, train_size=0.8, shuffle=True
     )
 
     print("total: ", len(filenames), " train: ", len(inputs_train), " valid: ", len(inputs_valid))
 
-
-    # Training dataset
     train_dataset = RegistrationDataSet(path_dataset = inputs_train,
                                         input_shape  = (300, 192, 192, 1),
                                         transform    = None)
 
-    # Validation dataset
     valid_dataset = RegistrationDataSet(path_dataset = inputs_valid,
                                         input_shape  = (300, 192, 192, 1),
                                         transform    = None)
 
-    # Training dataloader
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=2, shuffle=True)
-
-    # Validation dataloader
     valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=2, shuffle=True)
 
     return train_dataloader, valid_dataloader
