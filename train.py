@@ -78,7 +78,7 @@ def load_dataloader():
     filenames = os.listdir(PARAMS.train_folder)
     filenames = [f for f in filenames if f.endswith('.nrrd')]
     filenames = [os.path.join(PARAMS.train_folder, f) for f in filenames]
-    filenames = pd.DataFrame(filenames, index=list(range(len(filenames))), columns=['paths'])
+    filenames = pd.DataFrame(filenames, index=list(range(len(filenames))), columns=['dicom_path'])
 
     # Split dataset into training set and validation set
     inputs_train, inputs_valid = train_test_split(
@@ -126,7 +126,7 @@ def training(
     pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
 
     # wandb Initialization
-    wandb.init(project=PARAMS.wandb)
+    wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
     wandb_config = wandb.config
     wandb.watch(pam_network, log='all')
 
