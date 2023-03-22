@@ -2,6 +2,8 @@
 
 
 import os
+import pandas as pd
+import numpy as np
 import wandb
 import torch
 import torch.nn as nn
@@ -76,6 +78,7 @@ def load_dataloader():
     filenames = os.listdir(PARAMS.train_folder)
     filenames = [f for f in filenames if f.endswith('.nrrd')]
     filenames = [os.path.join(PARAMS.train_folder, f) for f in filenames]
+    filenames = pd.DataFrame(filenames, index=list(range(len(filenames))), columns=['paths'])
 
     # Split dataset into training set and validation set
     inputs_train, inputs_valid = train_test_split(
