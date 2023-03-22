@@ -213,4 +213,4 @@ def training(
 cuda_seeds()
 pam_network, discriminator_network, device  = model_init()
 train_dataloader, _                         = load_dataloader()
-training(pam_network, discriminator_network, train_dataloader, None)
+training(pam_network, discriminator_network, train_dataloader, None, device)
