@@ -74,8 +74,8 @@ class DeformationNetwork(nn.Module):
             self.Conv5, 
             self.AvgPool,
             self.Flatten,
-            self.Fc, 
-            self.FcAct
+            self.Fc #, 
+            #self.FcAct
         )        
 
         self.Up5      = Conv   (self.filters[4], self.filters[3])
