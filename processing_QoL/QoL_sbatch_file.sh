@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
+#SBATCH --time=4-00:00:00                           # Time limit hrs:min:sec
 #SBATCH --job-name=QoL_AbR                       # Job name
 #SBATCH --partition=p6000                           # Partition
 #SBATCH --nodelist=mariecurie                       # Node list
@@ -14,10 +14,10 @@ pwd; hostname; date
 # Source bashrc, such that the shell is setup properly
 source ~/.bashrc
 # Activate conda environment pyenv
-source /home/l.estacio/miniconda3/bin/activate tensorflow
+source /home/l.estacio/miniconda3/bin/activate pytorch
 
 # Load cuda and cudnn (make sure versions match)
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /projects/disentanglement_methods/PAM/processing_QoL/DicomToNRRD.py
+python /projects/disentanglement_methods/PAM/processing_QoL/FeatureExtraction.py

@@ -22,8 +22,8 @@ def replace_Z_by_new_location(filename: str):
     data['PRIOR_PATH'] = data['PRIOR_PATH'].replace('Z:/NKI-d21243/', '/data/groups/beets-tan/s.trebeschi/QOL_dicoms/', regex=True)
     data['SUBSQ_PATH'] = data['SUBSQ_PATH'].replace('Z:/NKI-d21243/', '/data/groups/beets-tan/s.trebeschi/QOL_dicoms/', regex=True)
     
-    prior_path_nrrd = list( data['PRIOR_PATH'].replace('/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM/', '/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/', regex=True) )
-    subsq_path_nrrd = list( data['SUBSQ_PATH'].replace('/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM/', '/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/', regex=True) )
+    prior_path_nrrd = list( data['PRIOR_PATH'].replace('/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM/', '/data/groups/beets-tan/l.estacio/QOL_nrrd_remaining/abdomen/', regex=True) )
+    subsq_path_nrrd = list( data['SUBSQ_PATH'].replace('/data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM/', '/data/groups/beets-tan/l.estacio/QOL_nrrd_remaining/abdomen/', regex=True) )
 
     for idx in range(len(prior_path_nrrd)):
         print('Prior path: ', prior_path_nrrd[idx])
@@ -38,7 +38,7 @@ def replace_Z_by_new_location(filename: str):
         
     data['PRIOR_PATH_NRRD'] = prior_path_nrrd
     data['SUBSQ_PATH_NRRD'] = subsq_path_nrrd
-    data.to_csv('/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/ThoraxScanPairs.csv', na_rep='NULL', index=True, encoding='utf-8')
+    data.to_csv('/data/groups/beets-tan/l.estacio/QOL_nrrd_remaining/abdomen/AbdomenScanPairs.csv', na_rep='NULL', index=True, encoding='utf-8')
     
 
 class PamModel:
@@ -317,23 +317,23 @@ if __name__ == "__main__":
     import json
 
     parser = ArgumentParser()
-    parser.add_argument('--thorax_raw_file_path',      type=str, default='/data/groups/beets-tan/l.estacio/QOL_nrrd/thorax/ThoraxScanPairs.csv')
+    parser.add_argument('--thorax_raw_file_path',      type=str, default='/data/groups/beets-tan/l.estacio/QOL_nrrd_remaining/thorax/ThoraxScanPairs.csv')
     parser.add_argument('--thorax_pam_checkpoint',     type=str, default='/projects/disentanglement_methods/checkpoints/PAM/thorax/PAMModel_60.pth')
     parser.add_argument('--thorax_dis_checkpoint',     type=str, default='/projects/disentanglement_methods/checkpoints/PAM/thorax/DisModel_60.pth')
     parser.add_argument('--thorax_path_to_save_file',  type=str, default='/projects/disentanglement_methods/QoL_files/thorax/')
-    parser.add_argument('--thorax_name_to_save_xlsx',  type=str, default='features_pam_thorax')
+    parser.add_argument('--thorax_name_to_save_xlsx',  type=str, default='features_remaining_pam_thorax')
     
-    parser.add_argument('--abdomen_raw_file_path',     type=str, default='/data/groups/beets-tan/l.estacio/QOL_nrrd/abdomen/AbdomenScanPairs.csv')
+    parser.add_argument('--abdomen_raw_file_path',     type=str, default='/data/groups/beets-tan/l.estacio/QOL_nrrd_remaining/abdomen/AbdomenScanPairs.csv')
     parser.add_argument('--abdomen_pam_checkpoint',    type=str, default='/projects/disentanglement_methods/checkpoints/PAM/abdomen/PAMModel_60.pth')
     parser.add_argument('--abdomen_dis_checkpoint',    type=str, default='/projects/disentanglement_methods/checkpoints/PAM/abdomen/DisModel_60.pth')
     parser.add_argument('--abdomen_path_to_save_file', type=str, default='/projects/disentanglement_methods/QoL_files/abdomen/')
-    parser.add_argument('--abdomen_name_to_save_xlsx', type=str, default='features_pam_abdomen')
+    parser.add_argument('--abdomen_name_to_save_xlsx', type=str, default='features_remaining_pam_abdomen')
     
     parser.add_argument('--region_to_get_features',    type=str, default='Abdomen')
     args = parser.parse_args()
 
     # If data is considering path with Z:\\.....
-    '''path = '/projects/disentanglement_methods/QoL_files/B01_ScanPairs.csv'
+    '''path = '/projects/disentanglement_methods/QoL_files/ScanPairs_remaning.csv'
     replace_Z_by_new_location(path)'''
     
     if args.region_to_get_features =='Thorax':
