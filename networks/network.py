@@ -125,7 +125,7 @@ class Decoder(nn.Module):
         for layer_i in range(len(filters) - 1):
             modules['decoder_block_' + str(layer_i)] = nn.Sequential(
                 conv_up_layer(len(input_dim))(
-                    in_channels=filters[layer_i], out_channels=filters[layer_i+1], kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
+                    in_channels=filters[layer_i], out_channels=filters[layer_i+1], kernel_size=4, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=filters[layer_i+1]),
                 nn.ReLU()
             )
@@ -133,12 +133,14 @@ class Decoder(nn.Module):
 
         self.final_layer = nn.Sequential(
                 conv_up_layer(len(input_dim))(
-                    in_channels=filters[layer_i+1], out_channels=output_ch, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
+                    in_channels=filters[layer_i+1], out_channels=output_ch, kernel_size=4, stride=2, padding=1, bias=False)
         )
         
     
     def forward(self, x):
+        print('Shape input: ', x.shape)
         x = self.input_layer(x)
+        print('Shape: ', x.shape)
 
         if len(self.input_decoder) == 2:
             x = x.view(-1, self.last_feature, self.input_decoder[0], self.input_decoder[1])
@@ -146,8 +148,11 @@ class Decoder(nn.Module):
             x = x.view(-1, self.last_feature, self.input_decoder[0], self.input_decoder[1], self.input_decoder[2])
         else:
             NotImplementedError('only support 2d and 3d')
+        print('Shape: ', x.shape)
         x = self.conv_up_net(x)
+        print('Shape: ', x.shape)
         x = self.final_layer(x)
+        print('Shape End: ', x.shape)
 
         return x
 
@@ -180,7 +185,7 @@ class Encoder_WAE(nn.Module):
 
             modules['encoder_block_' + str(layer_i)] = nn.Sequential(
                 conv_layer(len(input_dim))(
-                    in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
+                    in_channels=input_ch, out_channels=layer_filters, kernel_size=4, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
                 nn.ReLU()
             )
@@ -198,7 +203,9 @@ class Encoder_WAE(nn.Module):
 
     def forward(self, x):
         x = self.conv_net(x)
+        print(' Encoder shape 1: ', x.shape)
         x = x.view(-1, self.elem)
+        print('Encoder shape: ', x.shape)
         latent_space_z = self.latent_space_z(x)
         return latent_space_z
 

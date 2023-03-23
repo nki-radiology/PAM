@@ -78,7 +78,7 @@ class Affine_WAE(nn.Module):
 
             modules['encoder_block' + str(layer_i)] = nn.Sequential(
                 conv_layer(len(input_dim))(
-                    in_channels=input_ch, out_channels=layer_filters, kernel_size=3, stride=2, padding=1, bias=False),
+                    in_channels=input_ch, out_channels=layer_filters, kernel_size=4, stride=2, padding=1, bias=False),
                 nn.GroupNorm(num_groups=group_num, num_channels=layer_filters),
                 nn.ReLU()
             )

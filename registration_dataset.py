@@ -77,6 +77,7 @@ class Registration3DDataSet(data.Dataset):
 
         fixed_path  = str(image_path.squeeze().dicom_path)
         fx = self.loader(fixed_path)
+        #fx = fx[:160, :, :]    # abdomen
         fx[:,  :,  0]  = 0
         fx[:,  :, -1]  = 0
         fx[:,  0,  :]  = 0
@@ -86,6 +87,7 @@ class Registration3DDataSet(data.Dataset):
 
         moving_path = str(self.dataset.sample(n=1).squeeze().dicom_path)
         mv = self.loader(moving_path)
+        #mv = mv[:160, :, :]    # abdomen
         mv[:,  :,  0] = 0
         mv[:,  :, -1] = 0
         mv[:,  0,  :] = 0

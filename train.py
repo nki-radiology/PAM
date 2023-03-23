@@ -64,6 +64,7 @@ class Train(object):
         self.gamma_value  = args.gamma_value            # regularization for the discriminator (feature matching loss: MSE)
         self.lambda_value = args.lambda_value           # regularization for the reconstruction loss
         self.sigma_value  = args.sigma_value            # regularizer for WAE
+        self.lambda_value_wae = args.lambda_value_wae
     
         # Data folder
         self.data_folder = args.dset_dir
@@ -584,8 +585,8 @@ class Train(object):
                 # Forward pass through the registration model
                 t_0, w_0, t_1, w_1, z_real = self.net(fixed, moving)
                 d_real                     = self.discriminator_net(z_real)
-                loss_d_fake = self.lambda_value * torch.log(d_fake + eps).mean()
-                loss_d_real = self.lambda_value * torch.log(1 - d_real + eps).mean()
+                loss_d_fake = self.lambda_value_wae * torch.log(d_fake + eps).mean()
+                loss_d_real = self.lambda_value_wae * torch.log(1 - d_real + eps).mean()
                 loss_d_fake.backward(-one)
                 loss_d_real.backward(-one)
                 print('loss_d_fake: ', loss_d_fake)
@@ -598,20 +599,33 @@ class Train(object):
                 free_params(self.net)
                 frozen_params(self.discriminator_net)
                 
-                _, _, _, w_1, z_real  = self.net(fixed, moving)
+                t_0, w_0, t_1, w_1, z_real  = self.net(fixed, moving)
                 d_real                = self.discriminator_net(z_real)
                 reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
+
                 print(z_real)
                 print('z_real: ', z_real.min(), z_real.max(), (torch.log(z_real + eps)).mean())
-                d_loss               = self.lambda_value * (torch.log(z_real + eps)).mean()
+                d_loss               = self.lambda_value_wae * (torch.log(z_real + eps)).mean()
+                                
+                # Including PAM baseline losses to the WAE model
+                registration_affine_loss  = self.nn_loss.pearson_correlation(fixed, w_0)
+                penalty_affine_loss       = self.energy_loss.energy_loss(t_0)
+                registration_elastic_loss = self.nn_loss.pearson_correlation(fixed, w_1)
+                penalty_elastic_loss      = self.energy_loss.energy_loss(t_1)
+                loss_additional = registration_affine_loss + self.alpha_value * penalty_affine_loss +\
+                                  registration_elastic_loss + self.beta_value * penalty_elastic_loss  
+                # ----------------------------------------------------------------
+                
                 reconstruction_loss.backward(one, retain_graph=True)
-                d_loss.backward(-one)
+                d_loss.backward(-one, retain_graph=True)
+                loss_additional.backward()
                 print('reconstruction_loss: ', reconstruction_loss)
                 print('d_loss: ', d_loss)
+                print('loss pam baseline: ', loss_additional)
                 
                 # one backward pass
                 # loss_generator.backward()
-                loss_pam_wae_train  += reconstruction_loss.item() + d_loss.item()
+                loss_pam_wae_train  += reconstruction_loss.item() + d_loss.item() + loss_additional.item()
                 
                 # Update the parameters
                 self.optim.step()
@@ -621,6 +635,11 @@ class Train(object):
                 wandb.log({'Iteration': i, 
                         'Train: Reconstruction loss': reconstruction_loss.item(),
                         'Train: MMD Loss': d_loss.item(),
+                        'Train: Registration affine loss': registration_affine_loss.item(),
+                        'Train: Penalty affinel loss': penalty_affine_loss.item(),
+                        'Train: Registration elastic loss': registration_elastic_loss.item(),
+                        'Train: Penalty elastic loss': penalty_elastic_loss.item(),
+                        'Train: Loss PAM baseline': loss_additional.item(),
                         'Train: Discriminator Loss': loss_d_fake.item() + loss_d_real.item()})
             
             
@@ -639,16 +658,26 @@ class Train(object):
                     # Forward pass through the registration model
                     t_0, w_0, t_1, w_1, z_real = self.net(fixed, moving)
                     d_real                     = self.discriminator_net(z_real)
-                    loss_d_fake = self.lambda_value * torch.log(d_fake + eps).mean()
-                    loss_d_real = self.lambda_value * torch.log(1 - d_real + eps).mean()
+                    loss_d_fake = self.lambda_value_wae * torch.log(d_fake + eps).mean()
+                    loss_d_real = self.lambda_value_wae * torch.log(1 - d_real + eps).mean()
                     loss_disc_valid += (loss_d_fake.item() + loss_d_real.item())
                 
                     # Train Generator
                     t_0, w_0, t_1, w_1, z_real  = self.net(fixed, moving)
                     d_real                      = self.discriminator_net(z_real)
                     reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
-                    d_loss               = self.lambda_value * (torch.log(z_real + eps)).mean()
-                    loss_pam_wae_valid  += reconstruction_loss.item() + d_loss.item()
+                    d_loss               = self.lambda_value_wae * (torch.log(z_real + eps)).mean()
+                    
+                    # Including PAM baseline losses to the WAE model
+                    registration_affine_loss  = self.nn_loss.pearson_correlation(fixed, w_0)
+                    penalty_affine_loss       = self.energy_loss.energy_loss(t_0)
+                    registration_elastic_loss = self.nn_loss.pearson_correlation(fixed, w_1)
+                    penalty_elastic_loss      = self.energy_loss.energy_loss(t_1)
+                    loss_additional = registration_affine_loss + self.alpha_value * penalty_affine_loss +\
+                                      registration_elastic_loss + self.beta_value * penalty_elastic_loss  
+                # ----------------------------------------------------------------
+                    
+                    loss_pam_wae_valid  += reconstruction_loss.item() + d_loss.item() + loss_additional.item()
                 
                     
                     # Weights and biases visualization
@@ -656,6 +685,11 @@ class Train(object):
                     wandb.log({'Iteration': i, 
                             'Valid: Reconstruction loss': reconstruction_loss.item(),
                             'Valid: MMD Loss': d_loss.item(),
+                            'Valid: Registration affine loss': registration_affine_loss.item(),
+                            'Valid: Penalty affinel loss': penalty_affine_loss.item(),
+                            'Valid: Registration elastic loss': registration_elastic_loss.item(),
+                            'Valid: Penalty elastic loss': penalty_elastic_loss.item(),
+                            'Valid: Loss PAM baseline': loss_additional.item(),
                             'Valid: Discriminator Loss': loss_d_fake.item() + loss_d_real.item()})
                         
                     self.fixed_draw = fixed[0]
