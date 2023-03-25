@@ -78,19 +78,28 @@ class DeformationNetwork(nn.Module):
             #self.FcAct
         )        
 
-        self.Up5      = Conv   (self.filters[4], self.filters[3])
-        self.Up_conv5 = Up_Conv(self.filters[3], self.filters[3])
+        self.DeFlatten  = nn.Sequential(
+            nn.GELU(),
+            nn.Linear(self.filters[4], 6*6*5*self.filters[4]),
+            nn.GELU()
+        )
 
-        self.Up4      = Conv   (self.filters[3], self.filters[2])
-        self.Up_conv4 = Up_Conv(self.filters[2], self.filters[2])
+        self.DeConv6 = Conv   (self.filters[4], self.filters[4])
+        self.UpConv6 = Up_Conv(self.filters[4], self.filters[4])
 
-        self.Up3      = Conv   (self.filters[2], self.filters[1])
-        self.Up_conv3 = Up_Conv(self.filters[1], self.filters[1])
+        self.DeConv5 = Conv   (self.filters[4], self.filters[3])
+        self.UpConv5 = Up_Conv(self.filters[3], self.filters[3])
 
-        self.Up2      = Conv   (self.filters[1], self.filters[0])
-        self.Up_conv2 = Up_Conv(self.filters[0], self.filters[0])
+        self.DeConv4 = Conv   (self.filters[3], self.filters[2])
+        self.UpConv4 = Up_Conv(self.filters[2], self.filters[2])
 
-        self.Conv     = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
+        self.DeConv3 = Conv   (self.filters[2], self.filters[1])
+        self.UpConv3 = Up_Conv(self.filters[1], self.filters[1])
+
+        self.DeConv2 = Conv   (self.filters[1], self.filters[0])
+        self.UpConv2 = Up_Conv(self.filters[0], self.filters[0])
+
+        self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
         self.spat_trs = SpatialTransformer(self.img_dim)  #((192, 192, 160))
 
@@ -103,23 +112,31 @@ class DeformationNetwork(nn.Module):
         z           = z_fixed - z_moving
 
         # tiling the feature vector to feature map
-        z = z[..., None, None, None]
-        s = [int(s/(2**4)) for s in self.img_dim]
-        z = z.tile((1, 1, s[0], s[1], s[2]))
+        #z = z[..., None, None, None]
+        #s = [int(s/(2**4)) for s in self.img_dim]
+        #z = z.tile((1, 1, s[0], s[1], s[2]))
 
-        d5  = self.Up5     (z)
-        d5  = self.Up_conv5(d5) #48
+        # TODO 
+        z = self.DeFlatten(z)
+        s = (z.shape[0], self.filters[4], 6, 6, 5)
+        z = torch.reshape(z, s)
 
-        d4  = self.Up4     (d5)
-        d4  = self.Up_conv4(d4) #96
+        d6  = self.DeConv6(z)
+        d6  = self.UpConv6(d6) #12
 
-        d3  = self.Up3     (d4)
-        d3  = self.Up_conv3(d3) #192
+        d5  = self.DeConv5(d6)
+        d5  = self.UpConv5(d5) #24
 
-        d2  = self.Up2     (d3)
-        d2  = self.Up_conv2(d2) 
+        d4  = self.DeConv4(d5)
+        d4  = self.UpConv4(d4) #48
 
-        transformation = self.Conv(d2)
+        d3  = self.DeConv3(d4)
+        d3  = self.UpConv3(d3) #96
+
+        d2  = self.DeConv2(d3)
+        d2  = self.UpConv2(d2) #192
+
+        transformation = self.OutConv(d2)
 
         # Spatial Transform
         registered_img = self.spat_trs(moving, transformation)
