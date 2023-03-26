@@ -81,7 +81,7 @@ class DeformationNetwork(nn.Module):
         self.DeFlatten  = nn.Sequential(
             nn.Linear(self.filters[4], 6*6*5*self.filters[4]),
             nn.GELU(),
-            nn.Linear(self.filters[4], 6*6*5*self.filters[4]),
+            nn.Linear(6*6*5*self.filters[4], 6*6*5*self.filters[4]),
             nn.GELU()
         )
 

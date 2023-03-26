@@ -8,7 +8,7 @@
 - latent space of the deformation created via subtraction f(moving) - f(fixed).
 
 ## experiments
-- baseline: not learning, similarity loss > 0.6 for both affine and elastic
-- removing tanh in the latent space: it got a bit faster, learning still stuck
-- overparametrize interface latent space-decoder
-- make latent space convolutional:
+- pleasent-disco-2: baseline model, underfitting
+- dainty-sun-3: removed Tanh, underfitting
+- demin-deluge-4: overparametrized latent, lower loss, slow learning, still underfitting
+- comic-firebrand-5: increased latent
