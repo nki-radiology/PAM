@@ -74,11 +74,12 @@ class DeformationNetwork(nn.Module):
             self.Conv5, 
             self.AvgPool,
             self.Flatten,
-            self.Fc #, 
-            #self.FcAct
+            self.Fc, 
+            self.FcAct
         )        
 
         self.DeFlatten  = nn.Sequential(
+            nn.Linear(self.filters[4], 6*6*5*self.filters[4]),
             nn.GELU(),
             nn.Linear(self.filters[4], 6*6*5*self.filters[4]),
             nn.GELU()
