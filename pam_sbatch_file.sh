@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1                                  # Run on a single node
 #SBATCH --mem=25G                                   # Memory
 #SBATCH --cpus-per-task=5                           # Number of cores
-#SBATCH --output=/projects/split-encoders/slurm_%j.log   # Standard output and error log
+#SBATCH --output=/home/s.trebeschi/log-slurm/slurm_%j.log   # Standard output and error log
 pwd; hostname; date
 
 # Source bashrc, such that the shell is setup properly
