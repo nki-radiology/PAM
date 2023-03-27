@@ -183,7 +183,7 @@ class PAMNetwork(nn.Module):
         self.decoder        = Decoder(self.img_size, self.filters)
 
         # Spatial layer
-        self.spatial_layer  = SpatialTransformer(self.img_dim)
+        self.spatial_layer  = SpatialTransformer(self.img_size)
 
 
     def forward(self, fixed, moving):
