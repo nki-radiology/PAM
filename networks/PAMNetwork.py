@@ -162,7 +162,7 @@ class PAMNetwork(nn.Module):
         self.img_size = img_size
         self.filters = filters
 
-        self.encoder = Encoder(self.img_size, self.filters)
+        self.encoder = Encoder(self.img_size, self.filters, latent_dim=1024)
         latent = self.encoder.latent_dim
 
         # Affine Layers
