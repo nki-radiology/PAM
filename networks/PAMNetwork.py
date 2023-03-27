@@ -53,11 +53,12 @@ Encoder
 """
 class Encoder(nn.Module):
 
-    def __init__(self, img_size, filters, latent_dim) -> None:
+    def __init__(self, img_size, filters, in_channels, out_channels) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
-        self.latent_dim = latent_dim
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.Maxpool1 = nn.MaxPool3d(kernel_size=2, stride=2) # 96, 80
         self.Maxpool2 = nn.MaxPool3d(kernel_size=2, stride=2) # 48, 40
@@ -65,17 +66,16 @@ class Encoder(nn.Module):
         self.Maxpool4 = nn.MaxPool3d(kernel_size=2, stride=2) # 12, 10
         self.Maxpool5 = nn.MaxPool3d(kernel_size=2, stride=2) # 6, 5
 
-        self.Conv1    = Conv   (1,               self.filters[0])
-        self.Conv2    = Conv   (self.filters[0], self.filters[1])
-        self.Conv3    = Conv   (self.filters[1], self.filters[2])
-        self.Conv4    = Conv   (self.filters[2], self.filters[3])
-        self.Conv5    = Conv   (self.filters[3], self.filters[4])
-        self.Conv6    = Conv   (self.filters[4], self.filters[5])
+        self.Conv1    = Conv   (self.in_channels, self.filters[0])
+        self.Conv2    = Conv   (self.filters[0],  self.filters[1])
+        self.Conv3    = Conv   (self.filters[1],  self.filters[2])
+        self.Conv4    = Conv   (self.filters[2],  self.filters[3])
+        self.Conv5    = Conv   (self.filters[3],  self.filters[4])
+        self.Conv6    = Conv   (self.filters[4],  self.filters[5])
 
         self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
         self.Flatten  = nn.Flatten()
-        self.Fc       = nn.Linear(self.filters[5], self.latent_dim)
-        self.FcAct    = nn.Tanh() 
+        self.Fc       = nn.Linear(self.filters[5], self.out_channels)
 
     def forward(self, image):
 
@@ -99,7 +99,6 @@ class Encoder(nn.Module):
             x = self.AvgPool(x)
             x = self.Flatten(x)
             x = self.Fc(x)
-            x = self.FcAct(x)
 
             return x
 
@@ -163,19 +162,20 @@ class PAMNetwork(nn.Module):
         self.img_size = img_size
         self.filters = filters
 
-        self.encoder = Encoder(self.img_size, self.filters, latent_dim=1024)
-        latent = self.encoder.latent_dim
+        self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=1024)
+        self.dual_encoder   = Encoder(self.img_size, self.filters, in_channels=2, out_channels=1024)
+        latent_dim          = self.encoder.out_channels
 
         # Affine Layers
-        self.dense_w        = nn.Linear(in_features=latent, out_features=9, bias=False)
-        self.dense_b        = nn.Linear(in_features=latent, out_features=3, bias=False)
+        self.dense_w        = nn.Linear(in_features=latent_dim, out_features=9, bias=False)
+        self.dense_b        = nn.Linear(in_features=latent_dim, out_features=3, bias=False)
 
         # Deformation Layers
         feature_maps_size   = [int(s/(2**5)) for s in self.img_size]
         elements            = np.prod(feature_maps_size) * self.filters[5]
 
         self.deflatten      = nn.Sequential(
-            nn.Linear(latent, int(elements/2)),
+            nn.Linear(latent_dim, int(elements/2)),
             nn.ReLU(),
             nn.Linear(int(elements/2), elements),
             nn.ReLU()
@@ -189,10 +189,14 @@ class PAMNetwork(nn.Module):
 
     def forward(self, fixed, moving):
 
-        z_fixed = self.encoder(fixed)
-        z_moving = self.encoder(moving)
+        # encoder
+        h_fixed = self.encoder(fixed)
+        h_moving = self.encoder(moving)
+        h = h_fixed - h_moving
 
-        z = z_fixed - z_moving
+        # dual encoder
+        x = torch.concat([fixed, moving], dim=1)
+        z = self.dual_encoder(x)
 
         # compute affine transform
         W = self.dense_w(z).view(-1, 3, 3)
@@ -217,7 +221,7 @@ class PAMNetwork(nn.Module):
         wA = self.spatial_layer(moving, tA)
         wD = self.spatial_layer(moving, tD)
 
-        return tA, wA, tD, wD
+        return tA, wA, tD, wD, h, z
 
 
         
