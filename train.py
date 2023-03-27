@@ -162,7 +162,7 @@ def training(
             registration_deform_loss = cc_loss(fixed, w_1)
             penalty_deform_loss      = penalty(t_1)
 
-            divergence_loss = l2_loss(h, z)
+            divergence_loss = cc_loss(h, z)
             
             loss = registration_affine_loss + alpha_value * penalty_affine_loss + \
                 registration_deform_loss + beta_value * penalty_deform_loss + \
