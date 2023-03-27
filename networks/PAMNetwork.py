@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from networks.SpatialTransformer import SpatialTransformer
+from SpatialTransformer import SpatialTransformer
 
 
 """
@@ -215,3 +215,14 @@ class PAMNetwork(nn.Module):
 
 
         
+"""
+# To summarize the complete model
+from torchsummary import summary
+img_size = [192, 192, 160]
+filters = [16, 32, 64, 128, 256, 512]
+model  = PAMNetwork(img_size, filters)
+print(model)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model  = model.to(device)
+summary = summary(model, [(1, 192, 192, 160), (1, 192, 192, 160)], device='cuda')
+"""
