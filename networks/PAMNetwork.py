@@ -4,7 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from networks.SpatialTransformer import SpatialTransformer
+from networks.SpatialTransformer import SpatialTransformer 
+#from SpatialTransformer import SpatialTransformer # local 
 
 
 """
@@ -201,15 +202,20 @@ class PAMNetwork(nn.Module):
         tA = tA.view(-1, 3, 4)
         tA = F.affine_grid(tA, moving.size(), align_corners=False)
         tA = tA.permute(0, 4, 1, 2, 3)
-
+        
         # compute deformation field
         x  = self.deflatten(z)
+
+        s = [int(s/(2**5)) for s in self.img_size]
+        s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
+        x = torch.reshape(x, s)
+
         tD = self.decoder(x)
 
         # apply transforms
         # wD = self.spatial_layer(moving, tA+tD)
         wA = self.spatial_layer(moving, tA)
-        wD = self.spatial_layer(wA, tD)
+        wD = self.spatial_layer(moving, tD)
 
         return tA, wA, tD, wD
 
@@ -219,7 +225,7 @@ class PAMNetwork(nn.Module):
 # To summarize the complete model
 from torchsummary import summary
 img_size = [192, 192, 160]
-filters = [16, 32, 64, 128, 256, 512]
+filters = [8, 8, 16, 32, 64, 128]
 model  = PAMNetwork(img_size, filters)
 print(model)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
