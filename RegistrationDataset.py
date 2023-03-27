@@ -48,8 +48,6 @@ class RegistrationDataSet(data.Dataset):
         self.inp_dtype   = torch.float32
         self.log         = []
 
-        self.loader      = self.__init_loader()
-
     def __len__(self):
         return len(self.dataset)
 
