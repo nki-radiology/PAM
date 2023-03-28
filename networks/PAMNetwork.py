@@ -29,26 +29,7 @@ class Conv(nn.Module):
     def forward(self, x):
         out = self.conv(x) + self.identity(x)
         return out 
-
-"""
-Up sample Convolution Class
-"""
-class Up_Conv(nn.Module):
-
-    def __init__(self, in_ch, out_ch):
-        super(Up_Conv, self).__init__()
-
-        self.up = nn.Sequential(
-            nn.Upsample (scale_factor=2, mode='trilinear'),
-            nn.Conv3d   (in_channels =in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.GroupNorm(num_groups=8, num_channels=out_ch),
-            nn.ReLU     (inplace=True)
-        )
-
-    def forward(self, x):
-        out = self.up(x)
-        return out
-    
+        
 
 """
 Encoder
@@ -117,20 +98,20 @@ class Decoder(nn.Module):
         self.img_size = img_size
         self.filters = filters
 
-        self.DeConv6 = Conv   (self.filters[5], self.filters[4])
-        self.UpConv6 = nn.Upsample (scale_factor=2, mode='trilinear')
+        self.DeConv6 = Conv       (self.filters[5], self.filters[4])
+        self.UpConv6 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.DeConv5 = Conv   (self.filters[4], self.filters[3])
-        self.UpConv5 = nn.Upsample (scale_factor=2, mode='trilinear')
+        self.DeConv5 = Conv       (self.filters[4], self.filters[3])
+        self.UpConv5 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.DeConv4 = Conv   (self.filters[3], self.filters[2])
-        self.UpConv4 = nn.Upsample (scale_factor=2, mode='trilinear')
+        self.DeConv4 = Conv       (self.filters[3], self.filters[2])
+        self.UpConv4 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.DeConv3 = Conv   (self.filters[2], self.filters[1])
-        self.UpConv3 = nn.Upsample (scale_factor=2, mode='trilinear')
+        self.DeConv3 = Conv       (self.filters[2], self.filters[1])
+        self.UpConv3 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.DeConv2 = Conv   (self.filters[1], self.filters[0])
-        self.UpConv2 = nn.Upsample (scale_factor=2, mode='trilinear')
+        self.DeConv2 = Conv       (self.filters[1], self.filters[0])
+        self.UpConv2 = nn.Upsample(scale_factor=2, mode='trilinear')
 
         self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
