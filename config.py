@@ -9,12 +9,12 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--filters',
                     type = list,  
-                    default = [8, 16, 32, 64, 96, 128, 256],      
+                    default = [16, 32, 64, 128, 256, 320, 384],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = list,  
-                    default = [8, 16, 32, 64, 96, 128, 256],    
+                    default = [16, 32, 64, 128, 256, 320, 384],    
                     help = 'filters number for each layer')
 
 parser.add_argument('--train-folder',      

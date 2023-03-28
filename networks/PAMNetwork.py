@@ -14,19 +14,21 @@ Convolution Class
 class Conv(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(Conv, self).__init__()
+
         self.conv = nn.Sequential(
             nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding=1, bias=False),
             nn.GroupNorm(num_groups=8, num_channels=out_ch),
             nn.ReLU     (inplace=True),
             nn.Conv3d   (in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding=1, bias=False),
             nn.GroupNorm(num_groups=8, num_channels=out_ch),
-            nn.ReLU     (inplace=True)
         )
 
+        self.identity = \
+            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding=1, bias=False)
+
     def forward(self, x):
-        out = self.conv(x)
-        return out
-    
+        out = self.conv(x) + self.identity(x)
+        return out 
 
 """
 Up sample Convolution Class
@@ -76,6 +78,7 @@ class Encoder(nn.Module):
         self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
         self.Flatten  = nn.Flatten()
         self.Fc       = nn.Linear(self.filters[5], self.out_channels)
+        self.Tanh     = nn.Tanh()
 
     def forward(self, image):
 
@@ -99,6 +102,7 @@ class Encoder(nn.Module):
             x = self.AvgPool(x)
             x = self.Flatten(x)
             x = self.Fc(x)
+            x = self.Tanh(x)
 
             return x
 
@@ -163,7 +167,6 @@ class PAMNetwork(nn.Module):
         self.filters = filters
 
         self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=1024)
-        self.dual_encoder   = Encoder(self.img_size, self.filters, in_channels=2, out_channels=1024)
         latent_dim          = self.encoder.out_channels
 
         # Affine Layers
@@ -190,13 +193,9 @@ class PAMNetwork(nn.Module):
     def forward(self, fixed, moving):
 
         # encoder
-        h_fixed = self.encoder(fixed)
-        h_moving = self.encoder(moving)
-        h = h_fixed - h_moving
-
-        # dual encoder
-        x = torch.concat([fixed, moving], dim=1)
-        z = self.dual_encoder(x)
+        z_fixed = self.encoder(fixed)
+        z_moving = self.encoder(moving)
+        z = z_fixed - z_moving
 
         # compute affine transform
         W = self.dense_w(z).view(-1, 3, 3)
@@ -221,7 +220,7 @@ class PAMNetwork(nn.Module):
         wA = self.spatial_layer(moving, tA)
         wD = self.spatial_layer(moving, tD)
 
-        return tA, wA, tD, wD, h, z
+        return tA, wA, tD, wD
 
 
         

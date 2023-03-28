@@ -137,7 +137,6 @@ def training(
 
     pam_network.train()
     discriminator.train()
-    it_train_counter = 0
 
     for epoch in range(epoch, n_epochs):
 
@@ -151,7 +150,7 @@ def training(
 
             pam_network_optimizer.zero_grad()
 
-            t_0, w_0, t_1, w_1, h, z = pam_network(fixed, moving)
+            t_0, w_0, t_1, w_1 = pam_network(fixed, moving)
 
             # we use the affine as real and the elastic as fake
             _, features_w1      = discriminator(w_1) 
@@ -162,13 +161,10 @@ def training(
             penalty_affine_loss      = penalty(t_0)
             registration_deform_loss = cc_loss(fixed, w_1)
             penalty_deform_loss      = penalty(t_1)
-
-            divergence_loss = cc_loss(h, z) 
             
             loss = registration_affine_loss + alpha_value * penalty_affine_loss + \
                 registration_deform_loss + beta_value * penalty_deform_loss + \
-                gamma_value * generator_adv_loss + \
-                divergence_loss * np.minimum(it_train_counter * 2.5e-5, 1.)
+                gamma_value * generator_adv_loss
             
             loss.backward()
             pam_network_optimizer.step()
@@ -206,7 +202,6 @@ def training(
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Penalty Elastic loss': beta_value * penalty_deform_loss.item(),
                         'Train: Generator Adversarial Loss': generator_adv_loss.item(),
-                        'Train: Divergence Loss': divergence_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()})
             
