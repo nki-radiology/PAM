@@ -118,19 +118,19 @@ class Decoder(nn.Module):
         self.filters = filters
 
         self.DeConv6 = Conv   (self.filters[5], self.filters[4])
-        self.UpConv6 = Up_Conv(self.filters[4], self.filters[4])
+        self.UpConv6 = nn.Upsample (scale_factor=2, mode='trilinear')
 
         self.DeConv5 = Conv   (self.filters[4], self.filters[3])
-        self.UpConv5 = Up_Conv(self.filters[3], self.filters[3])
+        self.UpConv5 = nn.Upsample (scale_factor=2, mode='trilinear')
 
         self.DeConv4 = Conv   (self.filters[3], self.filters[2])
-        self.UpConv4 = Up_Conv(self.filters[2], self.filters[2])
+        self.UpConv4 = nn.Upsample (scale_factor=2, mode='trilinear')
 
         self.DeConv3 = Conv   (self.filters[2], self.filters[1])
-        self.UpConv3 = Up_Conv(self.filters[1], self.filters[1])
+        self.UpConv3 = nn.Upsample (scale_factor=2, mode='trilinear')
 
         self.DeConv2 = Conv   (self.filters[1], self.filters[0])
-        self.UpConv2 = Up_Conv(self.filters[0], self.filters[0])
+        self.UpConv2 = nn.Upsample (scale_factor=2, mode='trilinear')
 
         self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
