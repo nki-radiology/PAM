@@ -8,11 +8,12 @@
 - latent space of the deformation created via subtraction f(moving) - f(fixed).
 
 ## experiments
-- pleasent-disco-2: baseline model >> underfitting
-- dainty-sun-3: removed Tanh >> no change
-- demin-deluge-4: overparametrized latent >> lower loss, still underfitting
-- effortless-glade-6: increased latent >> no change
-- share split encoders in affine network, larger network >> 
-- colorful-butterfly-13: twin network with standard setting >> no change, underftting
-- scheduler of the similarity between encoders latent space >> 
-- only convolutional latent >>
+| wandb-name            | change                  | result       |
+|-----------------------|-------------------------|--------------|
+| pleasent-disco-2      | baseline model          | underfitting |
+| dainty-sun-3          | removed Tanh            | no change    |
+| demin-deluge-4        | added FC to latent      | lower loss   |
+| effortless-glade-6    | added FC to latent      | no change    |
+|                       | share affine and deform |              |
+| colorful-butterfly-13 | knowledge transfer (KT) | worse result |
+|                       | scheduler on KT         |              |
