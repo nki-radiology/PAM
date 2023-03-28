@@ -137,6 +137,7 @@ def training(
 
     pam_network.train()
     discriminator.train()
+    it_train_counter = 0
 
     for epoch in range(epoch, n_epochs):
 
