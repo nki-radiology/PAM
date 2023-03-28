@@ -11,6 +11,8 @@
 - pleasent-disco-2: baseline model >> underfitting
 - dainty-sun-3: removed Tanh >> no change
 - demin-deluge-4: overparametrized latent >> lower loss, still underfitting
-- comic-firebrand-5: increased latent >> bug
-- effortless-glade-6: bugfix >> no change
+- effortless-glade-6: increased latent >> no change
 - share split encoders in affine network, larger network >> 
+- colorful-butterfly-13: twin network with standard setting >> no change, underftting
+- scheduler of the similarity between encoders latent space >> 
+- only convolutional latent >>
