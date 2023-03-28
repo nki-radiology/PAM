@@ -14,6 +14,8 @@
 | dainty-sun-3          | removed Tanh            | no change    |
 | demin-deluge-4        | added FC to latent      | lower loss   |
 | effortless-glade-6    | added FC to latent      | no change    |
-|                       | share affine and deform |              |
-| colorful-butterfly-13 | knowledge transfer (KT) | worse result |
-|                       | scheduler on KT         |              |
+| colorful-butterfly-13 | student-teacher (ST)    | not learning |
+| cosmic-firefly-16     | scheduler on ST         | not learning |
+|                       | remove ST, res. block   |              |
+
+
