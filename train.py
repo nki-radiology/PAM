@@ -133,7 +133,7 @@ def training(
 
     # wandb Initialization
     wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
-    wandb.watch(pam_network, log='all')
+    wandb.watch(pam_network, log=None)
 
     pam_network.train()
     discriminator.train()
