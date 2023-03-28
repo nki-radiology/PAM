@@ -16,15 +16,15 @@ class Conv(nn.Module):
         super(Conv, self).__init__()
 
         self.conv = nn.Sequential(
-            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False),
             nn.GroupNorm(num_groups=8, num_channels=out_ch),
             nn.ReLU     (inplace=True),
-            nn.Conv3d   (in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.Conv3d   (in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False),
             nn.GroupNorm(num_groups=8, num_channels=out_ch),
         )
 
         self.identity = \
-            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding=1, bias=False)
+            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
 
     def forward(self, x):
         out = self.conv(x) + self.identity(x)
