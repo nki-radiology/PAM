@@ -102,7 +102,7 @@ class Encoder(nn.Module):
             x = self.AvgPool(x)
             x = self.Flatten(x)
             x = self.Fc(x)
-            x = self.Tanh(x)
+            #x = self.Tanh(x)
 
             return x
 
@@ -178,9 +178,7 @@ class PAMNetwork(nn.Module):
         elements            = np.prod(feature_maps_size) * self.filters[5]
 
         self.deflatten      = nn.Sequential(
-            nn.Linear(latent_dim, int(elements/2)),
-            nn.ReLU(),
-            nn.Linear(int(elements/2), elements),
+            nn.Linear(latent_dim, elements),
             nn.ReLU()
         )
 
