@@ -162,12 +162,12 @@ def training(
             registration_deform_loss = cc_loss(fixed, w_1)
             penalty_deform_loss      = penalty(t_1)
 
-            divergence_loss = cc_loss(h, z)
+            divergence_loss = cc_loss(h, z) 
             
             loss = registration_affine_loss + alpha_value * penalty_affine_loss + \
                 registration_deform_loss + beta_value * penalty_deform_loss + \
                 gamma_value * generator_adv_loss + \
-                divergence_loss
+                divergence_loss * np.minimum(it_train_counter * 2.5e-5, 1.)
             
             loss.backward()
             pam_network_optimizer.step()
