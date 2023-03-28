@@ -16,6 +16,10 @@ class Preprocessing(object):
         self.path_to_save_file   = args.path_to_save_file
         self.path_to_cts_in_yads = args.path_to_cts_in_yads
         self.patients_file_to_read = args.patients_file_to_read
+        
+        # Variables for the pairs file generation
+        self.name_file_to_read  = args.name_file_to_read
+        self.name_pairs_file    = args.name_pairs_file
     
     
     def assign_path(self, entry):
@@ -153,12 +157,48 @@ class Preprocessing(object):
         yads_data['DateOfLastCheck'] = yads_data['DateOfLastCheck'].apply(lambda x: datetime.strptime(str(x), '%Y-%m-%d %H:%M:%S').strftime("%Y-%m-%d"))
         yads_data['DateOfDeath']     = yads_data['DateOfDeath'].apply(self.format_date_of_death)
         yads_data.to_csv(self.path_to_save_file + '7.YADS_survival_data_standardized.csv', na_rep='NULL', index=False, encoding='utf-8')
+
+
+    def get_directories(self, root_path):
+        try: 
+            subdirs = next(os.walk(root_path))[1]
+            subdirs = list(map(lambda x: root_path + '/' + x, subdirs))
+        except StopIteration:
+            subdirs = []
+            pass
+        return subdirs
     
+
+    def get_pairs(self):
+        yads  = pd.read_csv(self.name_file_to_read)
+        pairs = []
+        for i in range(len(yads)):
+            # Get directories with possible dicoms
+            prior_subdirs = self.get_directories(yads.iloc[i]['PRIOR_PATH'])
+            subsq_subdirs = self.get_directories(yads.iloc[i]['SUBSQ_PATH'])
+            
+            for prior in prior_subdirs:
+                for subsq in subsq_subdirs:
+                    pairs.append([ yads.iloc[i]['AnonymizedName'] , yads.iloc[i]['PatientID'], yads.iloc[i]['YADSId'], yads.iloc[i]['AnonymizedPatientID'], yads.iloc[i]['Included'], 
+                                   yads.iloc[i]['PRIOR_DATE'], prior,
+                                   yads.iloc[i]['SUBSQ_DATE'], subsq,
+                                   yads.iloc[i]['DifferenceInDaysBetweenScans'], yads.iloc[i]['DateOfDeath'], yads.iloc[i]['DateOfLastCheck'], yads.iloc[i]['DaysOfSurvival'],
+                                   yads.iloc[i]['Event'], yads.iloc[i]['Y1Survival'], yads.iloc[i]['Y2Survival']
+                                ])
+        yads_pairs = pd.DataFrame(pairs, columns=[ 'AnonymizedName', 'PatientID', 'YADSId', 'AnonymizedPatientID', 'Included', 'PRIOR_DATE', 'PRIOR_PATH',
+                                                    'SUBSQ_DATE', 'SUBSQ_PATH', 'DifferenceInDaysBetweenScans', 'DateOfDeath', 'DateOfLastCheck', 'DaysOfSurvival',
+                                                    'Event', 'Y1Survival', 'Y2Survival'
+                                                 ])
+        yads_pairs.to_csv(self.name_pairs_file, na_rep='NULL', index=False, encoding='utf-8')
+                    
+
+
+
         
 def main(args):
     
     preproc = Preprocessing(args)
-    if args.preprocessing_nki:
+    if args.task == 'preprocessing':
         print("Preprocessing YADS file... ")
         yads_data = preproc.read_yads_file()
         yads_including_days = preproc.get_difference_between_scans(yads_data)
@@ -175,14 +215,21 @@ def main(args):
         print('--------------------------------------')
         print('--------------------------------------')
         print('End Survival Data Preproprocessing! :)')
+        
+    elif args.task == 'generate_pairs':
+        print(' Generating pairs file ....')
+        preproc.get_pairs()
+        print('End Generating pairs file! :)')
+    
     else:
-        print('Under development...!')
+        print('Error! ')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Disentanglement Methods: Wassertein Autoencoder, Beta-VAE')
+    parser = argparse.ArgumentParser(description='Preprocessing of YADS and patient files to create pairs')
     
-    parser.add_argument('--preprocessing_nki',  default=True, type=bool,  help='Preprocessing or ...')
+    # Variables to preprocess the NKI files: YADS file and patients file
+    parser.add_argument('--task',               default='generate_pairs', type=str,  help='Taks to execute: preprocessing or generate_pairs')
     parser.add_argument('--YADS_file_to_read',  default='/projects/disentanglement_methods/files_nki/YADSRequestResult.csv', type=str, help='YADS file path')
     parser.add_argument('--patients_file_to_read', default='/projects/disentanglement_methods/files_nki/patients.csv', type=str, help='Patients file path')
     parser.add_argument('--min_days_inclusion', default=30,   type=int,   help='Minimum days between prior and subsquent CTs')
@@ -191,6 +238,10 @@ if __name__ == '__main__':
     parser.add_argument('--y2_survival_days',   default=710,  type=int,   help='Number of days to assign survival')
     parser.add_argument('--path_to_save_file',  default='/projects/disentanglement_methods/files_nki/', type=str, help='Path to save the preprocessed file of YADS')
     parser.add_argument('--path_to_cts_in_yads',default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM/', type=str, help='Path to add to the AnonymizedName in yalds to read the CTs')
+    
+    # Variables for generating the pairs
+    parser.add_argument('--name_file_to_read',           default='/projects/disentanglement_methods/files_nki/7.YADS_survival_data_standardized.csv', type=str, help='File which contains initial pairs')
+    parser.add_argument('--name_pairs_file',             default='/projects/disentanglement_methods/files_nki/infoA/pairs.csv', type=str, help='Path to save file with all the pairs for infoA')
     
     args = parser.parse_args()
     
