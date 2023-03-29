@@ -121,8 +121,8 @@ def training(
     
     epoch        = 0
     n_epochs     = 10001
-    alpha_value  = 0.001
-    beta_value   = 0.001
+    alpha_value  = 0.01
+    beta_value   = 0.01
     gamma_value  = 0.01
 
     real_label   = 1.
