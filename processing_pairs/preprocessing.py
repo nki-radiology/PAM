@@ -191,9 +191,6 @@ class Preprocessing(object):
                                                  ])
         yads_pairs.to_csv(self.name_pairs_file, na_rep='NULL', index=False, encoding='utf-8')
                     
-
-
-
         
 def main(args):
     
