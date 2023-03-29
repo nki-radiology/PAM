@@ -1,100 +1,125 @@
 import os
-import pandas as pd
+import csv
+import SimpleITK
+import numpy     as     np
+import pandas    as     pd
+import SimpleITK as     sitk
+from   tqdm      import tqdm
+from   pydicom   import dcmread
+from   SimpleITK import WriteImage
+from   SimpleITK import ClampImageFilter
+from   localizer import *
 import argparse
-import pydicom as dicom
-from datetime import datetime
-from dateutil.parser import parse
-from preprocessing   import Preprocessing
-import SimpleITK as sitk
 
-class Pairs(object):
+
+class Pairs_Format(object):
     def __init__(self, args):
-        self.name_file_to_read           = args.name_file_to_read
-        self.name_pairs_file             = args.name_pairs_file
-
-
-    def get_directories(self, root_path):
         
-        try: 
-            subdirs = next(os.walk(root_path))[1]
-            subdirs = list(map(lambda x: root_path + '/' + x, subdirs))
-        except StopIteration:
-            subdirs = []
-            pass
+        self.pairs_file    = args.pairs_file
+        self.path_of_dicom = args.path_of_dicom
+        self.path_of_nrrd  = args.path_of_nrrd
+        self.structure_to_crop              = args.structure_to_crop
+        self.path_to_save_unprocessed_pairs = args.path_to_save_unprocessed_pairs
         
-        return subdirs
-    
+
+    def get_data_file(self):
+        
+        # Reading the original csv file
+        data               = pd.read_csv(self.pairs_file)
+        print(' Initial data length: ', len(data))
+        
+        # Removing duplicate paths
+        new_prior = data[~data.duplicated('PRIOR_PATH')]
+        new_subsq = data[~data.duplicated('SUBSQ_PATH')] 
+        print('Non-repeated prior data length: ', len(new_prior))
+        print('Non-repeated subsq data length: ', len(new_subsq))
+
+        # Concatenation of both dataframes and removing duplicate paths
+        non_repeating_data = list(new_prior['PRIOR_PATH']) + list(new_subsq['SUBSQ_PATH'])
+        print(' Total non-repeated data length: ', len(non_repeating_data))
+        non_repeating_pairs = pd.DataFrame(non_repeating_data, columns=[ ' Path ' ])
+        non_repeating_pairs.to_csv(self.path_to_save_unprocessed_pairs + 'non_reapiting_pairs.csv', na_rep='NULL', index=False, encoding='utf-8')
+        return non_repeating_data
 
 
-    def get_pairs(self):
-        yads  = pd.read_csv(self.name_file_to_read)
-        pairs = []
-        for i in range(len(yads)):
-            # Get directories with possible dicoms
-            prior_subdirs = self.get_directories(yads.iloc[i]['PRIOR_PATH'])
-            subsq_subdirs = self.get_directories(yads.iloc[i]['SUBSQ_PATH'])
-            
-            for prior in prior_subdirs:
-                for subsq in subsq_subdirs:
-                    pairs.append([ yads.iloc[i]['AnonymizedName'] , yads.iloc[i]['PatientID'], yads.iloc[i]['YADSId'], yads.iloc[i]['AnonymizedPatientID'], yads.iloc[i]['Included'], 
-                                   yads.iloc[i]['PRIOR_DATE'], prior,
-                                   yads.iloc[i]['SUBSQ_DATE'], subsq,
-                                   yads.iloc[i]['DifferenceInDaysBetweenScans'], yads.iloc[i]['DateOfDeath'], yads.iloc[i]['DateOfLastCheck'], yads.iloc[i]['DaysOfSurvival'],
-                                   yads.iloc[i]['Event'], yads.iloc[i]['Y1Survival'], yads.iloc[i]['Y2Survival']
-                                ])
-        yads_pairs = pd.DataFrame(pairs, columns=[ 'AnonymizedName', 'PatientID', 'YADSId', 'AnonymizedPatientID', 'Included', 'PRIOR_DATE', 'PRIOR_PATH',
-                                                    'SUBSQ_DATE', 'SUBSQ_PATH', 'DifferenceInDaysBetweenScans', 'DateOfDeath', 'DateOfLastCheck', 'DaysOfSurvival',
-                                                    'Event', 'Y1Survival', 'Y2Survival'
-                                                 ])
-        yads_pairs.to_csv(self.name_pairs_file, na_rep='NULL', index=False, encoding='utf-8')
-                    
+    def verify_path_to_save(self, path: str):
+        if not os.path.exists(path):
+            print('Creating folder...')
+            os.makedirs(path)
+        else:
+            print('This folder already exists :)!')
+
+
+    def apply_localizer(self, data: list): 
+        clamp = ClampImageFilter()
+        clamp.SetUpperBound(300)
+        clamp.SetLowerBound(-120)
+
+        if self.structure_to_crop == 'thorax': 
+            loader = ImageLoader(
+                ReadDICOM(),
+                CropThorax(margin=25),
+                Resample(2),
+                PadAndCropTo((192, 192, 160), cval=-1000),
+                TransformFromITKFilter(clamp),
+            )
+            print('Applying crop of Thorax!')
         
+        else:
+            loader = ImageLoader(
+                ReadDICOM(),
+                CropAbdomen(margin=25), 
+                Resample(2),
+                PadAndCropTo((192, 192, 160), cval=-1000),
+                TransformFromITKFilter(clamp),
+            )
+            print('Applying crop of Abdomen!')
+
+        name_unprocessed_file  = self.path_to_save_unprocessed_pairs + self.structure_to_crop + "_data.csv"
+        dicom_unprocessed_path = []
+        
+        # Reading and saving preprocessed data
+        with tqdm(total=len(data)) as pbar:
+            for path in data:
+                try:
+                    processed_ct_scan = loader(path)
+                    processed_ct_scan = processed_ct_scan + 120
+                    processed_ct_scan = processed_ct_scan / 2
+                    processed_ct_scan = SimpleITK.Cast(processed_ct_scan, sitk.sitkUInt8)
+
+                    path_to_save_nrrd = path.replace(self.path_of_dicom, self.path_of_nrrd + self.structure_to_crop )
+                    print('Path to save: ', path_to_save_nrrd)
+                    self.verify_path_to_save(path_to_save_nrrd)
+                    nrrd_image_name = path_to_save_nrrd + '/' + path.split('/')[9] + '.nrrd'
+                    print('Nrrd image name: ', nrrd_image_name)
+                    WriteImage(processed_ct_scan, nrrd_image_name)
+                except:
+                    print("--------------- CT was not loaded! ---------------")
+                    dicom_unprocessed_path.append(path)
+                    pass
+                pbar.update(1)
+        print("Done!")
+        dict = {'dicom_path': dicom_unprocessed_path}
+        df   = pd.DataFrame(dict)
+        df.to_csv(name_unprocessed_file, na_rep='NULL', index=False, encoding='utf-8')
+
+
 def main(args):
-    
-    if args.preprocessing_nki:
-        
-        preproc = Preprocessing(args)
-        
-        print("Preprocessing YADS file... ")
-        yads_data = preproc.read_yads_file()
-        yads_including_days = preproc.get_difference_between_scans(yads_data)
-        included_patients_yads = preproc.exclude_patients_based_on_number_of_days(yads_including_days)
-        print('Done :)')
-        
-        print('Preprocessing patient file... ')
-        yads_including_dates_from_patients = preproc.read_and_get_included_patients(included_patients_yads)
-        yads_including_survival            = preproc.get_survival_from_patients(yads_including_dates_from_patients)
-        print('Done :)')
-        print('--------------------------------------')
-        print('Applying the last fomat to data ......')
-        preproc.final_format_dates(yads_including_survival)
-        print('--------------------------------------')
-        print('--------------------------------------')
-        print('End Survival Data Preproprocessing! :)')
-        
-    else:
-        pairs = Pairs(args)
-        print(' Generating pairs file ....')
-        pairs.get_pairs()
-        print('End Generating pairs file! :)')
+    dcm_to_nrrd = Pairs_Format(args)
+    non_repeated_data = dcm_to_nrrd.get_data_file()
+    dcm_to_nrrd.apply_localizer(non_repeated_data)
+    print('Process Done!!!!!!!!!!!!!!!!!!!!!!!')    
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Preprocessing of YADS and patient files to create pairs')
-    # Variables required for preprocessing the pairs
-    parser.add_argument('--preprocessing_nki',  default=False, type=bool,  help='Preprocessing or ...')
-    parser.add_argument('--YADS_file_to_read',  default='/projects/disentanglement_methods/files_nki/YADSRequestResult.csv', type=str, help='YADS file path')
-    parser.add_argument('--patients_file_to_read', default='/projects/disentanglement_methods/files_nki/patients.csv', type=str, help='Patients file path')
-    parser.add_argument('--min_days_inclusion', default=30,   type=int,   help='Minimum days between prior and subsquent CTs')
-    parser.add_argument('--max_days_inclusion', default=120,  type=int,   help='Maximum days between prior and subsquent CTs')
-    parser.add_argument('--y1_survival_days',   default=355,  type=int,   help='Number of days to assign survival')
-    parser.add_argument('--y2_survival_days',   default=710,  type=int,   help='Number of days to assign survival')
-    parser.add_argument('--path_to_save_file',  default='/projects/disentanglement_methods/files_nki/', type=str, help='Path to save the preprocessed file of YADS')
-    parser.add_argument('--path_to_cts_in_yads',default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM/', type=str, help='Path to add to the AnonymizedName in yalds to read the CTs')
+    parser = argparse.ArgumentParser(description='From Dicom to Nrrd class for all CT pairs')
+    parser.add_argument('--structure_to_crop',              default='abdomen',                                                     type=str, help='Structure to crop: thorax or abdomen')
+    parser.add_argument('--pairs_file',                     default='/projects/disentanglement_methods/files_nki/infoA/pairs.csv', type=str, help='Pairs file path')
+    parser.add_argument('--path_of_dicom',                  default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM',       type=str, help='Dicom path')
+    parser.add_argument('--path_of_nrrd',                   default='/data/groups/beets-tan/l.estacio/infoA/',                     type=str, help='Nrrd path')
+    parser.add_argument('--path_to_save_unprocessed_pairs', default='/projects/disentanglement_methods/files_nki/infoA/',          type=str, help='Path to save unprocessed pairs')
     
-    # Variables requires for creating the pairs
-    parser.add_argument('--name_file_to_read',           default='/projects/disentanglement_methods/files_nki/7.YADS_survival_data_standardized.csv', type=str, help='File which contains initial pairs')
-    parser.add_argument('--name_pairs_file',             default='/projects/disentanglement_methods/files_nki/infoA/pairs.csv', type=str, help='Path to save file with all the pairs for infoA')
     args = parser.parse_args()
     
     main(args)
+        
