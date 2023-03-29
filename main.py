@@ -57,9 +57,9 @@ if __name__ == '__main__':
     parser.add_argument('--proj_bvae_adversarial', default='Beta-VAE-Adversarial', type=str, help='Project name for weights and biases for the adversarial Beta-VAE')
     parser.add_argument('--entity_wb',             default='ljestaciocerquin',     type=str, help='Entity for weights and biases')
     
-    parser.add_argument('--dset_dir',   default='/data/groups/beets-tan/l.estacio/data_tcia/train/',               type=str, help='dataset directory')
-    parser.add_argument('--ckpt_dir',   default='/projects/disentanglement_methods/checkpoints/WAE/adversarial-pam/',  type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir',default='/projects/disentanglement_methods/results/WAE/adversarial-pam/',      type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--dset_dir',   default='/data/groups/beets-tan/l.estacio/data_tcia/train/',   type=str, help='dataset directory')
+    parser.add_argument('--ckpt_dir',   default='/projects/disentanglement_methods/checkpoints/WAE/',  type=str, help='checkpoint directory')
+    parser.add_argument('--results_dir',default='/projects/disentanglement_methods/results/WAE/',      type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     

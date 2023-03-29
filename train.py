@@ -579,7 +579,7 @@ class Train(object):
                 frozen_params(self.net)
                 free_params(self.discriminator_net)
                 
-                z_fake = torch.rand(fixed.size()[0], self.latent_dim, device=self.device) * self.sigma_value
+                z_fake = torch.randn(fixed.size()[0], self.latent_dim, device=self.device) * self.sigma_value
                 d_fake = self.discriminator_net(z_fake)
                 
                 # Forward pass through the registration model
@@ -600,8 +600,8 @@ class Train(object):
                 frozen_params(self.discriminator_net)
                 
                 t_0, w_0, t_1, w_1, z_real  = self.net(fixed, moving)
-                d_real                = self.discriminator_net(z_real)
-                reconstruction_loss  = self.disc_loss_rec(w_1, fixed).mean()
+                d_real                      = self.discriminator_net(z_real)
+                reconstruction_loss         = self.disc_loss_rec(w_1, fixed).mean()
 
                 print(z_real)
                 print('z_real: ', z_real.min(), z_real.max(), (torch.log(z_real + eps)).mean())
@@ -652,7 +652,7 @@ class Train(object):
                     moving = x_2.to(self.device)
                     
                      # Train Discriminator
-                    z_fake = torch.rand(fixed.size()[0], self.latent_dim, device=self.device) * self.sigma_value
+                    z_fake = torch.randn(fixed.size()[0], self.latent_dim, device=self.device) * self.sigma_value
                     d_fake = self.discriminator_net(z_fake)
                     
                     # Forward pass through the registration model

@@ -198,7 +198,6 @@ class Encoder_WAE(nn.Module):
             
         self.latent_space_z = nn.Sequential(
             nn.Linear(in_features=self.elem, out_features=latent_dim, bias=True),
-            nn.ReLU()
         )
 
     def forward(self, x):
