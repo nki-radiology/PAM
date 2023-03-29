@@ -207,8 +207,8 @@ def training(
             
         # Save checkpoints
         if epoch % 25 == 0:
-            name_pam = 'PAMModel_' + str(epoch) + '.pth'
-            name_dis = 'DisModel_' + str(epoch) + '.pth'
+            name_pam = 'PAMModel.pth'
+            name_dis = 'DisModel.pth'
             torch.save(pam_network.state_dict(), os.path.join(PARAMS.project_folder, name_pam))
             torch.save(discriminator_network.state_dict(), os.path.join(PARAMS.project_folder, name_dis))
             print('Model saved!')
