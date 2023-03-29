@@ -123,7 +123,7 @@ def training(
     n_epochs     = 10001
     alpha_value  = 0.01
     beta_value   = 0.01
-    gamma_value  = 0.005
+    gamma_value  = 0.1
 
     real_label   = 1.
     fake_label   = 0.
