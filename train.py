@@ -121,9 +121,9 @@ def training(
     
     epoch        = 0
     n_epochs     = 10001
-    alpha_value  = 0.01
-    beta_value   = 0.01
-    gamma_value  = 0.1
+    alpha_value  = 0.001
+    beta_value   = 0.001
+    gamma_value  = 0.01
 
     real_label   = 1.
     fake_label   = 0.
@@ -206,12 +206,12 @@ def training(
                         'Train: Discriminator Loss': loss_d_t.item()})
             
         # Save checkpoints
-        #if epoch % 25 == 0:
-        #    name_pam = 'PAMModel_' + str(epoch) + '.pth'
-        #    name_dis = 'DisModel_' + str(epoch) + '.pth'
-        #    torch.save(pam_network.state_dict(), os.path.join(PARAMS.project_folder, name_pam))
-        #    torch.save(discriminator_network.state_dict(), os.path.join(PARAMS.project_folder, name_dis))
-        #    print('Model saved!')
+        if epoch % 25 == 0:
+            name_pam = 'PAMModel_' + str(epoch) + '.pth'
+            name_dis = 'DisModel_' + str(epoch) + '.pth'
+            torch.save(pam_network.state_dict(), os.path.join(PARAMS.project_folder, name_pam))
+            torch.save(discriminator_network.state_dict(), os.path.join(PARAMS.project_folder, name_dis))
+            print('Model saved!')
             
 
 cuda_seeds()

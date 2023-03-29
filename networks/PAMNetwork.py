@@ -15,21 +15,35 @@ class Conv(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(Conv, self).__init__()
 
-        self.conv = nn.Sequential(
-            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False),
-            nn.GroupNorm(num_groups=8, num_channels=out_ch),
-            nn.ReLU     (inplace=True),
-            nn.Conv3d   (in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False),
-            nn.GroupNorm(num_groups=8, num_channels=out_ch),
-        )
+        self.identity   = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
+        self.conv1      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
+        self.conv2      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False),
 
-        self.identity = \
-            nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
+        self.relu       = nn.LeakyReLU(inplace=True)
+
+        self.gnorm1     = nn.GroupNorm(num_groups=8, num_channels=out_ch)
+        self.gnorm2     = nn.GroupNorm(num_groups=8, num_channels=out_ch)
 
     def forward(self, x):
-        out = self.conv(x) + self.identity(x)
+
+        out = self.conv1(x)
+        out = self.gnorm1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.gnorm2(out)
+
+        out = out + self.identity(x)
+
         return out 
-        
+
+
+class DeConv(Conv):
+    def __init__(self, in_ch, out_ch):
+        super(Conv, self).__init__(in_ch, out_ch)
+        self.identity   = nn.ConvTranspose3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=2, padding='same', bias=False)
+        self.conv1      = nn.ConvTranspose3d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=2, padding='same', bias=False)
+
 
 """
 Encoder
@@ -58,8 +72,7 @@ class Encoder(nn.Module):
 
         self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
         self.Flatten  = nn.Flatten()
-        self.Fc       = nn.Linear(self.filters[5], self.out_channels)
-        self.Tanh     = nn.Tanh()
+        self.Fc       = nn.Linear(self.filters[5], self.out_channels, bias=False)
 
     def forward(self, image):
 
@@ -83,7 +96,6 @@ class Encoder(nn.Module):
             x = self.AvgPool(x)
             x = self.Flatten(x)
             x = self.Fc(x)
-            #x = self.Tanh(x)
 
             return x
 
@@ -98,39 +110,21 @@ class Decoder(nn.Module):
         self.img_size = img_size
         self.filters = filters
 
-        self.DeConv6 = Conv       (self.filters[5], self.filters[4])
-        self.UpConv6 = nn.Upsample(scale_factor=2, mode='trilinear')
-
-        self.DeConv5 = Conv       (self.filters[4], self.filters[3])
-        self.UpConv5 = nn.Upsample(scale_factor=2, mode='trilinear')
-
-        self.DeConv4 = Conv       (self.filters[3], self.filters[2])
-        self.UpConv4 = nn.Upsample(scale_factor=2, mode='trilinear')
-
-        self.DeConv3 = Conv       (self.filters[2], self.filters[1])
-        self.UpConv3 = nn.Upsample(scale_factor=2, mode='trilinear')
-
-        self.DeConv2 = Conv       (self.filters[1], self.filters[0])
-        self.UpConv2 = nn.Upsample(scale_factor=2, mode='trilinear')
+        self.DeConv6 = DeConv(self.filters[5], self.filters[4])
+        self.DeConv5 = DeConv(self.filters[4], self.filters[3])
+        self.DeConv4 = DeConv(self.filters[3], self.filters[2])
+        self.DeConv3 = DeConv(self.filters[2], self.filters[1])
+        self.DeConv2 = DeConv(self.filters[1], self.filters[0])
 
         self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, feature_maps):
                 
-        x  = self.DeConv6(feature_maps)
-        x  = self.UpConv6(x) #12
-
+        x  = self.DeConv6(feature_maps) 
         x  = self.DeConv5(x)
-        x  = self.UpConv5(x) #24
-
         x  = self.DeConv4(x)
-        x  = self.UpConv4(x) #48
-
         x  = self.DeConv3(x)
-        x  = self.UpConv3(x) #96
-
         x  = self.DeConv2(x)
-        x  = self.UpConv2(x) #192
 
         x = self.OutConv(x)
 
@@ -159,8 +153,8 @@ class PAMNetwork(nn.Module):
         elements            = np.prod(feature_maps_size) * self.filters[5]
 
         self.deflatten      = nn.Sequential(
-            nn.Linear(latent_dim, elements),
-            nn.ReLU()
+            nn.Linear(latent_dim, elements, bias=False),
+            nn.LeakyReLU()
         )
 
         self.decoder        = Decoder(self.img_size, self.filters)
