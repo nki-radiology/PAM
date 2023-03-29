@@ -40,7 +40,7 @@ class Conv(nn.Module):
 
 class DeConv(Conv):
     def __init__(self, in_ch, out_ch):
-        super(Conv, self).__init__(in_ch, out_ch)
+        super(DeConv, self).__init__(in_ch, out_ch)
         self.identity   = nn.ConvTranspose3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=2, padding='same', bias=False)
         self.conv1      = nn.ConvTranspose3d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=2, padding='same', bias=False)
 
