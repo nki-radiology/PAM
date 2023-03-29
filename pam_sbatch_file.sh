@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
+#SBATCH --time=5-00:00:00                           # Time limit hrs:min:sec
 #SBATCH --job-name=split-encoders                   # Job name
 #SBATCH --partition=rtx8000                         # Partition
 #SBATCH --gpus-per-task=1                           # Number of gpus per node

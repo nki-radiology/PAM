@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-#from networks.SpatialTransformer import SpatialTransformer 
-from SpatialTransformer import SpatialTransformer # local 
+from networks.SpatialTransformer import SpatialTransformer 
+#from SpatialTransformer import SpatialTransformer # local 
 
 
 """
