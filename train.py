@@ -201,7 +201,7 @@ def training(
                         'Train: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Penalty Elastic loss': beta_value * penalty_deform_loss.item(),
-                        'Train: Generator Adversarial Loss': gamma_value * generator_adv_loss.item(),
+                        'Train: Generator Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()})
             
