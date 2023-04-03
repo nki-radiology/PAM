@@ -207,6 +207,14 @@ class PAMNetwork(nn.Module):
         return tA, wA, tD, wD
 
 
+    def get_features(self, fixed, moving):
+        z_fixed = self.encoder(fixed)
+        z_moving = self.encoder(moving)
+        z = z_fixed - z_moving
+
+        return z, (z_fixed, z_moving)
+    
+    
 """
 # To summarize the complete model
 from torchsummary import summary
