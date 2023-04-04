@@ -36,9 +36,11 @@ class Pairs_Format(object):
 
         # Concatenation of both dataframes and removing duplicate paths
         non_repeating_data = list(new_prior['PRIOR_PATH']) + list(new_subsq['SUBSQ_PATH'])
-        print(' Total non-repeated data length: ', len(non_repeating_data))
+        print('Non-repeated total data length: ', len(non_repeating_data))
+        non_repeating_data = list(dict.fromkeys(non_repeating_data))
+        print(' Total len of non-repeated data PRIOR_PATH plus SUBSQ_PATH: ', len(non_repeating_data))
         non_repeating_pairs = pd.DataFrame(non_repeating_data, columns=[ ' Path ' ])
-        non_repeating_pairs.to_csv(self.path_to_save_unprocessed_pairs + 'non_reapiting_pairs.csv', na_rep='NULL', index=False, encoding='utf-8')
+        non_repeating_pairs.to_csv(self.path_to_save_unprocessed_pairs + 'non_reapiting_pairs_prior_plus_subsq.csv', na_rep='NULL', index=False, encoding='utf-8')
         return non_repeating_data
 
 
@@ -107,13 +109,13 @@ class Pairs_Format(object):
 def main(args):
     dcm_to_nrrd = Pairs_Format(args)
     non_repeated_data = dcm_to_nrrd.get_data_file()
-    dcm_to_nrrd.apply_localizer(non_repeated_data)
+    dcm_to_nrrd.apply_localizer(non_repeated_data[18080:])
     print('Process Done!!!!!!!!!!!!!!!!!!!!!!!')    
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='From Dicom to Nrrd class for all CT pairs')
-    parser.add_argument('--structure_to_crop',              default='abdomen',                                                     type=str, help='Structure to crop: thorax or abdomen')
+    parser.add_argument('--structure_to_crop',              default='thorax',                                                     type=str, help='Structure to crop: thorax or abdomen')
     parser.add_argument('--pairs_file',                     default='/projects/disentanglement_methods/files_nki/infoA/pairs.csv', type=str, help='Pairs file path')
     parser.add_argument('--path_of_dicom',                  default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM',       type=str, help='Dicom path')
     parser.add_argument('--path_of_nrrd',                   default='/data/groups/beets-tan/l.estacio/infoA/',                     type=str, help='Nrrd path')
