@@ -214,6 +214,35 @@ class PAMNetwork(nn.Module):
 
         return z, (z_fixed, z_moving)
     
+
+    def generate(self, z, moving):
+
+        # compute affine transform
+        W = self.dense_w(z).view(-1, 3, 3)
+        b = self.dense_b(z).view(-1, 3)
+
+        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
+        tA = tA.view(-1, 3, 4)
+        tA = F.affine_grid(tA, moving.size(), align_corners=False)
+        tA = tA.permute(0, 4, 1, 2, 3)
+        
+        # compute deformation field
+        x  = self.deflatten(z)
+
+        s = [int(s/(2**5)) for s in self.img_size]
+        s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
+        x = torch.reshape(x, s)
+
+        tD = self.decoder(x)
+
+        # apply transforms
+        # wD = self.spatial_layer(moving, tA+tD)
+        wA = self.spatial_layer(moving, tA)
+        wD = self.spatial_layer(moving, tD)
+
+        return tA, wA, tD, wD
+
+    
     
 """
 # To summarize the complete model
