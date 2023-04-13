@@ -124,16 +124,16 @@ def test(pam_network, test_dataloader, device):
         registration_affine_loss = cc_loss(fixed, w_0)
         penalty_affine_loss      = penalty(t_0) 
 
-        print('affine:', str(registration_affine_loss.detach().numpy().squeeze()), end='\t')
+        print('affine:', str(registration_affine_loss.cpu().detach().numpy().squeeze()), end='\t')
 
         registration_deform_loss = cc_loss(fixed, w_1)
         penalty_deform_loss = penalty(t_1)
 
-        print('elastic:', str(registration_deform_loss.detach().numpy().squeeze()), end='\t')
+        print('elastic:', str(registration_deform_loss.cpu().detach().numpy().squeeze()), end='\t')
 
         matched = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
 
-        print('disentangl:', str(matched.detach().numpy().squeeze()))
+        print('disentangl:', str(matched.cpu().detach().numpy().squeeze()))
 
         results.append({
             'reg_aff'   : registration_affine_loss,
