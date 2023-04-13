@@ -68,7 +68,7 @@ def load_dataloader():
 
 def load_model_weights():
     # Network definition
-    pam_net     = PAMNetwork()
+    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters)
     device      = torch.device('cuda:0')
     pam_net.to(device)
 
@@ -117,14 +117,14 @@ def test(pam_network, test_dataloader, device):
         matched = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
 
         results.append({
-            'reg_aff': registration_affine_loss,
-            'pen_aff': penalty_affine_loss,
-            'reg_def': registration_deform_loss,
-            'pen_def': penalty_deform_loss,
-            'z': z,
-            'z_fixed': z_fixed,
-            'z_moving': z_moving,
-            'dis': matched 
+            'reg_aff'   : registration_affine_loss,
+            'pen_aff'   : penalty_affine_loss,
+            'reg_def'   : registration_deform_loss,
+            'pen_def'   : penalty_deform_loss,
+            'dis'       : matched ,
+            'z'         : z,
+            'z_fixed'   : z_fixed,
+            'z_moving'  : z_moving
         })
 
         pd.DataFrame(results).to_csv('test.csv')
