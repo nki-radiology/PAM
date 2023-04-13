@@ -62,9 +62,11 @@ def load_dataloader():
         filenames, random_state=RANDOM_SEED, train_size=0.8, shuffle=True
     )
 
-    test_dataset = RegistrationDataSet(path_dataset = inputs_test,
-                                        input_shape  = (300, 192, 192, 1),
-                                        transform    = None)
+    test_dataset    = RegistrationDataSet(
+        path_dataset = inputs_test,
+        input_shape  = (300, 192, 192, 1),
+        transform    = None
+    )
     
     test_dataloader = DataLoader(dataset=test_dataset, batch_size=1, shuffle=False)
 
