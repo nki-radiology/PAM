@@ -100,7 +100,9 @@ def test(pam_network, test_dataloader, device):
     pam_network.eval()
     results = []
 
-    for _, (x_1, x_2) in enumerate(test_dataloader):
+    for i, (x_1, x_2) in enumerate(test_dataloader):
+
+        print('sample', str(i), end='\t')
                     
         fixed  = x_1.to(device)
         moving = x_2.to(device)
@@ -108,13 +110,21 @@ def test(pam_network, test_dataloader, device):
         t_0, w_0, t_1, w_1 = pam_network(fixed, moving)
         z, (z_fixed, z_moving) = pam_network.get_features(fixed, moving)
 
+        print('registered', end='\t')
+
         registration_affine_loss = cc_loss.pearson_correlation(fixed, w_0)
         penalty_affine_loss      = penalty.energy_loss(t_0) 
+
+        print('affine:', str(registration_affine_loss), end='\t')
 
         registration_deform_loss = cc_loss.pearson_correlation(fixed, w_1)
         penalty_deform_loss = penalty.energy_loss(t_1)
 
+        print('elastic:', str(registration_deform_loss), end='\t')
+
         matched = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
+
+        print('disentangl:', str(matched))
 
         results.append({
             'reg_aff'   : registration_affine_loss,
