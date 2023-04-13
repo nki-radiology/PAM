@@ -100,6 +100,8 @@ def test(pam_network, test_dataloader, device):
     pam_network.eval()
     results = []
 
+    print('starting...')
+
     for i, (x_1, x_2) in enumerate(test_dataloader):
 
         print('sample', str(i), end='\t')
@@ -138,6 +140,8 @@ def test(pam_network, test_dataloader, device):
         })
 
         pd.DataFrame(results).to_csv('test.csv')
+
+    print('done.')
 
 cuda_seeds()
 pam_network, device = load_model_weights()
