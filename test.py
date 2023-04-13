@@ -135,7 +135,7 @@ def test(pam_network, test_dataloader, device):
 
         print('elastic:', str(registration_deform_loss.item()), end='\t')
 
-        top1, top3, top10 = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
+        top1, top3, top10 = measure_disentaglement(pam_network, fixed, moving, effect=torch.max(z))
 
         print('disentangl:', str(top10))
 
@@ -154,7 +154,7 @@ def test(pam_network, test_dataloader, device):
     print('done.')
 
 if __name__ == "__main__":
-    
+
     cuda_seeds()
     pam_network, device = load_model_weights()
     test_dataloader     = load_dataloader()
