@@ -106,8 +106,6 @@ def measure_disentaglement(pam_network, fixed, moving, effect=1.):
 
 def test(pam_network, test_dataloader, device):
 
-    with torch.no_grad():
-
     _, _, cc_loss, penalty = init_loss_functions()
 
     pam_network.eval()
@@ -162,7 +160,8 @@ cuda_seeds()
 pam_network, device = load_model_weights()
 test_dataloader     = load_dataloader()
 
-test(pam_network, test_dataloader, device)
+with torch.no_grad():
+    test(pam_network, test_dataloader, device)
 
 
 
