@@ -20,21 +20,19 @@ from config import PARAMS
 RANDOM_SEED = 42
 
 
-def read_test_data():
-    path_input= PARAMS.test_folder
+def read_train_data():
+    path_input= PARAMS.train_folder
     path      = Path(path_input)
     filenames = list(path.glob('*.nrrd'))
     data_index= []
 
-    print('files found:', str(len(filenames)))
-
     for f in filenames:
         data_index.append(int(str(f).split('/')[7].split('_')[0])) 
 
-    test_data = list(zip(data_index, filenames))
-    test_data = pd.DataFrame(test_data, columns=['tcia_idx', 'dicom_path'])
+    train_data = list(zip(data_index, filenames))
+    train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
 
-    return test_data
+    return train_data
 
 
 def cuda_seeds():
@@ -58,8 +56,13 @@ def init_loss_functions():
 
 
 def load_dataloader():
-    filenames   = read_test_data()
-    test_dataset = RegistrationDataSet(path_dataset = filenames,
+    filenames   = read_train_data()
+
+    _, inputs_test = train_test_split(
+        filenames, random_state=RANDOM_SEED, train_size=0.8, shuffle=True
+    )
+
+    test_dataset = RegistrationDataSet(path_dataset = inputs_test,
                                         input_shape  = (300, 192, 192, 1),
                                         transform    = None)
     
