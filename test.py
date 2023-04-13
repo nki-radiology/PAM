@@ -26,6 +26,8 @@ def read_test_data():
     filenames = list(path.glob('*.nrrd'))
     data_index= []
 
+    print('files found:', str(len(filenames)))
+
     for f in filenames:
         data_index.append(int(str(f).split('/')[7].split('_')[0])) 
 
