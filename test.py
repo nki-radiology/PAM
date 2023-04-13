@@ -146,22 +146,21 @@ def test(pam_network, test_dataloader, device):
             'pen_def'   : penalty_deform_loss.item(),
             'top1'      : top1,
             'top3'      : top3,
-            'top10'     : top10,
-            'z'         : z.cpu().detach().numpy().squeeze(),
-            'z_fixed'   : z_fixed.cpu().detach().numpy().squeeze(),
-            'z_moving'  : z_moving.cpu().detach().numpy().squeeze()
+            'top10'     : top10
         })
 
         pd.DataFrame(results).to_csv('test.csv')
 
     print('done.')
 
-cuda_seeds()
-pam_network, device = load_model_weights()
-test_dataloader     = load_dataloader()
+if __name__ == "__main__":
+    
+    cuda_seeds()
+    pam_network, device = load_model_weights()
+    test_dataloader     = load_dataloader()
 
-with torch.no_grad():
-    test(pam_network, test_dataloader, device)
+    with torch.no_grad():
+        test(pam_network, test_dataloader, device)
 
 
 

@@ -214,7 +214,9 @@ def training(
             print('Model saved!')
             
 
-cuda_seeds()
-pam_network, discriminator_network, device  = model_init()
-train_dataloader, _                         = load_dataloader()
-training(pam_network, discriminator_network, train_dataloader, None, device)
+if __name__ == "__main__":
+    
+    cuda_seeds()
+    pam_network, discriminator_network, device  = model_init()
+    train_dataloader, _                         = load_dataloader()
+    training(pam_network, discriminator_network, train_dataloader, None, device)
