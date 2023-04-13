@@ -130,8 +130,8 @@ def test(pam_network, test_dataloader, device):
         pd.DataFrame(results).to_csv('test.csv')
 
 cuda_seeds()
-pam_network, discriminator_network, device  = load_model_weights()
-test_dataloader                             = load_dataloader()
+pam_network, device = load_model_weights()
+test_dataloader     = load_dataloader()
 
 test(pam_network, test_dataloader, device)
 
