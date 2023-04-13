@@ -98,9 +98,9 @@ def measure_disentaglement(pam_network, fixed, moving, effect=1.):
     z, (_, _) = pam_network.get_features(fixed, moving_)
     # top-1, 3, 10
     topk    = torch.topk(z, 10).indices
-    top1    = ix == topk[0].item()
-    top3    = any([ix == i.item() for i in topk[:3]])
-    top10   = any([ix == i.item() for i in topk[:10]])
+    top1    = ix == topk[0, 0].item()
+    top3    = any([ix == i.item() for i in topk[0, :3]])
+    top10   = any([ix == i.item() for i in topk[0, :10]])
     return top1, top3, top10
 
 
