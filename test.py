@@ -119,13 +119,13 @@ def test(pam_network, test_dataloader, device):
 
         print('registered', end='\t')
 
-        registration_affine_loss = cc_loss.pearson_correlation(fixed, w_0)
-        penalty_affine_loss      = penalty.energy_loss(t_0) 
+        registration_affine_loss = cc_loss(fixed, w_0)
+        penalty_affine_loss      = penalty(t_0) 
 
         print('affine:', str(registration_affine_loss), end='\t')
 
-        registration_deform_loss = cc_loss.pearson_correlation(fixed, w_1)
-        penalty_deform_loss = penalty.energy_loss(t_1)
+        registration_deform_loss = cc_loss(fixed, w_1)
+        penalty_deform_loss = penalty(t_1)
 
         print('elastic:', str(registration_deform_loss), end='\t')
 
