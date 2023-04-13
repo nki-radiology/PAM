@@ -96,11 +96,17 @@ def measure_disentaglement(pam_network, fixed, moving, effect=1.):
     _, _, _, moving_ = pam_network.generate(z, moving)
     # moving_ should match fixed (z=0), except for the feature modified
     z, (_, _) = pam_network.get_features(fixed, moving_)
-    ix_pred = torch.argmax(torch.abs(z))
-    return ix == ix_pred
+    # top-1, 3, 10
+    topk    = torch.topk(z, 10).indices
+    top1    = ix == topk[0].item()
+    top3    = any([ix == i.item() for i in topk[:3]])
+    top10   = any([ix == i.item() for i in topk[:10]])
+    return top1, top3, top10
 
 
 def test(pam_network, test_dataloader, device):
+
+    with torch.no_grad():
 
     _, _, cc_loss, penalty = init_loss_functions()
 
@@ -124,23 +130,25 @@ def test(pam_network, test_dataloader, device):
         registration_affine_loss = cc_loss(fixed, w_0)
         penalty_affine_loss      = penalty(t_0) 
 
-        print('affine:', str(registration_affine_loss.cpu().detach().numpy().squeeze()), end='\t')
+        print('affine:', str(registration_affine_loss.item()), end='\t')
 
         registration_deform_loss = cc_loss(fixed, w_1)
         penalty_deform_loss = penalty(t_1)
 
-        print('elastic:', str(registration_deform_loss.cpu().detach().numpy().squeeze()), end='\t')
+        print('elastic:', str(registration_deform_loss.item()), end='\t')
 
-        matched = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
+        top1, top3, top10 = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
 
-        print('disentangl:', str(matched.cpu().detach().numpy().squeeze()))
+        print('disentangl:', str(top10.item()))
 
         results.append({
             'reg_aff'   : registration_affine_loss,
             'pen_aff'   : penalty_affine_loss,
             'reg_def'   : registration_deform_loss,
             'pen_def'   : penalty_deform_loss,
-            'dis'       : matched ,
+            'top1'      : top1,
+            'top3'      : top3,
+            'top10'     : top10,
             'z'         : z,
             'z_fixed'   : z_fixed,
             'z_moving'  : z_moving
@@ -154,8 +162,7 @@ cuda_seeds()
 pam_network, device = load_model_weights()
 test_dataloader     = load_dataloader()
 
-with torch.no_grad():
-    test(pam_network, test_dataloader, device)
+test(pam_network, test_dataloader, device)
 
 
 
