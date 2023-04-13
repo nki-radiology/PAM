@@ -137,19 +137,19 @@ def test(pam_network, test_dataloader, device):
 
         top1, top3, top10 = measure_disentaglement(pam_network, fixed, moving, effect=torch.std(z))
 
-        print('disentangl:', str(top10.item()))
+        print('disentangl:', str(top10.cpu().detach().numpy().squeeze()))
 
         results.append({
-            'reg_aff'   : registration_affine_loss,
-            'pen_aff'   : penalty_affine_loss,
-            'reg_def'   : registration_deform_loss,
-            'pen_def'   : penalty_deform_loss,
-            'top1'      : top1,
-            'top3'      : top3,
-            'top10'     : top10,
-            'z'         : z,
-            'z_fixed'   : z_fixed,
-            'z_moving'  : z_moving
+            'reg_aff'   : registration_affine_loss.item(),
+            'pen_aff'   : penalty_affine_loss.item(),
+            'reg_def'   : registration_deform_loss.item(),
+            'pen_def'   : penalty_deform_loss.item(),
+            'top1'      : top1.cpu().detach().numpy().squeeze(),
+            'top3'      : top3.cpu().detach().numpy().squeeze(),
+            'top10'     : top10.cpu().detach().numpy().squeeze(),
+            'z'         : z.cpu().detach().numpy().squeeze(),
+            'z_fixed'   : z_fixed.cpu().detach().numpy().squeeze(),
+            'z_moving'  : z_moving.cpu().detach().numpy().squeeze()
         })
 
         pd.DataFrame(results).to_csv('test.csv')
