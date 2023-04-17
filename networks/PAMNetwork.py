@@ -202,7 +202,7 @@ class PAMNetwork(nn.Module):
         # apply transforms
         # wD = self.spatial_layer(moving, tA+tD)
         wA = self.spatial_layer(moving, tA)
-        wD = self.spatial_layer(moving, tD)
+        wD = self.spatial_layer(wA, tD)
 
         return tA, wA, tD, wD
 
