@@ -1,7 +1,7 @@
 import pandas as pd
 from  pathlib import Path
 
-class ReadPairs():
+class SavePairs():
     def __init__(self, filename_to_read: str, anatomy_to_read: str, filename_including_non_succeed_nrrd: str, filename_only_succeed_nrrd:str):
         self.filename_to_read = filename_to_read
         self.anatomy_to_read  = anatomy_to_read
@@ -51,6 +51,6 @@ class ReadPairs():
         data.to_csv(self.filename_only_succeed_nrrd, na_rep='NULL', index=True, encoding='utf-8')
         
         
-read = ReadPairs('/projects/disentanglement_methods/files_nki/infoA/pairs.csv', 'abdomen', '/projects/disentanglement_methods/files_nki/infoA/abdomen_pairs_including_non_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/infoA/abdomen_pairs_only_succeed_nrrd.csv')
-read.get_succed_pairs()
-read.keep_only_succeed_pairs()
+save = SavePairs('/projects/disentanglement_methods/files_nki/infoA/pairs.csv', 'abdomen', '/projects/disentanglement_methods/files_nki/infoA/abdomen_pairs_including_non_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/infoA/abdomen_pairs_only_succeed_nrrd.csv')
+save.get_succed_pairs()
+save.keep_only_succeed_pairs()
