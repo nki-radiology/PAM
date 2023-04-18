@@ -109,13 +109,13 @@ class Pairs_Format(object):
 def main(args):
     dcm_to_nrrd = Pairs_Format(args)
     non_repeated_data = dcm_to_nrrd.get_data_file()
-    dcm_to_nrrd.apply_localizer(non_repeated_data[18080:])
+    dcm_to_nrrd.apply_localizer(non_repeated_data)
     print('Process Done!!!!!!!!!!!!!!!!!!!!!!!')    
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='From Dicom to Nrrd class for all CT pairs')
-    parser.add_argument('--structure_to_crop',              default='thorax',                                                     type=str, help='Structure to crop: thorax or abdomen')
+    parser.add_argument('--structure_to_crop',              default='abdomen',                                                     type=str, help='Structure to crop: thorax or abdomen')
     parser.add_argument('--pairs_file',                     default='/projects/disentanglement_methods/files_nki/infoA/pairs.csv', type=str, help='Pairs file path')
     parser.add_argument('--path_of_dicom',                  default='/data/groups/beets-tan/s.trebeschi/INFOa_dicoms/DICOM',       type=str, help='Dicom path')
     parser.add_argument('--path_of_nrrd',                   default='/data/groups/beets-tan/l.estacio/infoA/',                     type=str, help='Nrrd path')
