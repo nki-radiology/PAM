@@ -82,7 +82,7 @@ def init_loss_functions():
     xcorr_loss  = Cross_Correlation_Loss().pearson_correlation
     penalty     = Energy_Loss().energy_loss
     xent        = nn.CrossEntropyLoss()
-    l2_loss     = lambda x:torch.norm(x, p=2)
+    l2_norm     = lambda x:torch.norm(x, p=2)
     return bce_loss, l2_loss, xcorr_loss, penalty, xent, l2_norm
 
 
