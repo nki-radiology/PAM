@@ -98,10 +98,20 @@ Decoder
 """
 class Decoder(nn.Module):
 
-    def __init__(self, img_size, filters) -> None:
+    def __init__(self, img_size, filters, latent_dim, out_channels) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
+        self.latent_dim = latent_dim
+        self.out_channels = out_channels
+
+        feature_maps_size   = [int(s/(2**5)) for s in self.img_size]
+        elements            = np.prod(feature_maps_size) * self.filters[5]
+
+        self.deflatten      = nn.Sequential(
+            nn.Linear(latent_dim, elements, bias=False),
+            nn.LeakyReLU()
+        )
 
         self.DeConv6 = Conv       (self.filters[5], self.filters[4])
         self.UpConv6 = nn.Upsample(scale_factor=2, mode='trilinear')
@@ -118,10 +128,16 @@ class Decoder(nn.Module):
         self.DeConv2 = Conv       (self.filters[1], self.filters[0])
         self.UpConv2 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
+        self.OutConv = nn.Conv3d(self.filters[0], self.out_channels, kernel_size=1, stride=1, padding=0, bias=False)
 
-    def forward(self, feature_maps):
+    def forward(self, z):
                 
+        x = self.deflatten(z)
+
+        s = [int(s/(2**5)) for s in self.img_size]
+        s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
+        feature_maps = torch.reshape(x, s)
+            
         x  = self.DeConv6(feature_maps)
         x  = self.UpConv6(x) #12
 
@@ -142,6 +158,37 @@ class Decoder(nn.Module):
         return x
 
 
+class DeformationDecoder(nn.Module):
+
+    def __init__(self, img_size, filters, latent_dim) -> None:
+        super().__init__()
+        self.img_size = img_size
+        self.filters = filters
+        self.latent_dim = latent_dim
+
+        self.dense_w        = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
+        self.dense_b        = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
+
+        self.decoder = Decoder(self.img_size, self.filters, self.latent_dim, out_channels=3)
+
+
+    def forward(self, z, moving):
+
+        # compute affine transform
+        W = self.dense_w(z).view(-1, 3, 3)
+        b = self.dense_b(z).view(-1, 3)
+
+        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
+        tA = tA.view(-1, 3, 4)
+        tA = F.affine_grid(tA, moving.size(), align_corners=False)
+        tA = tA.permute(0, 4, 1, 2, 3)
+
+        # compute deformation
+        tD = self.decoder(z)
+        
+        return tA, tD
+
+
 """
 Registration Network
 """
@@ -155,95 +202,57 @@ class PAMNetwork(nn.Module):
         self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=1024)
         latent_dim          = self.encoder.out_channels
 
-        # Affine Layers
-        self.dense_w        = nn.Linear(in_features=latent_dim, out_features=9, bias=False)
-        self.dense_b        = nn.Linear(in_features=latent_dim, out_features=3, bias=False)
+        self.decoder        = DeformationDecoder(self.img_size, self.filters, latent_dim)
 
-        # Deformation Layers
-        feature_maps_size   = [int(s/(2**5)) for s in self.img_size]
-        elements            = np.prod(feature_maps_size) * self.filters[5]
-
-        self.deflatten      = nn.Sequential(
-            nn.Linear(latent_dim, elements, bias=False),
-            nn.LeakyReLU()
-        )
-
-        self.decoder        = Decoder(self.img_size, self.filters)
-
-        # Spatial layer
         self.spatial_layer  = SpatialTransformer(self.img_size)
 
 
-    def forward(self, fixed, moving):
-
-        # encoder
+    def encode(self, fixed, moving):
         z_fixed = self.encoder(fixed)
         z_moving = self.encoder(moving)
-        z = z_fixed - z_moving
 
-        # compute affine transform
-        W = self.dense_w(z).view(-1, 3, 3)
-        b = self.dense_b(z).view(-1, 3)
-
-        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
-        tA = tA.view(-1, 3, 4)
-        tA = F.affine_grid(tA, moving.size(), align_corners=False)
-        tA = tA.permute(0, 4, 1, 2, 3)
-        
-        # compute deformation field
-        x  = self.deflatten(z)
-
-        s = [int(s/(2**5)) for s in self.img_size]
-        s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
-        x = torch.reshape(x, s)
-
-        tD = self.decoder(x)
-
-        # apply transforms
-        # wD = self.spatial_layer(moving, tA+tD)
-        wA = self.spatial_layer(moving, tA)
-        wD = self.spatial_layer(wA, tD)
-
-        return tA, wA, tD, wD
-
-
-    def get_features(self, fixed, moving):
-        z_fixed = self.encoder(fixed)
-        z_moving = self.encoder(moving)
         z = z_fixed - z_moving
 
         return z, (z_fixed, z_moving)
     
 
-    def generate(self, z, moving):
+    def decode(self, z, moving):
+        tA, tD = self.decoder(z)
 
-        # compute affine transform
-        W = self.dense_w(z).view(-1, 3, 3)
-        b = self.dense_b(z).view(-1, 3)
-
-        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
-        tA = tA.view(-1, 3, 4)
-        tA = F.affine_grid(tA, moving.size(), align_corners=False)
-        tA = tA.permute(0, 4, 1, 2, 3)
-        
-        # compute deformation field
-        x  = self.deflatten(z)
-
-        s = [int(s/(2**5)) for s in self.img_size]
-        s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
-        x = torch.reshape(x, s)
-
-        tD = self.decoder(x)
-
-        # apply transforms
-        # wD = self.spatial_layer(moving, tA+tD)
         wA = self.spatial_layer(moving, tA)
-        wD = self.spatial_layer(moving, tD)
+        wD = self.spatial_layer(moving, tA + tD)
 
         return tA, wA, tD, wD
 
+
+    def register(self, moving, fixed):
+
+
+        z, (z_fixed, z_moving) = self.encode(fixed, moving)
+        tA, wA, tD, wD = self.decode(z, moving)
+
+        return tA, wA, tD, wD, (z_fixed, z_moving)
     
-    
+
+    def forward(self, moving, fixed, z_noise):
+
+        z, (_, _) = self.encode(fixed, moving)
+        tA, wA, tD, wD = self.decode(z, moving)
+        
+        # this should be zero
+        z_residual, (_, _) = self.encode(fixed, wD)
+
+        # this should return z_noise
+        _, _, _, w_noise = self.decode(z_residual + z_noise, moving)
+        z_noise_pred, (_, _) = self.encoder(w_noise)
+        z_noise_pred = nn.Softmax(dim=1)(z_noise_pred)
+
+        return tA, wA, tD, wD, z_residual, z_noise_pred
+
+
+
+
+
 """
 # To summarize the complete model
 from torchsummary import summary

@@ -77,11 +77,13 @@ def model_init():
 
 
 def init_loss_functions():
-    discriminator_loss = nn.BCELoss()  
-    l2_loss = nn.MSELoss()  
-    nn_loss = Cross_Correlation_Loss().pearson_correlation
-    penalty = Energy_Loss().energy_loss
-    return discriminator_loss, l2_loss, nn_loss, penalty
+    bce_loss    = nn.BCELoss()  
+    l2_loss     = nn.MSELoss()  
+    xcorr_loss  = Cross_Correlation_Loss().pearson_correlation
+    penalty     = Energy_Loss().energy_loss
+    xent        = nn.CrossEntropyLoss()
+    l2_loss     = lambda x:torch.norm(x, p=2)
+    return bce_loss, l2_loss, xcorr_loss, penalty, xent, l2_norm
 
 
 def get_optimizers(pam_net, dis_net):
@@ -122,13 +124,13 @@ def training(
     epoch        = 0
     n_epochs     = 10001
     alpha_value  = 0.01
-    beta_value   = 0.01
-    gamma_value  = 0.1
+    beta_value   = 0.1
+    gamma_value  = 0.01
 
     real_label   = 1.
     fake_label   = 0.
 
-    xent, l2_loss, cc_loss, penalty = init_loss_functions()
+    xent, l2_loss, cc_loss, penalty, xent, l2_norm = init_loss_functions()
     pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
 
     # wandb Initialization
@@ -146,11 +148,12 @@ def training(
             fixed  = x_1.to(device)
             moving = x_2.to(device)
 
+            z_noise = torch.zeros(fixed.shape[0], 1024).to(device)
+            z_noise[np.random.randint(0, 1024)] = 1.
+
             # *** Train Generator ***
-
             pam_network_optimizer.zero_grad()
-
-            t_0, w_0, t_1, w_1 = pam_network(fixed, moving)
+            t_0, w_0, t_1, w_1, res, z_noise_pred = pam_network(fixed, moving, z_noise)
 
             # we use the affine as real and the elastic as fake
             _, features_w1      = discriminator(w_1) 
@@ -161,10 +164,15 @@ def training(
             penalty_affine_loss      = penalty(t_0)
             registration_deform_loss = cc_loss(fixed, w_1)
             penalty_deform_loss      = penalty(t_1)
+
+            residual_loss           = l2_norm(res)
+            disentaglement_loss     = xent(z_noise_pred, z_noise)
             
-            loss = registration_affine_loss + alpha_value * penalty_affine_loss + \
-                registration_deform_loss + beta_value * penalty_deform_loss + \
-                gamma_value * generator_adv_loss
+            
+            loss = registration_affine_loss + registration_deform_loss + \
+                alpha_value * (penalty_affine_loss + penalty_deform_loss) + \
+                beta_value  * (generator_adv_loss) + \
+                gamma_value * (residual_loss + disentaglement_loss)
             
             loss.backward()
             pam_network_optimizer.step()
@@ -198,10 +206,11 @@ def training(
             it_train_counter = len(train_dataloader)
             wandb.log({'Iteration': epoch * it_train_counter + i, 
                         'Train: Similarity Affine loss': registration_affine_loss.item(),
-                        'Train: Penalty Affine loss': alpha_value * penalty_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
-                        'Train: Penalty Elastic loss': beta_value * penalty_deform_loss.item(),
-                        'Train: Generator Adversarial Loss': generator_adv_loss.item(),
+                        'Train: Penalty loss': penalty_deform_loss.item() + penalty_affine_loss.item(),
+                        'Train: Adversarial Loss': generator_adv_loss.item(),
+                        'Train: Residual Loss': residual_loss.item(),
+                        'Train: Disentaglement Loss': disentaglement_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()})
             
