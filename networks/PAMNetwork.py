@@ -223,7 +223,7 @@ class PAMNetwork(nn.Module):
         return tA, wA, tD, wD
 
 
-    def register(self, moving, fixed):
+    def register(self, fixed, moving):
         z, (_, _) = self.encode(fixed, moving)
         tA, wA, tD, wD = self.decode(z, moving)
 
@@ -231,14 +231,14 @@ class PAMNetwork(nn.Module):
     
 
     def forward(self, moving, fixed, z_noise):
-        tA, wA, tD, wD = self.register(moving, fixed)
+        tA, wA, tD, wD = self.register(fixed, moving)
         
         # this should be zero
-        z_residual, (_, _) = self.encode(fixed, wD)
+        z_residual, _ = self.encode(fixed, wD)
 
         # this should return z_noise
         _, _, _, w_noise = self.decode(z_residual + z_noise, moving)
-        z_noise_pred, (_, _) = self.encoder(w_noise)
+        z_noise_pred, _ = self.encode(fixed, w_noise)
         z_noise_pred = nn.Softmax(dim=1)(z_noise_pred)
 
         return tA, wA, tD, wD, z_residual, z_noise_pred
