@@ -194,16 +194,14 @@ Registration Network
 """
 class PAMNetwork(nn.Module):    
 
-    def __init__(self, img_size, filters) -> None:
+    def __init__(self, img_size, filters, latent_dim) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
+        self.latent_dim = latent_dim
 
-        self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=1024)
-        latent_dim          = self.encoder.out_channels
-
-        self.decoder        = DeformationDecoder(self.img_size, self.filters, latent_dim)
-
+        self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
+        self.decoder        = DeformationDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer  = SpatialTransformer(self.img_size)
 
 

@@ -17,6 +17,11 @@ parser.add_argument('--filters-discriminator',
                     default = [32, 64, 128, 256, 384, 512, 1024],    
                     help = 'filters number for each layer')
 
+parser.add_argument('--latent-dim',     
+                    type = list,  
+                    default = 128,    
+                    help = 'latent dimension')
+
 parser.add_argument('--train-folder',      
                     type = str,
                     default = '/data/groups/beets-tan/l.estacio/data_tcia/train/',

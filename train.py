@@ -148,8 +148,10 @@ def training(
             fixed  = x_1.to(device)
             moving = x_2.to(device)
 
-            z_noise = torch.zeros(fixed.shape[0], 1024).to(device)
-            z_noise[np.random.randint(0, 1024)] = 1.
+            z_noise = torch.zeros(fixed.shape[0], PARAMS.latent_dim).to(device)
+            i = list(range(0, fixed.shape[0]))
+            j = np.random.randint(0, PARAMS.latent_dim, fixed.shape[0])
+            z_noise[i, j] = 1.
 
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
@@ -167,7 +169,6 @@ def training(
 
             residual_loss           = l2_norm(res)
             disentaglement_loss     = xent(z_noise_pred, z_noise)
-            
             
             loss = registration_affine_loss + registration_deform_loss + \
                 alpha_value * (penalty_affine_loss + penalty_deform_loss) + \
