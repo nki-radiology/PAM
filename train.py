@@ -169,7 +169,7 @@ def training(
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
             t_0, w_0, t_1, w_1, Z = pam_network(fixed, moving, t)
-            z_fixed, z_moving, residual, t_pred = Z
+            z, residual, t_pred = Z
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -190,7 +190,7 @@ def training(
             # penalty loss
             penalty_affine_loss     = penalty(t_0)
             penalty_deform_loss     = penalty(t_1 - t_0)
-            penalty_latent          = 0.5 * l1_norm(z_fixed) + l1_norm(z_moving)
+            penalty_latent          = l1_norm(z)
 
             # total loss            
             loss = registration_affine_loss + registration_deform_loss + \
