@@ -230,7 +230,7 @@ class PAMNetwork(nn.Module):
         return tA, wA, tD, wD
     
 
-    def forward(self, moving, fixed, z_noise):
+    def forward(self, fixed, moving, z_noise):
         tA, wA, tD, wD = self.register(fixed, moving)
         
         # this should be zero
