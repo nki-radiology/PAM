@@ -231,7 +231,9 @@ class PAMNetwork(nn.Module):
     
 
     def forward(self, fixed, moving, z_noise):
-        tA, wA, tD, wD = self.register(fixed, moving)
+        # normal registration path
+        z, (z_fixed, z_moving) = self.encode(fixed, moving)
+        tA, wA, tD, wD = self.decode(z, moving)
         
         # this should be zero
         z_residual, _ = self.encode(fixed, wD)
@@ -241,7 +243,9 @@ class PAMNetwork(nn.Module):
         z_noise_pred, _ = self.encode(fixed, w_noise)
         z_noise_pred = nn.Softmax(dim=1)(z_noise_pred)
 
-        return tA, wA, tD, wD, z_residual, z_noise_pred
+        Z = (z_fixed, z_moving, z_residual, z_noise_pred)
+
+        return tA, wA, tD, wD, Z
 
 
 
