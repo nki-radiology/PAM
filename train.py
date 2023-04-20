@@ -205,7 +205,7 @@ def training(
             # Display in tensorboard
             # ========
             it_train_counter = len(train_dataloader)
-            wandb.log({'Iteration': epoch * it_train_counter + i, 
+            wandb.log({ #'Iteration': epoch * it_train_counter + i, 
                         'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Penalty loss': (penalty_deform_loss + penalty_affine_loss).item(),
