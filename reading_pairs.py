@@ -51,6 +51,6 @@ class ReadPairs():
         data.to_csv(self.filename_only_succeed_nrrd, na_rep='NULL', index=True, encoding='utf-8')
         
         
-read = ReadPairs('/projects/disentanglement_methods/files_nki/infoA/pairs.csv', 'thorax', '/projects/disentanglement_methods/files_nki/infoA/thorax_pairs_including_non_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/infoA/thorax_pairs_only_succeed_nrrd.csv')
+read = ReadPairs('/projects/disentanglement_methods/files_nki/infoA/pairs.csv', 'abdomen', '/projects/disentanglement_methods/files_nki/infoA/abdomen_pairs_including_non_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/infoA/abdomen_pairs_only_succeed_nrrd.csv')
 read.get_succed_pairs()
 read.keep_only_succeed_pairs()
