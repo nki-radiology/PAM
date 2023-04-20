@@ -130,7 +130,7 @@ def training(
     real_label   = 1.
     fake_label   = 0.
 
-    xent, l2_loss, cc_loss, penalty, xent, l2_norm = init_loss_functions()
+    bce_loss, l2_loss, cc_loss, penalty, xent, l2_norm = init_loss_functions()
     pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
 
     # wandb Initialization
@@ -189,8 +189,8 @@ def training(
             label_r  = torch.full(b_size, real_label, dtype=torch.float, device=device)
             label_f  = torch.full(b_size, fake_label, dtype=torch.float, device=device)
 
-            loss_d_real = xent(real, label_r)
-            loss_d_fake = xent(fake, label_f)
+            loss_d_real = bce_loss(real, label_r)
+            loss_d_fake = bce_loss(fake, label_f)
             loss_d_t    = (loss_d_real + loss_d_fake) * 0.5
 
             # -- accu_loss_discriminator += loss_d_t.item()
