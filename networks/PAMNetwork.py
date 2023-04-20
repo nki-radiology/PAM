@@ -166,13 +166,13 @@ class DeformationDecoder(nn.Module):
         self.filters = filters
         self.latent_dim = latent_dim
 
-        self.dense_w        = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
-        self.dense_b        = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
+        self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
+        self.dense_b = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
 
         self.decoder = Decoder(self.img_size, self.filters, self.latent_dim, out_channels=3)
 
 
-    def forward(self, z, moving):
+    def forward(self, z, target_shape):
 
         # compute affine transform
         W = self.dense_w(z).view(-1, 3, 3)
@@ -180,7 +180,7 @@ class DeformationDecoder(nn.Module):
 
         tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
         tA = tA.view(-1, 3, 4)
-        tA = F.affine_grid(tA, moving.size(), align_corners=False)
+        tA = F.affine_grid(tA, target_shape, align_corners=False)
         tA = tA.permute(0, 4, 1, 2, 3)
 
         # compute deformation
@@ -215,7 +215,7 @@ class PAMNetwork(nn.Module):
     
 
     def decode(self, z, moving):
-        tA, tD = self.decoder(z)
+        tA, tD = self.decoder(z, moving.shape)
 
         wA = self.spatial_layer(moving, tA)
         wD = self.spatial_layer(moving, tA + tD)
@@ -224,18 +224,14 @@ class PAMNetwork(nn.Module):
 
 
     def register(self, moving, fixed):
-
-
-        z, (z_fixed, z_moving) = self.encode(fixed, moving)
+        z, (_, _) = self.encode(fixed, moving)
         tA, wA, tD, wD = self.decode(z, moving)
 
-        return tA, wA, tD, wD, (z_fixed, z_moving)
+        return tA, wA, tD, wD
     
 
     def forward(self, moving, fixed, z_noise):
-
-        z, (_, _) = self.encode(fixed, moving)
-        tA, wA, tD, wD = self.decode(z, moving)
+        tA, wA, tD, wD = self.register(moving, fixed)
         
         # this should be zero
         z_residual, (_, _) = self.encode(fixed, wD)
