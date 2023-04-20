@@ -208,7 +208,7 @@ def training(
             wandb.log({'Iteration': epoch * it_train_counter + i, 
                         'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
-                        'Train: Penalty loss': penalty_deform_loss.item() + penalty_affine_loss.item(),
+                        'Train: Penalty loss': (penalty_deform_loss + penalty_affine_loss).item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Residual Loss': residual_loss.item(),
                         'Train: Disentaglement Loss': disentaglement_loss.item(),
