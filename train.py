@@ -134,7 +134,7 @@ def training(
 
     alpha_value  = 0.1
     beta_value   = 0.01
-    gamma_value  = 0.01
+    gamma_value  = 0.0001
     delta_value  = 0.001
 
     real_label   = 1.
@@ -230,7 +230,7 @@ def training(
                         'Train: Discriminator Loss': loss_d_t.item()})
             
         # Save checkpoints
-        if epoch % 25 == 0:
+        if (epoch % 25 == 0) and (epoch > 0):
             name_pam = 'PAMModel.pth'
             name_dis = 'DisModel.pth'
             torch.save(pam_network.state_dict(), os.path.join(PARAMS.project_folder, name_pam))
