@@ -95,6 +95,29 @@ class Encoder(nn.Module):
 """
 Decoder
 """
+class AffineDecoder(nn.Module):
+
+    def __init__(self, img_size, latent_dim) -> None:
+        self.img_size = img_size
+        self.latent_dim = latent_dim
+
+        self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
+        self.dense_b = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
+        super().__init__()
+
+    def forward(self, z, target_shape):            
+        # compute affine transform
+        W = self.dense_w(z).view(-1, 3, 3)
+        b = self.dense_b(z).view(-1, 3)
+
+        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
+        tA = tA.view(-1, 3, 4)
+        tA = F.affine_grid(tA, target_shape, align_corners=False)
+        tA = tA.permute(0, 4, 1, 2, 3)
+
+        return tA
+    
+
 class Decoder(nn.Module):
 
     def __init__(self, img_size, filters, latent_dim, out_channels) -> None:
@@ -157,36 +180,6 @@ class Decoder(nn.Module):
         return x
 
 
-class DeformationDecoder(nn.Module):
-
-    def __init__(self, img_size, filters, latent_dim) -> None:
-        super().__init__()
-        self.img_size = img_size
-        self.filters = filters
-        self.latent_dim = latent_dim
-
-        self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
-        self.dense_b = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
-
-        self.decoder = Decoder(self.img_size, self.filters, self.latent_dim, out_channels=3)
-
-
-    def forward(self, z, target_shape):
-
-        # compute affine transform
-        W = self.dense_w(z).view(-1, 3, 3)
-        b = self.dense_b(z).view(-1, 3)
-
-        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
-        tA = tA.view(-1, 3, 4)
-        tA = F.affine_grid(tA, target_shape, align_corners=False)
-        tA = tA.permute(0, 4, 1, 2, 3)
-
-        # compute deformation
-        tD = self.decoder(z)
-        
-        return tA, tD
-
 """
 Registration Network
 """
@@ -198,9 +191,10 @@ class PAMNetwork(nn.Module):
         self.filters = filters
         self.latent_dim = latent_dim
 
-        self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.decoder        = DeformationDecoder(self.img_size, self.filters, self.latent_dim)
-        self.spatial_layer  = SpatialTransformer(self.img_size)
+        self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
+        self.affine_decoder     = AffineDecoder(self.img_size, self.filters, self.latent_dim)
+        self.elastic_decoder    = Decoder(self.img_size, self.filters, self.latent_dim, out_channels=3)
+        self.spatial_layer      = SpatialTransformer(self.img_size)
 
 
     def encode(self, fixed, moving):
@@ -212,31 +206,21 @@ class PAMNetwork(nn.Module):
         return z, (z_fixed, z_moving)
     
 
-    def decode(self, z, moving):
-        tA, tD = self.decoder(z, moving.shape)
-
-        wA = self.spatial_layer(moving, tA)
-        wD = self.spatial_layer(moving, tA + tD)
-
-        return tA, wA, tD, wD
-
-
-    def register(self, fixed, moving):
-        z, (_, _) = self.encode(fixed, moving)
-        tA, wA, tD, wD = self.decode(z, moving)
-
-        return tA, wA, tD, wD
-    
-
     def forward(self, fixed, moving):
-        # registration path
+        # affine
         z, (_, _) = self.encode(fixed, moving)
-        tA, wA, tD, wD = self.decode(z, moving)
+        tA = self.affine_decoder(z, moving)
+        wA = self.spatial_layer(moving, tA)
 
-        # residual paths
-        z_residual, _ = self.encode(fixed, wD)
+        # elastic
+        z, (_, _) = self.encode(fixed, wA)
+        tD = self.elastic_decoder(z)
+        wD = self.spatial_layer(wA, tD)
 
-        return tA, wA, tD, wD, (z, z_residual)
+        # residual 
+        residual, _ = self.encode(fixed, wD)
+
+        return tA, wA, tD, wD, (z, residual)
 
 
 """

@@ -7,6 +7,11 @@ parser.add_argument('--img-dim',
                     default = (192, 192, 160), 
                     help = 'Image dimension')
 
+parser.add_argument('--batch-size',
+                    type = int,
+                    default = 1,
+                    help = 'batch size')
+
 parser.add_argument('--filters',
                     type = list,  
                     default = [8, 16, 32, 64, 128, 256, 512],      

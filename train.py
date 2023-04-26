@@ -117,8 +117,8 @@ def load_dataloader():
                                         input_shape  = (300, 192, 192, 1),
                                         transform    = None)
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=2, shuffle=True)
-    valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=2, shuffle=True)
+    train_dataloader = DataLoader(dataset=train_dataset, batch_size=PARAMS.batch_size, shuffle=True)
+    valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=PARAMS.batch_size, shuffle=True)
 
     return train_dataloader, valid_dataloader
 
@@ -181,8 +181,9 @@ def training(
             sparsity_loss       = l1_norm(z)
 
             # hessian loss
-            hessian_loss    = hessian_penalty(pam_network.encoder, fixed)
-            hessian_loss   += hessian_penalty(pam_network.encoder, moving)
+            hessian_loss        = hessian_penalty(pam_network.encoder, fixed)
+            hessian_loss       += hessian_penalty(pam_network.encoder, moving)
+            hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z)
 
             # total loss            
             loss = registration_affine_loss + registration_deform_loss + \
