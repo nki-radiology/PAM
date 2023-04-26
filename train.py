@@ -19,6 +19,7 @@ from RegistrationDataset            import RegistrationDataSet
 from networks.PAMNetwork            import PAMNetwork
 from networks.DiscriminatorNetwork  import DiscriminatorNetwork
 from metrics.LossPam                import Energy_Loss, Cross_Correlation_Loss
+from metrics.HessianPenalty         import hessian_penalty
 
 from config import PARAMS
 
@@ -78,14 +79,19 @@ def model_init():
 
 
 def init_loss_functions():
-    bce_loss    = nn.BCELoss()  
-    l2_loss     = nn.MSELoss()  
-    xcorr_loss  = Cross_Correlation_Loss().pearson_correlation
-    penalty     = Energy_Loss().energy_loss
-    xent        = nn.CrossEntropyLoss()
+    # registration loss
+    correlation     = Cross_Correlation_Loss().pearson_correlation
+    energy          = Energy_Loss().energy_loss
+
+    # adversatial loss
+    binary_entropy  = nn.BCELoss()
+    mse_distance    = nn.MSELoss()
+
+    # latent loss
     l2_norm     = lambda x:torch.norm(x, p=2)
     l1_norm     = lambda x:torch.norm(x, p=1)
-    return bce_loss, l2_loss, xcorr_loss, penalty, xent, l2_norm, l1_norm
+
+    return (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm)
 
 
 def get_optimizers(pam_net, dis_net):
@@ -117,17 +123,6 @@ def load_dataloader():
     return train_dataloader, valid_dataloader
 
 
-def get_random_hot_encoding(batch_size, latent_dim):
-    t = torch.zeros(batch_size, latent_dim)
-
-    i = list(range(0, batch_size))
-    j = np.random.randint(0, latent_dim, batch_size)
-
-    t[i, j] = 1.
-    return t
-
-
-
 def training(
         pam_network, discriminator, 
         train_dataloader, 
@@ -137,15 +132,15 @@ def training(
     epoch        = 0
     n_epochs     = 10001
 
-    alpha_value  = 0.01
-    beta_value   = 0.1
+    alpha_value  = 0.1
+    beta_value   = 0.01
     gamma_value  = 0.01
     delta_value  = 0.001
 
     real_label   = 1.
     fake_label   = 0.
 
-    bce_loss, l2_loss, cc_loss, penalty, xent, l2_norm, l1_norm = init_loss_functions()
+    (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm) = init_loss_functions()
     pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
 
     # wandb Initialization
@@ -163,48 +158,43 @@ def training(
             fixed  = x_1.to(device)
             moving = x_2.to(device)
 
-            bs = fixed.size(0)
-            ld = PARAMS.latent_dim
-            t = get_random_hot_encoding(bs, ld).to(device)
-
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
-            t_0, w_0, t_1, w_1, Z = pam_network(fixed, moving, t)
-            z, residual, t_pred = Z
+            t_0, w_0, t_1, w_1, Z = pam_network(fixed, moving)
+            z, residual = Z
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
             _, features_w1      = discriminator(w_1) 
             _, features_w0      = discriminator(w_0) 
-            generator_adv_loss  = l2_loss(features_w1, features_w0)
+            generator_adv_loss  = mse_distance(features_w1, features_w0)
 
             # registration loss
-            registration_affine_loss = cc_loss(fixed, w_0)
-            registration_deform_loss = cc_loss(fixed, w_1)
+            registration_affine_loss = correlation(fixed, w_0)
+            registration_deform_loss = correlation(fixed, w_1)
 
-            # residual loss
-            residual_loss           = l2_norm(residual)
+            # circuit residual loss
+            residual_loss       = l2_norm(residual)
 
-            # disentaglement loss
-            disentaglement_loss     = xent(t_pred, t)
+            # energy-like penalty loss
+            enegry_deformation  = energy(t_1 - t_0)
+            sparsity_loss       = l1_norm(z)
 
-            # penalty loss
-            penalty_affine_loss     = penalty(t_0)
-            penalty_deform_loss     = penalty(t_1 - t_0)
-            penalty_latent          = l1_norm(z)
+            # hessian loss
+            hessian_loss    = hessian_penalty(pam_network.encoder, fixed)
+            hessian_loss   += hessian_penalty(pam_network.encoder, moving)
 
             # total loss            
             loss = registration_affine_loss + registration_deform_loss + \
-                alpha_value * (penalty_affine_loss + penalty_deform_loss) + \
-                beta_value  * (generator_adv_loss) + \
-                gamma_value * (residual_loss + disentaglement_loss) + \
-                delta_value * (penalty_latent)
+                alpha_value * (generator_adv_loss) + \
+                beta_value  * (residual_loss) + \
+                gamma_value * (hessian_loss) + \
+                delta_value * (sparsity_loss + enegry_deformation)
             
             loss.backward()
             pam_network_optimizer.step()
 
             # *** Train Discriminator ***
-
             discriminator_optimizer.zero_grad()
 
             real, _ = discriminator(w_0.detach()) 
@@ -214,8 +204,8 @@ def training(
             label_r  = torch.full(b_size, real_label, dtype=torch.float, device=device)
             label_f  = torch.full(b_size, fake_label, dtype=torch.float, device=device)
 
-            loss_d_real = bce_loss(real, label_r)
-            loss_d_fake = bce_loss(fake, label_f)
+            loss_d_real = binary_entropy(real, label_r)
+            loss_d_fake = binary_entropy(fake, label_f)
             loss_d_t    = (loss_d_real + loss_d_fake) * 0.5
 
             # -- accu_loss_discriminator += loss_d_t.item()
@@ -229,15 +219,13 @@ def training(
 
             # Display in tensorboard
             # ========
-            it_train_counter = len(train_dataloader)
-            wandb.log({ #'Iteration': epoch * it_train_counter + i, 
-                        'Train: Similarity Affine loss': registration_affine_loss.item(),
+            wandb.log({ 'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
-                        'Train: Penalty loss': (penalty_deform_loss + penalty_affine_loss).item(),
-                        'Train: Latent penalty loss': penalty_latent.item(),
-                        'Train: Adversarial Loss': generator_adv_loss.item(),
+                        'Train: Energy loss': enegry_deformation.item(),
+                        'Train: Sparsity loss': sparsity_loss.item(),
+                        'Train: Hessian loss': hessian_loss.item(),
                         'Train: Residual Loss': residual_loss.item(),
-                        'Train: Disentaglement Loss': disentaglement_loss.item(),
+                        'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()})
             

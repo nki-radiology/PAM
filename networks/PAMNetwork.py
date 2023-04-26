@@ -92,7 +92,6 @@ class Encoder(nn.Module):
 
             return x
 
-
 """
 Decoder
 """
@@ -188,7 +187,6 @@ class DeformationDecoder(nn.Module):
         
         return tA, tD
 
-
 """
 Registration Network
 """
@@ -230,25 +228,15 @@ class PAMNetwork(nn.Module):
         return tA, wA, tD, wD
     
 
-    def forward(self, fixed, moving, z_noise):
-        # normal registration path
-        z, _ = self.encode(fixed, moving)
+    def forward(self, fixed, moving):
+        # registration path
+        z, (_, _) = self.encode(fixed, moving)
         tA, wA, tD, wD = self.decode(z, moving)
-        
-        # this should be zero
+
+        # residual paths
         z_residual, _ = self.encode(fixed, wD)
 
-        # this should return z_noise
-        _, _, _, w_noise = self.decode(z_residual + z_noise, moving)
-        z_noise_pred, _ = self.encode(fixed, w_noise)
-        z_noise_pred = nn.Softmax(dim=1)(z_noise_pred)
-
-        Z = (z, z_residual, z_noise_pred)
-
-        return tA, wA, tD, wD, Z
-
-
-
+        return tA, wA, tD, wD, (z, z_residual)
 
 
 """
