@@ -2,6 +2,7 @@
 
 
 import os
+import datetime
 import pandas as pd
 import numpy as np
 import wandb
@@ -129,7 +130,7 @@ def get_random_hot_encoding(batch_size, latent_dim):
 
 def training(
         pam_network, discriminator, 
-        train_dataloader, test_dataloader,
+        train_dataloader, 
         device
     ):
     
@@ -249,9 +250,45 @@ def training(
             print('Model saved!')
             
 
+def are_models_trained():
+    name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
+    name_dis = os.path.join(PARAMS.project_folder, 'DisModel.pth')
+    return os.path.exists(name_pam) and os.path.exists(name_dis)
+
+
+def backup_existing_checkpoints():
+    name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
+    os.copyfile(name_pam, os.path.join(PARAMS.project_folder, 'PAMModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
+    name_dis = os.path.join(PARAMS.project_folder, 'DisModel.pth')
+    os.copyfile(name_dis, os.path.join(PARAMS.project_folder, 'DisModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
+    
+
+def load_trained_models():
+    # Network definition
+    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters)
+    dis_net     = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters)
+    device      = torch.device('cuda:0')
+    pam_net.to(device)
+
+    # Loading the model weights
+    pam_chkpt = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
+    dis_chkpt = os.path.join(PARAMS.project_folder, 'DisModel.pth')
+    pam_net.load_state_dict(torch.load(pam_chkpt))
+    dis_net.load_state_dict(torch.load(dis_chkpt))
+
+    return pam_net, dis_net, device
+
+
 if __name__ == "__main__":
     
     cuda_seeds()
-    pam_network, discriminator_network, device  = model_init()
-    train_dataloader, _                         = load_dataloader()
-    training(pam_network, discriminator_network, train_dataloader, None, device)
+    
+    if are_models_trained():
+        print("Models already trained. Backing up existing checkpoints.")
+        backup_existing_checkpoints()
+        pam_network, discriminator_network, device  = load_trained_models()
+    else:
+        pam_network, discriminator_network, device  = model_init()
+
+    train_dataloader, _  = load_dataloader()
+    training(pam_network, discriminator_network, train_dataloader, device)
