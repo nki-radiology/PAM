@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --time=4-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=prj-blue-horn                    # Job name
+#SBATCH --job-name=prj-blue                         # Job name
 #SBATCH --partition=rtx8000                         # Partition
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
 #SBATCH --mem=25G                                   # Memory
 #SBATCH --cpus-per-task=5                           # Number of cores
-#SBATCH --output=/home/s.trebeschi/PAM/slurm_%j.log # Standard output and error log
+#SBATCH --output=/home/s.trebeschi/PAM/log/slurm_%j.log # Standard output and error log
 pwd; hostname; date
 
 # Source bashrc, such that the shell is setup properly

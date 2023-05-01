@@ -155,7 +155,7 @@ def training(
 
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
-            _, w_0, t_1, w_1, Z = pam_network(fixed, moving)
+            t_0, w_0, t_1, w_1, Z = pam_network(fixed, moving)
             z, residual = Z
 
             # adversarial loss
@@ -176,8 +176,8 @@ def training(
             sparsity_loss       = l1_norm(z)
 
             # hessian loss
-            hessian_loss        = hessian_penalty(pam_network.affine_decoder, z)
-            hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z)
+            hessian_loss        = hessian_penalty(pam_network.affine_decoder, z, G_z=t_0)
+            hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
 
             # total loss            
             loss = \
