@@ -132,7 +132,7 @@ class PamFeatures():
         ls_layer_mean_lambda_mo   = (std ** 2 + mean ** 2) / (mean + 1e-10) - 1
         ls_layer_mean_pi_mo       = (std ** 2 - mean) / (std ** 2 + mean ** 2 - mean + 1e-10)
 
-        # Features based on the maximum values
+        '''# Features based on the maximum values
         ls_layer_max, _           = torch.max(ls_layer, 1)
         ls_layer_max_non_zero     = torch.count_nonzero(ls_layer_max) / dim1
         std                       = torch.std(ls_layer_max, unbiased=False)
@@ -146,12 +146,12 @@ class PamFeatures():
         std                        = torch.std(ls_layer_quantile, unbiased=False)
         mean                       = torch.mean(ls_layer_quantile)
         ls_layer_quantile_lambda_mo= (std ** 2 + mean ** 2) / (mean + 1e-10) - 1
-        ls_layer_quantile_pi_mo    = (std ** 2 - mean) / (std ** 2 + mean ** 2 - mean + 1e-10)
+        ls_layer_quantile_pi_mo    = (std ** 2 - mean) / (std ** 2 + mean ** 2 - mean + 1e-10)'''
 
         # Save feature map 
         result_mean     = dict()
-        result_max      = dict()
-        result_quantile = dict()
+        #result_max      = dict()
+        #result_quantile = dict()
         
         # Save additional values
         for i, f in enumerate(ls_layer_mean):
@@ -160,7 +160,7 @@ class PamFeatures():
         result_mean.update({'lambda_mo': ls_layer_mean_lambda_mo.item()})
         result_mean.update({'pi_mo': ls_layer_mean_pi_mo.item()})
         
-        for i, f in enumerate(ls_layer_max):
+        '''for i, f in enumerate(ls_layer_max):
             result_max.update({'feature_' + str(i): f.item()})
         result_max.update({'non_zero_percentage': ls_layer_max_non_zero.item()})
         result_max.update({'lambda_mo': ls_layer_max_lambda_mo.item()})
@@ -170,12 +170,11 @@ class PamFeatures():
             result_quantile.update({'feature_' + str(i): f.item()})
         result_quantile.update({'non_zero_percentage': ls_layer_quantile_non_zero.item()})
         result_quantile.update({'lambda_mo': ls_layer_quantile_lambda_mo.item()})
-        result_quantile.update({'pi_mo': ls_layer_quantile_pi_mo.item()})
+        result_quantile.update({'pi_mo': ls_layer_quantile_pi_mo.item()})'''
         
-        return result_mean, result_max, result_quantile
+        return result_mean#, result_max, result_quantile
 
     
-
     def get_features(self, filename: str, path_to_save_files: str, name_to_save_xlsx: str):
 
         # Reading the original csv file
@@ -187,8 +186,12 @@ class PamFeatures():
             ToNumpyArray(add_singleton_dim=True)
         )
         
-        with tqdm(total=len(data)) as pbar: 
-            for idx in range(len(data)):
+        total_data = len(data)
+        filename   = path_to_save_files + name_to_save_xlsx + '_mean.csv'
+        filename_non_processed = path_to_save_files + name_to_save_xlsx + '_unprocessed_images.csv'
+        
+        with tqdm(total=total_data) as pbar: 
+            for idx in range(total_data):
 
                 # Baselines: DICOM and NRRD
                 baseline_dicom      = data['PRIOR_PATH'].iloc[idx]
@@ -207,14 +210,15 @@ class PamFeatures():
                 try:
                     bl_img  = self.zero_at_edges(loader(baseline_nrrd))
                     fu_img  = self.zero_at_edges(loader(follow_up_nrrd))
-                    pam_ls_mean, pam_ls_max, pam_ls_quantile  = self.pam_features (bl_img, fu_img)
+                    #pam_ls_mean, pam_ls_max, pam_ls_quantile  = self.pam_features (bl_img, fu_img)
+                    pam_ls_mean  = self.pam_features (bl_img, fu_img)
                     
                     print('Baseline nrrd: ', baseline_nrrd)
                     print('Follow-up NRRd: ', follow_up_nrrd)
 
                     # Save dictionaries
                     
-                    self.patients.append({'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
+                    self.patients = [{'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
                                           'YADSId': data['YADSId'].iloc[idx], 'AnonymizedPatientID': data['AnonymizedPatientID'].iloc[idx],
                                           'Included': data['Included'].iloc[idx], 'PRIOR_DATE': data['PRIOR_DATE'].iloc[idx],
                                           'PRIOR_PATH': baseline_dicom,'SUBSQ_DATE': data['SUBSQ_DATE'].iloc[idx], 'SUBSQ_PATH': follow_up_dicom,
@@ -222,43 +226,43 @@ class PamFeatures():
                                           'DateOfLastCheck': data['DateOfLastCheck'].iloc[idx], 'DaysOfSurvival': data['DaysOfSurvival'].iloc[idx],
                                           'Event': data['Event'].iloc[idx], 'Y1Survival': data['Y1Survival'].iloc[idx], 'Y2Survival': data['Y2Survival'].iloc[idx],
                                           'PRIOR_PATH_NRRD': data['PRIOR_PATH_NRRD'].iloc[idx], 'SUBSQ_PATH_NRRD': data['SUBSQ_PATH_NRRD'].iloc[idx]
-                                        })
+                                        }]
                     # DICOM tags
                     if not baseline_dicom_tag: 
                             baseline_dicom_tag = {'studydate': ' ', 'studydescription': ' ', 'kvp': ' ', 'pixelspacing': ' ', 
                             'slicethickness': ' ', 'xraytubecurrent': ' ', 'convolutionkernel': ' ', 'exposuretime': ' ', 'spiralpitchfactor': ' '}
-                    self.tag_bl_list.append(baseline_dicom_tag)
+                    self.tag_bl_list = [baseline_dicom_tag]
 
                     if not follow_up_dicom_tag: 
                             follow_up_dicom_tag = {'studydate': ' ', 'studydescription': ' ', 'kvp': ' ', 'pixelspacing': ' ', 
                             'slicethickness': ' ', 'xraytubecurrent': ' ', 'convolutionkernel': ' ', 'exposuretime': ' ', 'spiralpitchfactor': ' '}
-                    self.tag_fu_list.append(follow_up_dicom_tag)
+                    self.tag_fu_list = [follow_up_dicom_tag]
                     
                     # PAM features
-                    self.pam_ls_mean_list.append(pam_ls_mean)
-                    self.pam_ls_max_list.append(pam_ls_max)
-                    self.pam_ls_quan_list.append(pam_ls_quantile)
+                    self.pam_ls_mean_list = [pam_ls_mean]
+                    #self.pam_ls_max_list.append(pam_ls_max)
+                    #self.pam_ls_quan_list.append(pam_ls_quantile)
 
                     # Saving csv
                     patient_after    = pd.DataFrame.from_dict(self.patients)
                     tag_bl_all_after = pd.DataFrame.from_dict(self.tag_bl_list)
                     tag_fu_all_after = pd.DataFrame.from_dict(self.tag_fu_list)
                     pam_ls_all_mean  = pd.DataFrame.from_dict(self.pam_ls_mean_list)
-                    pam_ls_all_max   = pd.DataFrame.from_dict(self.pam_ls_max_list)
-                    pam_ls_all_quan  = pd.DataFrame.from_dict(self.pam_ls_quan_list)
+                    #pam_ls_all_max   = pd.DataFrame.from_dict(self.pam_ls_max_list)
+                    #pam_ls_all_quan  = pd.DataFrame.from_dict(self.pam_ls_quan_list)
 
                     new_df_mean      = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_mean], axis=1, ignore_index=False, sort=False)
-                    new_df_max       = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_max], axis=1, ignore_index=False, sort=False)
-                    new_df_quan      = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_quan], axis=1, ignore_index=False, sort=False)
+                    #new_df_max       = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_max], axis=1, ignore_index=False, sort=False)
+                    #new_df_quan      = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_quan], axis=1, ignore_index=False, sort=False)
                     
-                    new_df_mean.to_csv(path_to_save_files + name_to_save_xlsx + '_mean.csv',       na_rep='NULL', index=True, encoding='utf-8')
-                    new_df_max.to_csv(path_to_save_files  + name_to_save_xlsx + '_max.csv',        na_rep='NULL', index=True, encoding='utf-8')
-                    new_df_quan.to_csv(path_to_save_files + name_to_save_xlsx + '_percentile.csv', na_rep='NULL', index=True, encoding='utf-8')
-                
+                    new_df_mean.to_csv(filename, mode='a', header=not os.path.exists(filename), na_rep='NULL', index=False, encoding='utf-8')
+                    #new_df_max.to_csv(path_to_save_files  + name_to_save_xlsx + '_max.csv',        na_rep='NULL', index=True, encoding='utf-8')
+                    #new_df_quan.to_csv(path_to_save_files + name_to_save_xlsx + '_percentile.csv', na_rep='NULL', index=True, encoding='utf-8')
+
                 except:
                     print(' - [failed] while loading of the NRRD images. ' )
                     
-                    self.exluded_patients.append({'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
+                    self.exluded_patients=[{'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
                                           'YADSId': data['YADSId'].iloc[idx], 'AnonymizedPatientID': data['AnonymizedPatientID'].iloc[idx],
                                           'Included': data['Included'].iloc[idx], 'PRIOR_DATE': data['PRIOR_DATE'].iloc[idx],
                                           'PRIOR_PATH': baseline_dicom,'SUBSQ_DATE': data['SUBSQ_DATE'].iloc[idx], 'SUBSQ_PATH': follow_up_dicom,
@@ -266,11 +270,11 @@ class PamFeatures():
                                           'DateOfLastCheck': data['DateOfLastCheck'].iloc[idx], 'DaysOfSurvival': data['DaysOfSurvival'].iloc[idx],
                                           'Event': data['Event'].iloc[idx], 'Y1Survival': data['Y1Survival'].iloc[idx], 'Y2Survival': data['Y2Survival'].iloc[idx],
                                           'PRIOR_PATH_NRRD': data['PRIOR_PATH_NRRD'].iloc[idx], 'SUBSQ_PATH_NRRD': data['SUBSQ_PATH_NRRD'].iloc[idx]
-                                        })
+                                        }]
                     
                     patient_nr    = pd.DataFrame.from_dict(self.exluded_patients)
                     #new_df_nr = pd.concat([patient_nr, prior_date_nr, prior_path_nr, subsq_date_nr, subsq_path_nr], axis=1, ignore_index=False, sort=False)
-                    patient_nr.to_csv(path_to_save_files + name_to_save_xlsx + '_unprocessed_images.csv', na_rep='NULL', index=True, encoding='utf-8')
+                    patient_nr.to_csv(filename_non_processed, mode='a', header=not os.path.exists(filename_non_processed), na_rep='NULL', index=False, encoding='utf-8')
                 pbar.update(1)
 
     
@@ -283,16 +287,16 @@ if __name__ == "__main__":
     parser.add_argument('--thorax_raw_file_path',      type=str, default='/projects/disentanglement_methods/files_nki/infoA/thorax/thorax_pairs_only_succeed_nrrd.csv')
     parser.add_argument('--thorax_pam_checkpoint',     type=str, default='/projects/disentanglement_methods/checkpoints/PAM/thorax/PAMModel_60.pth')
     parser.add_argument('--thorax_dis_checkpoint',     type=str, default='/projects/disentanglement_methods/checkpoints/PAM/thorax/DisModel_60.pth')
-    parser.add_argument('--thorax_path_to_save_file',  type=str, default='/projects/disentanglement_methods/files_nki/infoA/thorax/')
+    parser.add_argument('--thorax_path_to_save_file',  type=str, default='/projects/disentanglement_methods/files_nki/infoA/thorax/features/')
     parser.add_argument('--thorax_name_to_save_xlsx',  type=str, default='features_pam_thorax')
     
     parser.add_argument('--abdomen_raw_file_path',     type=str, default='/projects/disentanglement_methods/files_nki/infoA/abdomen/abdomen_pairs_only_succeed_nrrd.csv')
     parser.add_argument('--abdomen_pam_checkpoint',    type=str, default='/projects/disentanglement_methods/checkpoints/PAM/abdomen/PAMModel_60.pth')
     parser.add_argument('--abdomen_dis_checkpoint',    type=str, default='/projects/disentanglement_methods/checkpoints/PAM/abdomen/DisModel_60.pth')
-    parser.add_argument('--abdomen_path_to_save_file', type=str, default='/projects/disentanglement_methods/files_nki/infoA/abdomen/')
+    parser.add_argument('--abdomen_path_to_save_file', type=str, default='/projects/disentanglement_methods/files_nki/infoA/abdomen/features/')
     parser.add_argument('--abdomen_name_to_save_xlsx', type=str, default='features_pam_abdomen')
     
-    parser.add_argument('--region_to_get_features',    type=str, default='Thorax')
+    parser.add_argument('--region_to_get_features',    type=str, default='Abdomen')
     args = parser.parse_args()
 
      
