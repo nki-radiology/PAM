@@ -9,17 +9,17 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--batch-size',
                     type = int,
-                    default = 1,
+                    default = 8,
                     help = 'batch size')
 
 parser.add_argument('--filters',
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512],      
+                    default = [16, 32, 64, 128, 256, 512, 1024],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],    
+                    default = [16, 32, 64, 128, 256, 512, 1024],    
                     help = 'filters number for each layer')
 
 parser.add_argument('--latent-dim',     
@@ -46,8 +46,5 @@ parser.add_argument('--wandb',
                     type = str,
                     default = "split-encoders",
                     help = "folder to save the model checkpoints")
-
-
-
 
 PARAMS = parser.parse_args()

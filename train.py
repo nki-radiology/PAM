@@ -132,11 +132,6 @@ def training(
     epoch        = 0
     n_epochs     = 10001
 
-    alpha_value  = 0.1
-    beta_value   = 0.01
-    gamma_value  = 0.0001
-    delta_value  = 0.001
-
     real_label   = 1.
     fake_label   = 0.
 
@@ -160,7 +155,7 @@ def training(
 
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
-            t_0, w_0, t_1, w_1, Z = pam_network(fixed, moving)
+            _, w_0, t_1, w_1, Z = pam_network(fixed, moving)
             z, residual = Z
 
             # adversarial loss
@@ -177,20 +172,22 @@ def training(
             residual_loss       = l2_norm(residual)
 
             # energy-like penalty loss
-            enegry_deformation  = energy(t_1 - t_0)
+            enegry_deformation  = energy(t_1)
             sparsity_loss       = l1_norm(z)
 
             # hessian loss
-            hessian_loss        = hessian_penalty(pam_network.encoder, fixed)
-            hessian_loss       += hessian_penalty(pam_network.encoder, moving)
+            hessian_loss        = hessian_penalty(pam_network.affine_decoder, z)
             hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z)
 
             # total loss            
-            loss = registration_affine_loss + registration_deform_loss + \
-                alpha_value * (generator_adv_loss) + \
-                beta_value  * (residual_loss) + \
-                gamma_value * (hessian_loss) + \
-                delta_value * (sparsity_loss + enegry_deformation)
+            loss = \
+                1.0     * registration_affine_loss + \
+                1.0     * registration_deform_loss + \
+                0.01    * generator_adv_loss + \
+                0.01    * enegry_deformation + \
+                0.001   * residual_loss + \
+                0.0001  * sparsity_loss + \
+                0.0001  * hessian_loss
             
             loss.backward()
             pam_network_optimizer.step()

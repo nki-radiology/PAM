@@ -118,14 +118,13 @@ class AffineDecoder(nn.Module):
         return tA
     
 
-class Decoder(nn.Module):
+class ElasticDecoder(nn.Module):
 
-    def __init__(self, img_size, filters, latent_dim, out_channels) -> None:
+    def __init__(self, img_size, filters, latent_dim) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
         self.latent_dim = latent_dim
-        self.out_channels = out_channels
 
         feature_maps_size   = [int(s/(2**5)) for s in self.img_size]
         elements            = np.prod(feature_maps_size) * self.filters[5]
@@ -150,7 +149,7 @@ class Decoder(nn.Module):
         self.DeConv2 = Conv       (self.filters[1], self.filters[0])
         self.UpConv2 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.OutConv = nn.Conv3d(self.filters[0], self.out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, z):
                 
@@ -193,7 +192,7 @@ class PAMNetwork(nn.Module):
 
         self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
         self.affine_decoder     = AffineDecoder(self.img_size, self.filters, self.latent_dim)
-        self.elastic_decoder    = Decoder(self.img_size, self.filters, self.latent_dim, out_channels=3)
+        self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
 
@@ -207,15 +206,14 @@ class PAMNetwork(nn.Module):
     
 
     def forward(self, fixed, moving):
-        # affine
+        # registration
         z, (_, _) = self.encode(fixed, moving)
+
         tA = self.affine_decoder(z, moving)
         wA = self.spatial_layer(moving, tA)
 
-        # elastic
-        z, (_, _) = self.encode(fixed, wA)
-        tD = self.elastic_decoder(z)
-        wD = self.spatial_layer(wA, tD)
+        tD = self.elastic_decoder(z, wA)
+        wD = self.spatial_layer(moving, tA + tD)
 
         # residual 
         residual, _ = self.encode(fixed, wD)
