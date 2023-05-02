@@ -211,7 +211,7 @@ class PAMNetwork(nn.Module):
         tA = self.affine_decoder(z, moving.size())
         wA = self.spatial_layer(moving, tA)
 
-        tD = self.elastic_decoder(z, wA)
+        tD = self.elastic_decoder(z)
         wD = self.spatial_layer(moving, tA + tD)
 
         # residual 
