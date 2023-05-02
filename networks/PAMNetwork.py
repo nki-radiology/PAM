@@ -191,7 +191,7 @@ class PAMNetwork(nn.Module):
         self.latent_dim = latent_dim
 
         self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.affine_decoder     = AffineDecoder(self.img_size, self.filters, self.latent_dim)
+        self.affine_decoder     = AffineDecoder(self.img_size, self.latent_dim)
         self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
