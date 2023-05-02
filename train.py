@@ -2,6 +2,7 @@
 
 
 import os
+import shutil
 import datetime
 import pandas as pd
 import numpy as np
@@ -124,7 +125,8 @@ def load_dataloader():
 
 
 def training(
-        pam_network, discriminator, 
+        pam_network, 
+        discriminator, 
         train_dataloader, 
         device
     ):
@@ -244,9 +246,9 @@ def are_models_trained():
 
 def backup_existing_checkpoints():
     name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
-    os.copyfile(name_pam, os.path.join(PARAMS.project_folder, 'PAMModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
+    shutil.copyfile(name_pam, os.path.join(PARAMS.project_folder, 'PAMModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
     name_dis = os.path.join(PARAMS.project_folder, 'DisModel.pth')
-    os.copyfile(name_dis, os.path.join(PARAMS.project_folder, 'DisModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
+    shutil.copyfile(name_dis, os.path.join(PARAMS.project_folder, 'DisModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
     
 
 def load_trained_models():
