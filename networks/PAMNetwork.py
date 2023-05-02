@@ -97,20 +97,22 @@ Decoder
 """
 class AffineDecoder(nn.Module):
 
-    def __init__(self, latent_dim) -> None:
+    def __init__(self, image_dim, latent_dim) -> None:
         super().__init__()
+        self.image_dim = image_dim
         self.latent_dim = latent_dim
 
         self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
         self.dense_b = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
 
-    def forward(self, z, target_shape):            
+    def forward(self, z):            
         # compute affine transform
         W = self.dense_w(z).view(-1, 3, 3)
         b = self.dense_b(z).view(-1, 3)
 
         tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
         tA = tA.view(-1, 3, 4)
+        target_shape = torch.Size((z.shape[0], 1, *self.image_dim))
         tA = F.affine_grid(tA, target_shape, align_corners=False)
         tA = tA.permute(0, 4, 1, 2, 3)
 
@@ -190,7 +192,7 @@ class PAMNetwork(nn.Module):
         self.latent_dim = latent_dim
 
         self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.affine_decoder     = AffineDecoder(self.latent_dim)
+        self.affine_decoder     = AffineDecoder(self.img_size, self.latent_dim)
         self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
@@ -208,7 +210,7 @@ class PAMNetwork(nn.Module):
         # registration
         z, (_, _) = self.encode(fixed, moving)
 
-        tA = self.affine_decoder(z, moving.size())
+        tA = self.affine_decoder(z)
         wA = self.spatial_layer(moving, tA)
 
         tD = self.elastic_decoder(z)
