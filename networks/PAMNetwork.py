@@ -97,9 +97,8 @@ Decoder
 """
 class AffineDecoder(nn.Module):
 
-    def __init__(self, img_size, latent_dim) -> None:
+    def __init__(self, latent_dim) -> None:
         super().__init__()
-        self.img_size = img_size
         self.latent_dim = latent_dim
 
         self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
@@ -191,7 +190,7 @@ class PAMNetwork(nn.Module):
         self.latent_dim = latent_dim
 
         self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.affine_decoder     = AffineDecoder(self.img_size, self.latent_dim)
+        self.affine_decoder     = AffineDecoder(self.latent_dim)
         self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
@@ -209,7 +208,7 @@ class PAMNetwork(nn.Module):
         # registration
         z, (_, _) = self.encode(fixed, moving)
 
-        tA = self.affine_decoder(z, moving)
+        tA = self.affine_decoder(z, moving.size())
         wA = self.spatial_layer(moving, tA)
 
         tD = self.elastic_decoder(z, wA)
