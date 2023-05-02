@@ -178,8 +178,8 @@ def training(
             sparsity_loss       = l1_norm(z)
 
             # hessian loss
-            hessian_loss        = hessian_penalty(pam_network.affine_decoder, z, G_z=t_0)
-            hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
+            #hessian_loss        = hessian_penalty(pam_network.affine_decoder, z, G_z=t_0)
+            #hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
 
             # total loss            
             loss = \
@@ -188,8 +188,8 @@ def training(
                 0.01    * generator_adv_loss + \
                 0.01    * enegry_deformation + \
                 0.001   * residual_loss + \
-                0.0001  * sparsity_loss + \
-                0.0001  * hessian_loss
+                0.0001  * sparsity_loss #+ \
+                #0.0001  * hessian_loss
             
             loss.backward()
             pam_network_optimizer.step()
