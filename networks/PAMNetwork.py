@@ -98,12 +98,12 @@ Decoder
 class AffineDecoder(nn.Module):
 
     def __init__(self, img_size, latent_dim) -> None:
+        super().__init__()
         self.img_size = img_size
         self.latent_dim = latent_dim
 
         self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
         self.dense_b = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
-        super().__init__()
 
     def forward(self, z, target_shape):            
         # compute affine transform
