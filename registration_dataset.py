@@ -56,11 +56,8 @@ class Registration3DDataSet(data.Dataset):
                  ):
         self.dataset     = path_dataset
         self.input_shape = tuple(input_dim + [1]) # Giving the right shape as (192, 192, 160, 1)
-        self.indices     = path_dataset.index.values.copy()
         self.transform   = transform
-        self.random_seed = int(0)
         self.inp_dtype   = torch.float32
-        self.log         = []
         self.loader      = self.__init_loader()
 
 
@@ -76,19 +73,17 @@ class Registration3DDataSet(data.Dataset):
         return len(self.dataset)
 
 
-    def __getitem__(self,
-                    index: int):
+    def __getitem__(self, index: int):
 
         # Select the sample
-        image_path = self.dataset.iloc[index]
-        #print("Image Path: ", image_path)
+        print("Image Path: ", self.dataset.iloc[index])
+        
         fx = np.zeros(self.input_shape)
         mv = np.zeros(self.input_shape)
 
-        fixed_path  = str(image_path.squeeze().dicom_path)
+        fixed_path  = str(self.dataset.iloc[index]['PRIOR_PATH_NRRD']) #str(image_path.squeeze().dicom_path)
+        #print('Fixed image: ', self.dataset.iloc[index]['PRIOR_PATH_NRRD'])
         fx = self.loader(fixed_path)
-        fx = fx[:160, :, :]    # abdomen
-        ##fx = fx[140:, :, :]  # thorax
 
         fx[:,  :,  0]  = 0
         fx[:,  :, -1]  = 0
@@ -97,10 +92,9 @@ class Registration3DDataSet(data.Dataset):
         fx[0,  :,  :]  = 0
         fx[-1,  :,  :] = 0
 
-        moving_path = str(self.dataset.sample(n=1).squeeze().dicom_path)
+        moving_path = str(self.dataset.iloc[index]['SUBSQ_PATH_NRRD']) #str(self.dataset.sample(n=1).squeeze().dicom_path)
+        #print('Moving image: ', self.dataset.iloc[index]['SUBSQ_PATH_NRRD'])
         mv = self.loader(moving_path)
-        mv = mv[:160, :, :]    # abdomen
-        ##mv = mv[140:, :, :]  # thorax
         mv[:,  :,  0] = 0
         mv[:,  :, -1] = 0
         mv[:,  0,  :] = 0
@@ -115,4 +109,6 @@ class Registration3DDataSet(data.Dataset):
         mv = mv.transpose(1, 2, 0)
         mv = torch.from_numpy(mv).type(self.inp_dtype)
         mv = mv[None, :]
-        return fx, mv
+        
+        surv = torch.tensor(self.dataset.iloc[index]['Y1Survival'], dtype=self.inp_dtype) #torch.from_numpy(self.dataset.iloc[index]['Y1Survival']).type(self.inp_dtype)
+        return fx, mv, surv

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_epochs',   default=2000,       type=int,       help='maximum training iteration')
     parser.add_argument('--batch_size', default=4,          type=int,       help='batch size')
 
-    parser.add_argument('--add_survival',default=False,     type=bool,      help='Add a survival layer to the PAM model')
+    parser.add_argument('--add_survival',default=True,     type=bool,      help='Add a survival layer to the PAM model')
     parser.add_argument('--input_ch',    default=2,          type=int,       help='Number of input channels of the image')
     parser.add_argument('--input_ch_d',  default=1,          type=int,       help='Number of input channels of the image for the discriminator')
     parser.add_argument('--output_ch',   default=3,          type=int,       help='Number of output channels of the image')
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta1',       default=0.5,       type=float,     help='Adam optimizer beta1')
     parser.add_argument('--beta2',       default=0.999,     type=float,     help='Adam optimizer beta2')
     
-    parser.add_argument('--dataset_dir', default='/data/groups/beets-tan/l.estacio/data_tcia/train/',  type=str, help='dataset directory')
+    parser.add_argument('--dataset_file',default='/projects/disentanglement_methods/files_nki/survival_net_files/abdomen_pairs_train_valid_test.csv',  type=str, help='dataset directory')
     parser.add_argument('--num_workers', default=8,         type=int,       help='dataloader num_workers')
     
     parser.add_argument('--ckpt_dir',    default='/projects/disentanglement_methods/checkpoints/PAM_Survival/',  type=str, help='checkpoint directory')

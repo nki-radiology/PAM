@@ -4,7 +4,7 @@ from networks.network import Conv
 from networks.network import Up_Conv
 from networks.network import conv_layer
 from networks.network import max_pool_layer
-from spatial_transfomer import SpatialTransformer
+from networks.spatial_transfomer import SpatialTransformer
 
 class Deformation_Network(nn.Module):
     def __init__(self,

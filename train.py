@@ -4,8 +4,7 @@ import wandb
 from   utils                        import create_directory
 from   utils                        import cuda_seeds
 from   utils                        import weights_init
-from   utils                        import read_2D_train_data
-from   utils                        import read_3D_train_data
+from   utils                        import read_3D_survival_train_valid_data
 from   utils                        import save_images_weights_and_biases
 from   losses                       import Cross_Correlation_Loss
 from   losses                       import Energy_Loss
@@ -60,7 +59,7 @@ class Train(object):
         self.gamma_value  = args.gamma_value            # regularization for the discriminator (feature matching loss: MSE)
     
         # Data folder
-        self.data_folder = args.dataset_dir
+        self.data_file = args.dataset_file
         
         # Number of epochs to train the model
         self.n_epochs    = args.n_epochs
@@ -132,20 +131,16 @@ class Train(object):
                     
     def load_dataloader(self):
         # Dataset Path 
-        if len(self.input_dim) == 2:
-            filenames = read_2D_train_data(self.data_folder)
-        else:
-            filenames = read_3D_train_data(self.data_folder)
-       
-        # Random seed
+        inputs_train, inputs_valid = read_3D_survival_train_valid_data(self.data_file)
+        '''# Random seed
         random_seed = 42
 
         # Split dataset into training set and validation set
         inputs_train, inputs_valid = train_test_split(
-            filenames, random_state=random_seed, train_size=self.train_split, shuffle=True
+            filenames, random_state=random_seed, train_size=self.train_split, shuffle=True, stratify=filenames['PatientID']
         )
 
-        print("total: ", len(filenames), " train: ", len(inputs_train), " valid: ", len(inputs_valid))
+        print("total: ", len(filenames), " train: ", len(inputs_train), " valid: ", len(inputs_valid))'''
         
         if len(self.input_dim) == 2:
             registration_dataset = Registration2DDataSet
@@ -154,11 +149,11 @@ class Train(object):
 
         # Training and Validation dataset
         train_dataset = registration_dataset(path_dataset = inputs_train,
-                                             input_shape  = self.input_dim, # [160, 192, 192] -> (160, 192, 192, 1)
+                                             input_dim  = self.input_dim, # [160, 192, 192] -> (160, 192, 192, 1)
                                              transform    = None)
 
         valid_dataset = registration_dataset(path_dataset = inputs_valid,
-                                             input_shape  = self.input_dim, # [160, 192, 192] -> (160, 192, 192, 1)
+                                             input_dim  = self.input_dim, # [160, 192, 192] -> (160, 192, 192, 1)
                                              transform    = None)
 
         # Training and Validation dataloader
@@ -614,7 +609,7 @@ class Train(object):
             print("Valid epoch : {}/{}, loss_Dis = {:.6f},".format(epoch, self.n_epochs, loss_disc_valid))
                 
     
-    def train_disentanglement_method(self):
+    def train_registration_method(self):
         self.model_init()
         self.set_optimizer()
         self.load_dataloader()

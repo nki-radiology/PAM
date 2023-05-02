@@ -81,6 +81,20 @@ def read_3D_train_data(path_input):
     return train_data
 
 
+    
+def read_3D_survival_train_valid_data(filename):
+    data = pd.read_csv(filename)
+    print('total len: ', len(data))
+    train_data = data.loc[data['fold'] == 'train']
+    print('only training len: ', len(train_data))
+    valid_data = data.loc[data['fold'] == 'valid']
+    print('only validation len: ', len(valid_data))
+    return train_data, valid_data
+
+    
+    
+
+
 def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_img, w1_img):
     table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image'], allow_mixed_types = True)
     
