@@ -437,6 +437,7 @@ class Train(object):
                 penalty_deform_loss      = self.energy_loss.energy_loss(t_1)
                 
                 # Generator: Survival Loss
+                print(surv_pred.shape, surv_target.shape, ' ************************* ')
                 survival_loss    = self.survival_loss(surv_pred, surv_target)
                 loss_surv_train += survival_loss.item()
                 
@@ -611,6 +612,7 @@ class Train(object):
     
     def train_registration_method(self):
         self.model_init()
+        self.set_losses()
         self.set_optimizer()
         self.load_dataloader()
 

@@ -76,7 +76,7 @@ class Registration3DDataSet(data.Dataset):
     def __getitem__(self, index: int):
 
         # Select the sample
-        print("Image Path: ", self.dataset.iloc[index])
+        #print("Image Path: ", self.dataset.iloc[index])
         
         fx = np.zeros(self.input_shape)
         mv = np.zeros(self.input_shape)
@@ -110,5 +110,6 @@ class Registration3DDataSet(data.Dataset):
         mv = torch.from_numpy(mv).type(self.inp_dtype)
         mv = mv[None, :]
         
-        surv = torch.tensor(self.dataset.iloc[index]['Y1Survival'], dtype=self.inp_dtype) #torch.from_numpy(self.dataset.iloc[index]['Y1Survival']).type(self.inp_dtype)
+        surv = np.array([self.dataset.iloc[index]['Y1Survival']])
+        surv = torch.from_numpy(surv).type(self.inp_dtype)
         return fx, mv, surv

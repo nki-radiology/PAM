@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_gpus',   default=1,          type=int,       help='Number of GPUs available. Use 0 for CPU mode.')
     parser.add_argument('--start_ep',   default=1,          type=int,       help='start training iteration')
     parser.add_argument('--n_epochs',   default=2000,       type=int,       help='maximum training iteration')
-    parser.add_argument('--batch_size', default=4,          type=int,       help='batch size')
+    parser.add_argument('--batch_size', default=1,          type=int,       help='batch size')
 
     parser.add_argument('--add_survival',default=True,     type=bool,      help='Add a survival layer to the PAM model')
     parser.add_argument('--input_ch',    default=2,          type=int,       help='Number of input channels of the image')
