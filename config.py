@@ -9,22 +9,22 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--batch-size',
                     type = int,
-                    default = 2,
+                    default = 8,
                     help = 'batch size')
 
 parser.add_argument('--filters',
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],      
+                    default = [16, 32, 64, 128, 256, 512, 1024],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],    
+                    default = [16, 32, 64, 128, 256, 512, 1024],    
                     help = 'filters number for each layer')
 
 parser.add_argument('--latent-dim',     
                     type = list,  
-                    default = 256,    
+                    default = 1024,    
                     help = 'latent dimension')
 
 parser.add_argument('--train-folder',      
@@ -39,7 +39,7 @@ parser.add_argument('--test-folder',
 
 parser.add_argument('--project-folder',      
                     type = str,
-                    default = '/projects/split-encoders/comp/',
+                    default = '/projects/split-encoders/biggerNet/',
                     help = 'folder that contains checkpoints and log files')
 
 parser.add_argument('--wandb',   
