@@ -99,8 +99,7 @@ def get_optimizers(pam_net, dis_net):
     pam_optimizer = torch.optim.Adam(pam_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
     dis_optimizer = torch.optim.Adam(dis_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
-    scheduler = torch.optim.lr_scheduler.StepLR(pam_optimizer, step_size=10000, gamma=0.1)
-    return pam_optimizer, dis_optimizer, scheduler
+    return pam_optimizer, dis_optimizer
 
 
 def load_dataloader():
@@ -140,7 +139,7 @@ def training(
     fake_label   = 0.
 
     (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm) = init_loss_functions()
-    pam_network_optimizer, discriminator_optimizer, scheduler = get_optimizers(pam_network, discriminator_network)
+    pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
 
     # wandb Initialization
     wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
@@ -180,8 +179,7 @@ def training(
 
             # hessian loss
             if epoch > 100:
-                hessian_loss        = hessian_penalty(pam_network.affine_decoder, z, G_z=t_0)
-                hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
+                hessian_loss        = hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
             else:
                 hessian_loss        = torch.tensor([0.]).to(device)
 
@@ -196,7 +194,6 @@ def training(
             
             loss.backward()
             pam_network_optimizer.step()
-            scheduler.step()
 
             # *** Train Discriminator ***
             discriminator_optimizer.zero_grad()

@@ -196,13 +196,7 @@ class PAMNetwork(nn.Module):
         self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
-        self.fc                 = nn.Sequential(
-            nn.Linear(self.latent_dim*2, self.latent_dim*2, bias=False),
-            nn.LeakyReLU(),
-            nn.Linear(self.latent_dim*2, self.latent_dim*2, bias=False),
-            nn.LeakyReLU(),
-            nn.Linear(self.latent_dim*2, self.latent_dim, bias=False)
-        )
+        self.fc                 = nn.Linear(self.latent_dim*2, self.latent_dim, bias=False)
 
 
     def encode(self, fixed, moving):
@@ -222,6 +216,8 @@ class PAMNetwork(nn.Module):
         tA = self.affine_decoder(z)
         wA = self.spatial_layer(moving, tA)
 
+        # consider re-encoding
+        #z, (_, _) = self.encode(fixed, wA)
         tD = self.elastic_decoder(z)
         wD = self.spatial_layer(moving, tA + tD)
 
