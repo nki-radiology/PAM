@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=7-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=ftsA1_infoA                       # Job name
+#SBATCH --job-name=bashT                       # Job name
 #SBATCH --partition=a6000                          # Partition
 #SBATCH --nodelist=aristarchus                           # Node list
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
