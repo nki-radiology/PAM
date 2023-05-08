@@ -8,17 +8,16 @@ sys.path.append('/projects/disentanglement_methods/PAM/')
 from networks.PAMNetFeatures       import PAMNetwork
 from networks.DiscriminatorNetwork import DiscriminatorNetwork
 from libs.frida.io                 import ImageLoader, ReadVolume
-from libs.frida.transforms         import ZeroOneScaling, ToNumpyArray
-
+from libs.frida.transforms         import ZeroOneScaling, ToNumpyArray  
 
 class PamModel:
 
     def __init__(self, pam_checkpoint, dis_checkpoint):
         self.pam_net = PAMNetwork()
         self.dis_net = DiscriminatorNetwork()
-        self.pam_ckp = pam_checkpoint
-        self.dis_ckp = dis_checkpoint
-        self.device  = "cuda:0" # change
+        self.pam_ckp = pam_checkpoint#arg_adv_pam_fts_sit.pam_checkpoint
+        self.dis_ckp = dis_checkpoint#arg_adv_pam_fts_sit.dis_checkpoint
+        self.device  = "cuda:0"
 
     def assign_device(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -44,17 +43,25 @@ class PamFeatures():
 
     def __init__(self, pam_checkpoint, dis_checkpoint):
         self.pam             = PamModel(pam_checkpoint, dis_checkpoint)
-        self.patients        = []
         self.tag_bl_list     = []
         self.tag_fu_list     = []
         self.pam_ls_mean_list= []
         self.pam_ls_max_list = []
         self.pam_ls_quan_list= []
+        self.patient_list    = []
+        self.prior_date_list = []
+        self.prior_path_list = []
+        self.subsq_date_list = []
+        self.subsq_path_list = []
         
         # No readed variables
-        self.exluded_patients = []
+        self.patient_list_no_read    = []
+        self.prior_date_list_no_read = []
+        self.prior_path_list_no_read = []
+        self.subsq_date_list_no_read = []
+        self.subsq_path_list_no_read = []
 
-        # Loading weights of the model
+
         self.pam.assign_device()
         self.pam.load_pam_weights()
         self.pam.assign_eval_mode()
@@ -83,6 +90,7 @@ class PamFeatures():
                 0x00181150, # Exposure Time
                 0x00189311  # Spiral Pitch Factor
             )
+
             result = dict()
             for t in tags:
                 try:
@@ -150,8 +158,8 @@ class PamFeatures():
 
         # Save feature map 
         result_mean     = dict()
-        #result_max      = dict()
-        #result_quantile = dict()
+        '''result_max      = dict()
+        result_quantile = dict()'''
         
         # Save additional values
         for i, f in enumerate(ls_layer_mean):
@@ -175,6 +183,7 @@ class PamFeatures():
         return result_mean#, result_max, result_quantile
 
     
+
     def get_features(self, filename: str, path_to_save_files: str, name_to_save_xlsx: str):
 
         # Reading the original csv file
@@ -185,13 +194,10 @@ class PamFeatures():
             ZeroOneScaling(),
             ToNumpyArray(add_singleton_dim=True)
         )
-        
-        total_data = len(data)
-        filename   = path_to_save_files + name_to_save_xlsx + '_mean.csv'
-        filename_non_processed = path_to_save_files + name_to_save_xlsx + '_unprocessed_images.csv'
-        
-        with tqdm(total=total_data) as pbar: 
-            for idx in range(total_data):
+
+        len_data = len(data)
+        with tqdm(total=len_data) as pbar: #
+            for idx in range(len_data):
 
                 # Baselines: DICOM and NRRD
                 baseline_dicom      = data['PRIOR_PATH'].iloc[idx]
@@ -203,7 +209,7 @@ class PamFeatures():
 
                 # Get Tags from the baseline and followup (DICOM)
                 baseline_dicom_tag  = self.load_dicom_tagssafely(baseline_dicom, '_PRIOR')
-                follow_up_dicom_tag = self.load_dicom_tagssafely(follow_up_dicom, '_SUBSQ')
+                follow_up_dicom_tag = self.load_dicom_tagssafely(follow_up_dicom,'_SUBSQ')
 
 
                 # Get Pam features (NRRD)
@@ -212,13 +218,9 @@ class PamFeatures():
                     fu_img  = self.zero_at_edges(loader(follow_up_nrrd))
                     #pam_ls_mean, pam_ls_max, pam_ls_quantile  = self.pam_features (bl_img, fu_img)
                     pam_ls_mean  = self.pam_features (bl_img, fu_img)
-                    
-                    print('Baseline nrrd: ', baseline_nrrd)
-                    print('Follow-up NRRd: ', follow_up_nrrd)
 
                     # Save dictionaries
-                    
-                    self.patients = [{'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
+                    self.patient_list.append({'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
                                           'YADSId': data['YADSId'].iloc[idx], 'AnonymizedPatientID': data['AnonymizedPatientID'].iloc[idx],
                                           'Included': data['Included'].iloc[idx], 'PRIOR_DATE': data['PRIOR_DATE'].iloc[idx],
                                           'PRIOR_PATH': baseline_dicom,'SUBSQ_DATE': data['SUBSQ_DATE'].iloc[idx], 'SUBSQ_PATH': follow_up_dicom,
@@ -226,56 +228,48 @@ class PamFeatures():
                                           'DateOfLastCheck': data['DateOfLastCheck'].iloc[idx], 'DaysOfSurvival': data['DaysOfSurvival'].iloc[idx],
                                           'Event': data['Event'].iloc[idx], 'Y1Survival': data['Y1Survival'].iloc[idx], 'Y2Survival': data['Y2Survival'].iloc[idx],
                                           'PRIOR_PATH_NRRD': data['PRIOR_PATH_NRRD'].iloc[idx], 'SUBSQ_PATH_NRRD': data['SUBSQ_PATH_NRRD'].iloc[idx]
-                                        }]
+                                        })
+                    
                     # DICOM tags
                     if not baseline_dicom_tag: 
                             baseline_dicom_tag = {'studydate': ' ', 'studydescription': ' ', 'kvp': ' ', 'pixelspacing': ' ', 
                             'slicethickness': ' ', 'xraytubecurrent': ' ', 'convolutionkernel': ' ', 'exposuretime': ' ', 'spiralpitchfactor': ' '}
-                    self.tag_bl_list = [baseline_dicom_tag]
+                    self.tag_bl_list.append(baseline_dicom_tag)
 
                     if not follow_up_dicom_tag: 
                             follow_up_dicom_tag = {'studydate': ' ', 'studydescription': ' ', 'kvp': ' ', 'pixelspacing': ' ', 
                             'slicethickness': ' ', 'xraytubecurrent': ' ', 'convolutionkernel': ' ', 'exposuretime': ' ', 'spiralpitchfactor': ' '}
-                    self.tag_fu_list = [follow_up_dicom_tag]
-                    
+                    self.tag_fu_list.append(follow_up_dicom_tag)
+
                     # PAM features
-                    self.pam_ls_mean_list = [pam_ls_mean]
-                    #self.pam_ls_max_list.append(pam_ls_max)
-                    #self.pam_ls_quan_list.append(pam_ls_quantile)
-
-                    # Saving csv
-                    patient_after    = pd.DataFrame.from_dict(self.patients)
-                    tag_bl_all_after = pd.DataFrame.from_dict(self.tag_bl_list)
-                    tag_fu_all_after = pd.DataFrame.from_dict(self.tag_fu_list)
-                    pam_ls_all_mean  = pd.DataFrame.from_dict(self.pam_ls_mean_list)
-                    #pam_ls_all_max   = pd.DataFrame.from_dict(self.pam_ls_max_list)
-                    #pam_ls_all_quan  = pd.DataFrame.from_dict(self.pam_ls_quan_list)
-
-                    new_df_mean      = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_mean], axis=1, ignore_index=False, sort=False)
-                    #new_df_max       = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_max], axis=1, ignore_index=False, sort=False)
-                    #new_df_quan      = pd.concat([patient_after, tag_bl_all_after, tag_fu_all_after, pam_ls_all_quan], axis=1, ignore_index=False, sort=False)
-                    
-                    new_df_mean.to_csv(filename, mode='a', header=not os.path.exists(filename), na_rep='NULL', index=False, encoding='utf-8')
-                    #new_df_max.to_csv(path_to_save_files  + name_to_save_xlsx + '_max.csv',        na_rep='NULL', index=True, encoding='utf-8')
-                    #new_df_quan.to_csv(path_to_save_files + name_to_save_xlsx + '_percentile.csv', na_rep='NULL', index=True, encoding='utf-8')
+                    self.pam_ls_mean_list.append(pam_ls_mean)
+                    '''self.pam_ls_max_list.append(pam_ls_max)
+                    self.pam_ls_quan_list.append(pam_ls_quantile)'''
 
                 except:
                     print(' - [failed] while loading of the NRRD images. ' )
-                    
-                    self.exluded_patients=[{'AnonymizedName': data['AnonymizedName'].iloc[idx], 'PatientID': data['PatientID'].iloc[idx], 
-                                          'YADSId': data['YADSId'].iloc[idx], 'AnonymizedPatientID': data['AnonymizedPatientID'].iloc[idx],
-                                          'Included': data['Included'].iloc[idx], 'PRIOR_DATE': data['PRIOR_DATE'].iloc[idx],
-                                          'PRIOR_PATH': baseline_dicom,'SUBSQ_DATE': data['SUBSQ_DATE'].iloc[idx], 'SUBSQ_PATH': follow_up_dicom,
-                                          'DifferenceInDaysBetweenScans':data['DifferenceInDaysBetweenScans'].iloc[idx], 'DateOfDeath':data['DateOfDeath'].iloc[idx],
-                                          'DateOfLastCheck': data['DateOfLastCheck'].iloc[idx], 'DaysOfSurvival': data['DaysOfSurvival'].iloc[idx],
-                                          'Event': data['Event'].iloc[idx], 'Y1Survival': data['Y1Survival'].iloc[idx], 'Y2Survival': data['Y2Survival'].iloc[idx],
-                                          'PRIOR_PATH_NRRD': data['PRIOR_PATH_NRRD'].iloc[idx], 'SUBSQ_PATH_NRRD': data['SUBSQ_PATH_NRRD'].iloc[idx]
-                                        }]
-                    
-                    patient_nr    = pd.DataFrame.from_dict(self.exluded_patients)
-                    #new_df_nr = pd.concat([patient_nr, prior_date_nr, prior_path_nr, subsq_date_nr, subsq_path_nr], axis=1, ignore_index=False, sort=False)
-                    patient_nr.to_csv(filename_non_processed, mode='a', header=not os.path.exists(filename_non_processed), na_rep='NULL', index=False, encoding='utf-8')
                 pbar.update(1)
+            
+            # Saving csv
+            patient_after    = pd.DataFrame.from_dict(self.patient_list)
+            '''prior_date_after = pd.DataFrame.from_dict(self.prior_date_list)
+            prior_path_after = pd.DataFrame.from_dict(self.prior_path_list)
+            subsq_date_after = pd.DataFrame.from_dict(self.subsq_date_list)
+            subsq_path_after = pd.DataFrame.from_dict(self.subsq_path_list)'''
+            tag_bl_all_after = pd.DataFrame.from_dict(self.tag_bl_list)
+            tag_fu_all_after = pd.DataFrame.from_dict(self.tag_fu_list)
+            pam_ls_all_mean  = pd.DataFrame.from_dict(self.pam_ls_mean_list)
+            '''pam_ls_all_max   = pd.DataFrame.from_dict(self.pam_ls_max_list)
+            pam_ls_all_quan  = pd.DataFrame.from_dict(self.pam_ls_quan_list)'''
+
+            new_df_mean      = pd.concat([patient_after, tag_bl_all_after,  tag_fu_all_after, pam_ls_all_mean], axis=1, ignore_index=False, sort=False)
+            '''new_df_max       = pd.concat([patient_after, prior_date_after, prior_path_after, tag_bl_all_after, subsq_date_after, subsq_path_after, tag_fu_all_after, pam_ls_all_max], axis=1, ignore_index=False, sort=False)
+            new_df_quan      = pd.concat([patient_after, prior_date_after, prior_path_after, tag_bl_all_after, subsq_date_after, subsq_path_after, tag_fu_all_after, pam_ls_all_quan], axis=1, ignore_index=False, sort=False)'''
+            
+            new_df_mean.to_csv(path_to_save_files + name_to_save_xlsx + '_mean.csv',       na_rep='NULL', index=True, encoding='utf-8')
+            ''' new_df_max.to_csv(path_to_save_files  + name_to_save_xlsx + '_max.csv',        na_rep='NULL', index=True, encoding='utf-8')
+            new_df_quan.to_csv(path_to_save_files + name_to_save_xlsx + '_percentile.csv', na_rep='NULL', index=True, encoding='utf-8')'''
+                
 
     
 if __name__ == "__main__":
@@ -296,7 +290,7 @@ if __name__ == "__main__":
     parser.add_argument('--abdomen_path_to_save_file', type=str, default='/projects/disentanglement_methods/files_nki/infoA/abdomen/features/')
     parser.add_argument('--abdomen_name_to_save_xlsx', type=str, default='features_pam_abdomen')
     
-    parser.add_argument('--region_to_get_features',    type=str, default='Abdomen')
+    parser.add_argument('--region_to_get_features',    type=str, default='Thorax')
     args = parser.parse_args()
 
      
