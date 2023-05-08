@@ -226,7 +226,7 @@ def training(
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Energy loss': enegry_deformation.item(),
                         'Train: Sparsity loss': sparsity_loss.item(),
-                        #'Train: Hessian loss': hessian_loss.item(),
+                        'Train: Hessian loss': hessian_loss.item(),
                         'Train: Residual Loss': residual_loss.item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
