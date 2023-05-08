@@ -20,7 +20,6 @@ from RegistrationDataset            import RegistrationDataSet
 from networks.PAMNetwork            import PAMNetwork
 from networks.DiscriminatorNetwork  import DiscriminatorNetwork
 from metrics.LossPam                import Energy_Loss, Cross_Correlation_Loss
-from metrics.HessianPenalty         import hessian_penalty
 
 from config import PARAMS
 
@@ -177,20 +176,13 @@ def training(
             # energy-like penalty loss
             enegry_deformation  = energy(t_1)
 
-            # hessian loss
-            if epoch > 100:
-                hessian_loss        = hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
-            else:
-                hessian_loss        = torch.tensor([0.]).to(device)
-
             # total loss            
             loss = \
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
                 0.01    * generator_adv_loss + \
                 0.01    * enegry_deformation + \
-                0.001   * residual_loss + \
-                0.0001  * hessian_loss
+                0.001   * residual_loss 
             
             loss.backward()
             pam_network_optimizer.step()
@@ -223,7 +215,6 @@ def training(
             wandb.log({ 'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Energy loss': enegry_deformation.item(),
-                        'Train: Hessian loss': hessian_loss.item(),
                         'Train: Residual Loss': residual_loss.item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
