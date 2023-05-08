@@ -2,7 +2,7 @@
 #SBATCH --time=7-00:00:00                           # Time limit hrs:min:sec
 #SBATCH --job-name=prj-blue                         # Job name
 #SBATCH --partition=a100                            # Partition
-#SBATCH --qos=a100 
+#SBATCH --qos=a100_qos 
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
