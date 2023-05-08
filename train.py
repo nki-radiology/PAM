@@ -98,7 +98,9 @@ def init_loss_functions():
 def get_optimizers(pam_net, dis_net):
     pam_optimizer = torch.optim.Adam(pam_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
     dis_optimizer = torch.optim.Adam(dis_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
-    return pam_optimizer, dis_optimizer
+
+    scheduler = torch.optim.lr_scheduler.StepLR(pam_optimizer, step_size=10000, gamma=0.1)
+    return pam_optimizer, dis_optimizer, scheduler
 
 
 def load_dataloader():
@@ -138,7 +140,7 @@ def training(
     fake_label   = 0.
 
     (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm) = init_loss_functions()
-    pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
+    pam_network_optimizer, discriminator_optimizer, scheduler = get_optimizers(pam_network, discriminator_network)
 
     # wandb Initialization
     wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
@@ -175,7 +177,6 @@ def training(
 
             # energy-like penalty loss
             enegry_deformation  = energy(t_1)
-            sparsity_loss       = l1_norm(z)
 
             # hessian loss
             if epoch > 100:
@@ -191,11 +192,11 @@ def training(
                 0.01    * generator_adv_loss + \
                 0.01    * enegry_deformation + \
                 0.001   * residual_loss + \
-                0.0001  * sparsity_loss + \
                 0.0001  * hessian_loss
             
             loss.backward()
             pam_network_optimizer.step()
+            scheduler.step()
 
             # *** Train Discriminator ***
             discriminator_optimizer.zero_grad()
@@ -225,12 +226,12 @@ def training(
             wandb.log({ 'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Energy loss': enegry_deformation.item(),
-                        'Train: Sparsity loss': sparsity_loss.item(),
                         'Train: Hessian loss': hessian_loss.item(),
                         'Train: Residual Loss': residual_loss.item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
-                        'Train: Discriminator Loss': loss_d_t.item()})
+                        'Train: Discriminator Loss': loss_d_t.item()
+            })
             
         # Save checkpoints
         if (epoch % 25 == 0) and (epoch > 0):

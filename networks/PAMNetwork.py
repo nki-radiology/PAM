@@ -196,7 +196,13 @@ class PAMNetwork(nn.Module):
         self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim)
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
-        self.fc_layer           = nn.Linear(in_features=self.latent_dim*2, out_features=self.latent_dim, bias=False)
+        self.fc                 = nn.Sequential(
+            nn.Linear(self.latent_dim*2, self.latent_dim*2, bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(self.latent_dim*2, self.latent_dim*2, bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(self.latent_dim*2, self.latent_dim, bias=False)
+        )
 
 
     def encode(self, fixed, moving):
@@ -204,7 +210,7 @@ class PAMNetwork(nn.Module):
         z_moving = self.encoder(moving)
 
         z = torch.concat((z_fixed, z_moving), dim=1)
-        z = self.fc_layer(z)
+        z = self.fc(z)
 
         return z, (z_fixed, z_moving)
     
