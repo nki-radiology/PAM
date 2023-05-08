@@ -182,7 +182,7 @@ def training(
                 hessian_loss        = hessian_penalty(pam_network.affine_decoder, z, G_z=t_0)
                 hessian_loss       += hessian_penalty(pam_network.elastic_decoder, z, G_z=t_1)
             else:
-                hessian_loss        = 0.
+                hessian_loss        = torch.tensor([0.])
 
             # total loss            
             loss = \
