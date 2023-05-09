@@ -106,47 +106,21 @@ class Survival(object):
         
         # Cutoffs
         cutoff_1 = np.percentile(scores, 50)
-        #cutoff_3 = [0., np.percentile(scores, 33), np.percentile(scores, 66), np.percentile(scores, 100)]
-        #cutoff_4 = [0., np.percentile(scores, 25), np.percentile(scores, 50), np.percentile(scores, 75), np.percentile(scores, 100)]
+        cutoff_3 = [0., np.percentile(scores, 33), np.percentile(scores, 66), np.percentile(scores, 100)]
+        cutoff_4 = [0., np.percentile(scores, 25), np.percentile(scores, 50), np.percentile(scores, 75), np.percentile(scores, 100)]
 
         p_value_1 = self.get_p_value(data_test_logrank, scores, cutoff_1)
-        #p_value_3 = self.get_p_value(data_test_logrank, scores, cutoff_3)
-        #p_value_4 = self.get_p_value(data_test_logrank, scores, cutoff_4)
+        p_value_3 = self.get_p_value(data_test_logrank, scores, cutoff_3)
+        p_value_4 = self.get_p_value(data_test_logrank, scores, cutoff_4)
 
-        print('General, p-values: ', p_value_1)#, ' ', p_value_3, ' ',  p_value_4)
+        print('General, p-values: ', p_value_1, ' ', p_value_3, ' ',  p_value_4)
         
-    
-    '''def graph_layout(x_label, y_label, title, x_lim=None, y_lim=None, x_step=None, y_step=None, legend=True):
-        ax.spines[['right', 'top']].set_visible(False)
-        ax.spines[['left', 'bottom']].set_linewidth(4)
-        ax.spines[['left', 'bottom']].set_color('black')
-        ax.xaxis.set_tick_params(width=4)
-        ax.yaxis.set_tick_params(width=4)
-        ax.grid(False)
-        ax.set_xlim(x_lim)
-        ax.set_ylim(y_lim)
-
-        plt.xticks(fontsize= 24, fontweight='bold')
-        plt.yticks(fontsize= 24, fontweight='bold')
-        if x_step != None:
-            plt.xticks(np.arange(min(x_lim), max(x_lim), x_step))
-        if y_step != None:
-            plt.yticks(np.arange(min(y_lim), max(y_lim), y_step))
-
-        if legend == True:
-            plt.legend(frameon=False,
-                    loc='lower left',
-                    fontsize = 24)
-
-        plt.xlabel(x_label, fontsize = 32, fontweight='bold')
-        plt.ylabel(y_label, fontsize = 32, fontweight='bold')
-        plt.title(title, fontsize = 36, fontweight='bold', pad = 20)'''
         
 def main(args):
     # Training: Random survival forest
     survival              = Survival(args)
     data_train, data_test = survival.get_train_test_data()
-    #survival.train_random_survival_forest(data_train)
+    survival.train_random_survival_forest(data_train)
     
     # Testing: Performance assessment via C-index
     rsf_model  = survival.load_rsf_model()
@@ -158,7 +132,7 @@ def main(args):
     # Statistical Evaluation: Logrank test
     # Several defined cutoffs to measure the model performance 
     # regarding the different risk-groups 
-    logrank_test(data_test, rsf_model)
+    #logrank_test(data_test, rsf_model)
 
 
 if __name__ == '__main__':
