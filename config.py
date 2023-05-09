@@ -9,7 +9,7 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--batch-size',
                     type = int,
-                    default = 6,
+                    default = 2,
                     help = 'batch size')
 
 parser.add_argument('--filters',
@@ -39,7 +39,7 @@ parser.add_argument('--test-folder',
 
 parser.add_argument('--project-folder',      
                     type = str,
-                    default = '/projects/split-encoders/',
+                    default = '/projects/split-encoders/variant/',
                     help = 'folder that contains checkpoints and log files')
 
 parser.add_argument('--wandb',   
