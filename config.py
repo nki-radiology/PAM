@@ -9,7 +9,7 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--batch-size',
                     type = int,
-                    default = 6,
+                    default = 4,
                     help = 'batch size')
 
 parser.add_argument('--filters',
