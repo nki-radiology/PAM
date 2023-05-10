@@ -157,8 +157,7 @@ def training(
 
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
-            t_0, w_0, t_1, w_1, Z = pam_network(fixed, moving)
-            z, residual = Z
+            _, w_0, t_1, w_1, residual = pam_network(fixed, moving)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
