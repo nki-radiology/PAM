@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH --time=7-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=surv_pam                         # Job name
-#SBATCH --partition=a6000                        # Partition
-#SBATCH --nodelist=aristarchus                           # Node list
-#SBATCH --gpus-per-task=1                           # Number of gpus per node
-#SBATCH --gpus=1                                    # Number of gpus in total
-#SBATCH --ntasks=1                                  # Run on a single node
+#SBATCH --job-name=srvT_pam                         # Job name
+#SBATCH --qos=a6000_qos
+#SBATCH --partition=a6000                           # Partition
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
 #SBATCH --output=/projects/disentanglement_methods/outputjobs/PAM_Survival/slurm_%j.log   # Standard output and error log
 pwd; hostname; date
 
