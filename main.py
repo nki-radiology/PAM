@@ -49,8 +49,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_file',default='/projects/disentanglement_methods/files_nki/survival_net_files/abdomen_pairs_train_valid_test.csv',  type=str, help='dataset directory')
     parser.add_argument('--num_workers', default=8,         type=int,       help='dataloader num_workers')
     
-    parser.add_argument('--ckpt_dir',    default='/projects/disentanglement_methods/checkpoints/PAM_Survival/',  type=str, help='checkpoint directory')
-    parser.add_argument('--results_dir', default='/projects/disentanglement_methods/results/PAM_Survival/', type=str, help='Results directory of the weight&biases images')
+    parser.add_argument('--ckpt_dir',    default='/projects/disentanglement_methods/checkpoints/PAM_Survival/abdomen/',  type=str, help='checkpoint directory')
+    parser.add_argument('--results_dir', default='/projects/disentanglement_methods/results/PAM_Survival/abdomen/', type=str, help='Results directory of the weight&biases images')
     
     args = parser.parse_args()
     
