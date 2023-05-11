@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=7-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=srvT_pam                         # Job name
+#SBATCH --job-name=srvA_pam                         # Job name
 #SBATCH --qos=a6000_qos
 #SBATCH --partition=a6000                           # Partition
 #SBATCH --nodes=1
