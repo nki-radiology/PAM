@@ -86,41 +86,9 @@ def read_3D_survival_train_valid_data(filename):
     data = pd.read_csv(filename)
     print('total len: ', len(data))
     train_data = data.loc[data['fold'] == 'train']
+    train_data = train_data[['PRIOR_PATH_NRRD', 'SUBSQ_PATH_NRRD', 'Y1Survival']]
     print('only training len: ', len(train_data))
     valid_data = data.loc[data['fold'] == 'valid']
+    valid_data = valid_data[['PRIOR_PATH_NRRD', 'SUBSQ_PATH_NRRD', 'Y1Survival']]
     print('only validation len: ', len(valid_data))
     return train_data, valid_data
-
-    
-    
-
-
-def save_images_weights_and_biases(table_name, path_to_save, fixed, moving, w0_img, w1_img):
-    table = wandb.Table(columns=['Fixed Image', 'Moving Image', 'Affine Reg. Image', 'Deformation Reg. Image'], allow_mixed_types = True)
-    
-    saving_examples_folder = path_to_save
-    
-    #PIL VERSION
-    transform  = T.ToPILImage()    
-    fixed_img  = transform(fixed[:,:,:,:,50].squeeze()).convert("L")
-    moving_img = transform(moving[:,:,:,:,50].squeeze()).convert("L")
-    affine_img = transform(w0_img[:,:,:,:,50].squeeze()).convert("L")
-    deformation_img = transform(w1_img[:,:,:,:,50].squeeze()).convert("L")
-    
-    fixed_img.show()                              
-    fixed_img.save(saving_examples_folder + "fixed_image.png")    
-    moving_img.show() 
-    moving_img.save(saving_examples_folder + "moving_image.png")    
-    affine_img.show() 
-    affine_img.save(saving_examples_folder + "affine_image.png")    
-    deformation_img.show()
-    deformation_img.save(saving_examples_folder + "deformation_image.png")    
-    
-    table.add_data(
-        wandb.Image(Image.open(saving_examples_folder + "fixed_image.png")),
-        wandb.Image(Image.open(saving_examples_folder + "moving_image.png")),
-        wandb.Image(Image.open(saving_examples_folder + "affine_image.png")),
-        wandb.Image(Image.open(saving_examples_folder + "deformation_image.png")),
-    )
-    
-    wandb.log({table_name: table})
