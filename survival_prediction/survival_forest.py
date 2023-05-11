@@ -25,7 +25,7 @@ class Survival(object):
     
     def read_file(self):
         features_data = pd.read_csv(self.features_file)
-        return features_data[0:100]
+        return features_data
     
     
     def is_even(self, patient_id):
@@ -52,7 +52,7 @@ class Survival(object):
         
         # Assign x and y for the
         x_cols = [c for c in data_train.columns if c.startswith('feature') or c.startswith('Difference')]
-        y_cols = ['Event', 'DaysOfSurvival']
+        y_cols = ['Event', 'DaysOfSurvival'] #TIME
 
         # Selecting the right columns and converting to a numpy record array
         data_train_y          = data_train[y_cols]
@@ -99,11 +99,12 @@ class Survival(object):
 
 
     def logrank_test(self, data_test, rsf_model):
-        data_test_logrank = data_test
         x_cols            = [c for c in data_test.columns if c.startswith('feature') or c.startswith('Difference')]
-        scores            = rsf_model.predict(data_test_logrank[x_cols])
+        data_test_logrank = data_test[x_cols]
+        scores            = rsf_model.predict(data_test_logrank)
         data_test_logrank['score'] = scores
         
+        print(len(data_test_logrank))        
         # Cutoffs
         cutoff_1 = np.percentile(scores, 50)
         cutoff_3 = [0., np.percentile(scores, 33), np.percentile(scores, 66), np.percentile(scores, 100)]
@@ -120,7 +121,7 @@ def main(args):
     # Training: Random survival forest
     survival              = Survival(args)
     data_train, data_test = survival.get_train_test_data()
-    survival.train_random_survival_forest(data_train)
+    #survival.train_random_survival_forest(data_train)
     
     # Testing: Performance assessment via C-index
     rsf_model  = survival.load_rsf_model()
@@ -132,7 +133,7 @@ def main(args):
     # Statistical Evaluation: Logrank test
     # Several defined cutoffs to measure the model performance 
     # regarding the different risk-groups 
-    #logrank_test(data_test, rsf_model)
+    logrank_test(data_test, rsf_model)
 
 
 if __name__ == '__main__':
