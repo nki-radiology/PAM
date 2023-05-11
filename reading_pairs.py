@@ -26,11 +26,11 @@ def get_data_file(filename_to_read, filename_to_save):
     infoA.insert(len(infoA.columns), 'fold', infoA.apply(assign, axis=1))
     infoA.to_csv(filename_to_save, na_rep='NULL', index=False, encoding='utf-8')
     print('Saving data including train and test as folds!')
-        
+
 # Abdomen
 #get_data_file('/projects/disentanglement_methods/files_nki/infoA/abdomen/abdomen_pairs_only_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/survival_net_files/abdomen_pairs_train_test.csv')
 #add_valid_fold('/projects/disentanglement_methods/files_nki/survival_net_files/abdomen_pairs_train_test.csv', '/projects/disentanglement_methods/files_nki/survival_net_files/abdomen_pairs_train_valid_test.csv')
 
 # Thorax
-get_data_file('/projects/disentanglement_methods/files_nki/infoA/thorax/thorax_pairs_only_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/survival_net_files/thorax_pairs_train_test.csv')
-add_valid_fold('/projects/disentanglement_methods/files_nki/survival_net_files/thorax_pairs_train_test.csv', '/projects/disentanglement_methods/files_nki/survival_net_files/thorax_pairs_train_valid_test.csv')
+#get_data_file('/projects/disentanglement_methods/files_nki/infoA/thorax/thorax_pairs_only_succeed_nrrd.csv', '/projects/disentanglement_methods/files_nki/survival_net_files/thorax_pairs_train_test.csv')
+#add_valid_fold('/projects/disentanglement_methods/files_nki/survival_net_files/thorax_pairs_train_test.csv', '/projects/disentanglement_methods/files_nki/survival_net_files/thorax_pairs_train_valid_test.csv')
