@@ -236,9 +236,9 @@ def are_models_trained():
 
 def backup_existing_checkpoints():
     name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
-    shutil.copyfile(name_pam, os.path.join(PARAMS.project_folder, 'PAMModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
+    shutil.copyfile(name_pam, os.path.join(PARAMS.project_folder, 'PAMModel.pth.bak'))
     name_dis = os.path.join(PARAMS.project_folder, 'DisModel.pth')
-    shutil.copyfile(name_dis, os.path.join(PARAMS.project_folder, 'DisModel.pth.bak-' + datetime.now().strftime("%Y/%m/%d/-%H:%M")))
+    shutil.copyfile(name_dis, os.path.join(PARAMS.project_folder, 'DisModel.pth.bak'))
     
 
 def load_trained_models():
