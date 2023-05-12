@@ -243,8 +243,8 @@ def backup_existing_checkpoints():
 
 def load_trained_models():
     # Network definition
-    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters)
-    dis_net     = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters)
+    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    dis_net     = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters_discriminator)
     device      = torch.device('cuda:0')
     pam_net.to(device)
 
