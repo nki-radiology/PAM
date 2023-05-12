@@ -245,8 +245,10 @@ def load_trained_models():
     # Network definition
     pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     dis_net     = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters_discriminator)
+    
     device      = torch.device('cuda:0')
     pam_net.to(device)
+    dis_net.to(device)
 
     # Loading the model weights
     pam_chkpt = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
