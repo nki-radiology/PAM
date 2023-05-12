@@ -3,7 +3,6 @@
 
 import os
 import shutil
-import datetime
 import pandas as pd
 import numpy as np
 import wandb
@@ -14,7 +13,7 @@ from torch.utils.data               import DataLoader
 from utils.utils_torch              import weights_init
 from sklearn.model_selection        import train_test_split
 from pathlib                        import Path
-
+from datetime                       import datetime
 
 from RegistrationDataset            import RegistrationDataSet
 from networks.PAMNetwork            import PAMNetwork
