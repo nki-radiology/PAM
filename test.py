@@ -127,6 +127,8 @@ def test(pam_network, test_dataloader, device):
 
         # +++
         import SimpleITK as sitk
+        sitk.WriteImage(sitk.GetImageFromArray(fixed.cpu().numpy()[0,0,:,:,:]), 'fixed.nii.gz')
+        sitk.WriteImage(sitk.GetImageFromArray(moving.cpu().numpy()[0,0,:,:,:]), 'moving.nii.gz')
         sitk.WriteImage(sitk.GetImageFromArray(w_1.cpu().numpy()[0,0,:,:,:]), 'test.nii.gz')
         break
         # +++
