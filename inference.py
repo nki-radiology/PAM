@@ -153,8 +153,14 @@ def test(pam_network, dataset, device):
 
         # compute loss
         _, _, tD, wD, _ = pam_network(baseline_im, followup_im)
-        loss = cc_loss(baseline_im, wD)
+        loss = cc_loss(followup_im, wD)
         energy = penalty(tD)
+
+        # +++
+        import SimpleITK as sitk
+        temp = wD.detach().cpu().numpy().squeeze()
+        sitk.WriteImage(sitk.GetImageFromArray(temp.squeeze()), 'WD.nii.gz')
+        # +++
 
         # store results
         entry = {
