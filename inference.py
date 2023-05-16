@@ -50,10 +50,10 @@ def load_model_weights():
     return pam_net, device
 
 
-def load_dicom_tagssafely(self, path, prefix = ''):
+def load_dicom_tagssafely(path, prefix = ''):
         # wraps metatags loading around a try-catch
         # attach a prefix to the fields if needed
-        result = None
+        result = {}
 
         try:
             dcm = os.path.join(path, os.listdir(path)[0])
@@ -85,6 +85,7 @@ def load_dicom_tagssafely(self, path, prefix = ''):
                     pass
         except:
             print(' - [failed] while loading of the DICOM tags. ' )
+
         return result
 
 
