@@ -103,7 +103,6 @@ def test(pam_network, test_dataloader, device):
         moving = x_2.to(device)
 
         t_0, w_0, t_1, w_1, _   = pam_network(fixed, moving)
-        z, _             = pam_network.get_features(fixed, moving)
 
         print('registered', end='\t')
 
