@@ -86,24 +86,6 @@ def load_model_weights():
     return pam_net, device
 
 
-def measure_disentaglement(pam_network, fixed, moving, effect=1.):
-    # get embedding of the deformation
-    z, (_, _) = pam_network.get_features(fixed, moving)
-    # modify entry 
-    ix = np.random.randint(z.shape[1])
-    z[:, ix] += effect
-    # generate and apply deformation to moving
-    _, _, _, moving_ = pam_network.generate(z, moving)
-    # moving_ should match fixed (z=0), except for the feature modified
-    z, (_, _) = pam_network.get_features(fixed, moving_)
-    # top-1, 3, 10
-    topk    = torch.topk(z, 10).indices
-    top1    = ix == topk[0, 0].item()
-    top3    = any([ix == i.item() for i in topk[0, :3]])
-    top10   = any([ix == i.item() for i in topk[0, :10]])
-    return top1, top3, top10
-
-
 def test(pam_network, test_dataloader, device):
 
     _, _, cc_loss, penalty = init_loss_functions()
@@ -121,7 +103,7 @@ def test(pam_network, test_dataloader, device):
         moving = x_2.to(device)
 
         t_0, w_0, t_1, w_1, _   = pam_network(fixed, moving)
-        z, residual             = pam_network.get_features(fixed, moving)
+        z, _             = pam_network.get_features(fixed, moving)
 
         print('registered', end='\t')
 
@@ -135,18 +117,11 @@ def test(pam_network, test_dataloader, device):
 
         print('elastic:', str(registration_deform_loss.item()), end='\t')
 
-        top1, top3, top10 = measure_disentaglement(pam_network, fixed, moving, effect=torch.max(z))
-
-        print('disentangl:', str(top10))
-
         results.append({
             'reg_aff'   : registration_affine_loss.item(),
             'pen_aff'   : penalty_affine_loss.item(),
             'reg_def'   : registration_deform_loss.item(),
-            'pen_def'   : penalty_deform_loss.item(),
-            'top1'      : top1,
-            'top3'      : top3,
-            'top10'     : top10
+            'pen_def'   : penalty_deform_loss.item()
         })
 
         pd.DataFrame(results).to_csv('test.csv')
