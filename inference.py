@@ -44,7 +44,7 @@ def load_model_weights():
     pam_net.to(device)
 
     # Loading the model weights
-    pam_chkpt = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
+    pam_chkpt = os.path.join(PARAMS.project_folder, 'PAMModel.pth.bk')
     pam_net.load_state_dict(torch.load(pam_chkpt))
 
     return pam_net, device
