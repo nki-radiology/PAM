@@ -125,6 +125,12 @@ def test(pam_network, test_dataloader, device):
 
         pd.DataFrame(results).to_csv('test.csv')
 
+        # +++
+        import SimpleITK as sitk
+        sitk.WriteImage(sitk.GetImageFromArray(w_1.cpu().numpy()[0,0,:,:,:]), 'test.nii.gz')
+        break
+        # +++
+
     print('done.')
 
 if __name__ == "__main__":
