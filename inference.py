@@ -39,7 +39,7 @@ def init_loss_functions():
 
 def load_model_weights():
     # Network definition
-    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters)
+    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     device      = torch.device('cuda:0')
     pam_net.to(device)
 
