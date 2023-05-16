@@ -39,7 +39,7 @@ parser.add_argument('--test-folder',
 
 parser.add_argument('--inference',
                     type = str,
-                    default = '/data/groups/beets-tan/s.trebeschi/infoa_pairs.csv',
+                    default = '/home/s.trebeschi/thorax_pairs_only_succeed_nrrd.csv',
                     help = 'csv that contains the testing dataset')
 
 parser.add_argument('--project-folder',      
