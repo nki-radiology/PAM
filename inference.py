@@ -133,6 +133,12 @@ def test(pam_network, dataset, device):
         baseline_im = loader(row['PRIOR_PATH_NRRD'])
         followup_im = loader(row['SUBSQ_PATH_NRRD'])
 
+        # +++
+        import SimpleITK as sitk
+        sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
+        sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
+        # +++
+
         baseline_im = torch.from_numpy(baseline_im).type(torch.float32).to(device)
         followup_im = torch.from_numpy(followup_im).type(torch.float32).to(device)
 
@@ -165,12 +171,9 @@ def test(pam_network, dataset, device):
 
         pd.DataFrame(result).to_csv('results.csv')
 
-        # DEBUG
-        import SimpleITK as sitk
-        sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
-        sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
+        # +++
         break
-
+        # +++
 
 if __name__ == "__main__":
 
