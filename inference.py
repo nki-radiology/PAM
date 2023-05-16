@@ -115,10 +115,7 @@ def test(pam_network, dataset, device):
         ReadVolume(),
         ZeroOneScaling(),
         TransformFromNumpyFunction(zero_at_edges),
-        ToNumpyArray(
-            add_batch_dim=True, 
-            add_singleton_dim=True, 
-            channel_second=True)
+        ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
     )
 
     _, _, cc_loss, penalty = init_loss_functions()
@@ -136,8 +133,8 @@ def test(pam_network, dataset, device):
         baseline_im = loader(row['PRIOR_PATH_NRRD'])
         followup_im = loader(row['SUBSQ_PATH_NRRD'])
 
-        baseline_im = baseline_im.to(device)
-        followup_im = followup_im.to(device)
+        baseline_im = torch.from_numpy(baseline_im).type(torch.float32).to(device)
+        followup_im = torch.from_numpy(followup_im).type(torch.float32).to(device)
 
         # compute embedding
         z, residual = pam_network.get_features(baseline_im, followup_im)
