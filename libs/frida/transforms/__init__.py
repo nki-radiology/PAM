@@ -1,6 +1,7 @@
 from .base import Transform
 from .base import RandomizedTransform
 from .base import TransformFromITKFilter
+from .base import TransformFromNumpyFunction
 
 from .base import PadAndCropTo
 from .base import Resample
