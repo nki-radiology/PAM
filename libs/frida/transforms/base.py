@@ -35,6 +35,18 @@ class TransformFromITKFilter(Transform):
         return self.flt.Execute(image)
 
 
+class TransformFromNumpyFunction(Transform):
+
+    def __init__( self, np_function ):
+        self.flt = np_function
+        super(TransformFromNumpyFunction, self).__init__()
+
+    def __call__( self, image ):
+        arr = sitk.GetArrayFromImage(image)
+        arr = self.flt(arr)
+        return sitk.GetImageFromArray(arr)
+
+
 class PadAndCropTo(Transform):
 
     def __init__( self, target_shape, cval=0. ):
@@ -105,16 +117,21 @@ class ZeroOneScaling(Transform):
 
 class ToNumpyArray(Transform):
 
-    def __init__(self, add_batch_dim=False, add_singleton_dim=False):
+    def __init__(self, add_batch_dim=False, add_singleton_dim=False, channel_second=False):
         self.add_batch_dim     = add_batch_dim
         self.add_singleton_dim = add_singleton_dim
+        self.channel_second    = channel_second
         super(ToNumpyArray, self).__init__()
 
     def __call__(self, image):
         image     = sitk.GetArrayFromImage(image)
+
         if self.add_batch_dim:
-            image = image[None]
+            image = image[None, ...]
         if self.add_singleton_dim:
-            image = image[..., None]
+            if self.channel_second:
+                image = image[:, None, ...]
+            else:
+                image = image[..., None]
         return image
 

@@ -37,6 +37,11 @@ parser.add_argument('--test-folder',
                     default = '/data/groups/beets-tan/l.estacio/data_tcia/test/',
                     help = 'folder that contains the testing dataset')
 
+parser.add_argument('--inference',
+                    type = str,
+                    default = '/data/groups/beets-tan/s.trebeschi/infoa_pairs.csv',
+                    help = 'csv that contains the testing dataset')
+
 parser.add_argument('--project-folder',      
                     type = str,
                     default = '/projects/split-encoders/',

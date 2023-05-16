@@ -224,6 +224,22 @@ class PAMNetwork(nn.Module):
         return tA, wA, tD, wD, residual
 
 
+    def get_features(self, fixed, moving):
+        # registration
+        z, _ = self.encode(fixed, moving)
+
+        tA = self.affine_decoder(z)
+        wA = self.spatial_layer(moving, tA)
+
+        z, _ = self.encode(fixed, wA)
+        tD = self.elastic_decoder(z)
+        wD = self.spatial_layer(wA, tD)
+
+        # residual 
+        _, (_, _, residual) = self.encode(fixed, wD)
+
+        return z, residual
+
 """
 # To summarize the complete model
 from torchsummary import summary
