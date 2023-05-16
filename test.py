@@ -75,7 +75,7 @@ def load_dataloader():
 
 def load_model_weights():
     # Network definition
-    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters)
+    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     device      = torch.device('cuda:0')
     pam_net.to(device)
 
@@ -120,8 +120,8 @@ def test(pam_network, test_dataloader, device):
         fixed  = x_1.to(device)
         moving = x_2.to(device)
 
-        t_0, w_0, t_1, w_1 = pam_network(fixed, moving)
-        z, (z_fixed, z_moving) = pam_network.get_features(fixed, moving)
+        t_0, w_0, t_1, w_1, _   = pam_network(fixed, moving)
+        z, residual             = pam_network.get_features(fixed, moving)
 
         print('registered', end='\t')
 
