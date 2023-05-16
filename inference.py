@@ -139,8 +139,8 @@ def test(pam_network, dataset, device):
         # compute embedding
         z, residual = pam_network.get_features(baseline_im, followup_im)
 
-        z = z.detach().cpu().numpy()
-        residual = residual.detach().cpu().numpy()
+        z = z.detach().cpu().numpy().squeeze()
+        residual = residual.detach().cpu().numpy().squeeze()
 
         features = array_to_dict(z, 'features')
         residual = array_to_dict(residual, 'residual')
@@ -164,6 +164,12 @@ def test(pam_network, dataset, device):
         result.append(entry)
 
         pd.DataFrame(result).to_csv('results.csv')
+
+        # DEBUG
+        import SimpleITK as sitk
+        sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
+        sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
+        break
 
 
 if __name__ == "__main__":
