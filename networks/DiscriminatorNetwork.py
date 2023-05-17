@@ -11,7 +11,7 @@ class S_Conv(nn.Module):
         super(S_Conv, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv3d   (in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.GroupNorm(num_groups=8,      num_channels=out_ch),
+            nn.GroupNorm(num_groups=4,      num_channels=out_ch),
             nn.LeakyReLU(inplace=True)
         )
 
