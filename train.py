@@ -156,7 +156,7 @@ def training(
             moving = x_2.to(device)
 
             # *** Train Generator ***
-            (_, _, wA), (_, tD, wD), residual = pam_network(fixed, moving, compute_residuals=epoch < 2)
+            (_, _, wA), (_, tD, wD), residual = pam_network(fixed, moving, compute_residuals=True)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -169,10 +169,7 @@ def training(
             registration_deform_loss = correlation(fixed, wD)
 
             # circuit residual loss
-            if epoch < 2:
-                residual_loss = l2_norm(residual)
-            else:
-                residual_loss = torch.tensor(0.0).to(device)
+            residual_loss = l2_norm(residual)
 
             # energy-like penalty loss
             enegry_deformation  = energy(tD)
@@ -235,7 +232,7 @@ def training(
 
             def save_example_image(im, name):
                 path = os.path.join(PARAMS.project_folder, name + '.nii.gz')
-                sitk_im = sitk.GetImageFromArray(im.cpu().numpy()[0,0,:,:,:])
+                sitk_im = sitk.GetImageFromArray(im.cpu().detach().numpy()[0,0,:,:,:])
                 sitk.WriteImage(sitk_im, path)
 
             save_example_image(fixed, 'fixed')
