@@ -156,8 +156,7 @@ def training(
             moving = x_2.to(device)
 
             # *** Train Generator ***
-            pam_network_optimizer.zero_grad()
-            (_, _, wA), (_, tD, wD), _ = pam_network(fixed, moving, compute_residuals=False)
+            (_, _, wA), (_, tD, wD), residual = pam_network(fixed, moving, compute_residuals=True)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -170,7 +169,10 @@ def training(
             registration_deform_loss = correlation(fixed, wD)
 
             # circuit residual loss
-            #residual_loss       = l2_norm(residual)
+            if epoch > 1:
+                residual_loss = torch.tensor(0.0).to(device)
+            else:
+                residual_loss = l2_norm(residual)
 
             # energy-like penalty loss
             enegry_deformation  = energy(tD)
@@ -180,8 +182,8 @@ def training(
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
                 0.1     * generator_adv_loss + \
-                0.01    * enegry_deformation #+ \
-                #0.001   * residual_loss 
+                0.01    * enegry_deformation + \
+                0.001   * residual_loss 
             
             loss.backward()
             pam_network_optimizer.step()

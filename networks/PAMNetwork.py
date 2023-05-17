@@ -12,18 +12,20 @@ from networks.SpatialTransformer import SpatialTransformer
 Convolution Class 
 """
 class Conv(nn.Module):
-    def __init__(self, in_ch, out_ch):
+    def __init__(self, in_ch, out_ch, downsample=False):
         super(Conv, self).__init__()
 
-        self.identity   = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
+        s = 2 if downsample else 1
+
+        self.identity   = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=s, padding='same', bias=False)
         
         self.conv1      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
-        self.conv2      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
+        self.conv2      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=s, padding='same', bias=False)
 
         self.relu       = nn.LeakyReLU(inplace=True)
 
-        self.gnorm1     = nn.GroupNorm(num_groups=8, num_channels=out_ch)
-        self.gnorm2     = nn.GroupNorm(num_groups=8, num_channels=out_ch)
+        self.gnorm1     = nn.GroupNorm(num_groups=4, num_channels=out_ch)
+        self.gnorm2     = nn.GroupNorm(num_groups=4, num_channels=out_ch)
 
     def forward(self, x):
 
@@ -56,11 +58,13 @@ class Encoder(nn.Module):
         self.Maxpool4 = nn.MaxPool3d(kernel_size=2, stride=2) # 12, 10
         self.Maxpool5 = nn.MaxPool3d(kernel_size=2, stride=2) # 6, 5
 
-        self.Conv1    = Conv   (self.in_channels, self.filters[0])
-        self.Conv2    = Conv   (self.filters[0],  self.filters[1])
-        self.Conv3    = Conv   (self.filters[1],  self.filters[2])
-        self.Conv4    = Conv   (self.filters[2],  self.filters[3])
-        self.Conv5    = Conv   (self.filters[3],  self.filters[4])
+        self.Conv1    = Conv   (self.in_channels, self.filters[0], downsample=True)
+        self.Conv2    = Conv   (self.filters[0],  self.filters[1], downsample=True)
+        self.Conv3    = Conv   (self.filters[1],  self.filters[2], downsample=True)
+        self.Conv3_1  = Conv   (self.filters[2],  self.filters[2])
+        self.Conv4    = Conv   (self.filters[2],  self.filters[3], downsample=True)
+        self.Conv4_1  = Conv   (self.filters[3],  self.filters[3])
+        self.Conv5    = Conv   (self.filters[3],  self.filters[4], downsample=True)
         self.Conv6    = Conv   (self.filters[4],  self.filters[5])
 
         self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
@@ -70,20 +74,12 @@ class Encoder(nn.Module):
     def forward(self, image):
 
             x = self.Conv1(image)
-            x = self.Maxpool1(x)
-
             x = self.Conv2(x)
-            x = self.Maxpool2(x)
-
             x = self.Conv3(x)
-            x = self.Maxpool3(x)
-
+            x = self.Conv3_1(x)
             x = self.Conv4(x)
-            x = self.Maxpool4(x)
-
+            x = self.Conv4_1(x)
             x = self.Conv5(x)
-            x = self.Maxpool5(x)
-
             x = self.Conv6(x)
 
             x = self.AvgPool(x)
