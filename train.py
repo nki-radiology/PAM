@@ -230,7 +230,7 @@ def training(
 
         # Save example images
         if (epoch % 5 == 0) and (epoch > 0):
-            
+
             def save_example_image(im, name):
                 path = os.path.join(PARAMS.project_folder, name + '.nii.gz')
                 sitk_im = sitk.GetImageFromArray(im.cpu().numpy()[0,0,:,:,:])
@@ -238,8 +238,8 @@ def training(
 
             save_example_image(fixed, 'fixed')
             save_example_image(moving, 'moving')
-            save_example_image(w_1, 'test_deformable')
-            save_example_image(w_0, 'test_affine')          
+            save_example_image(wD, 'test_deformable')
+            save_example_image(wA, 'test_affine')          
 
 def are_models_trained():
     name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
