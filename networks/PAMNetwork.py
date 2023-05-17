@@ -200,7 +200,7 @@ class PAMNetwork(nn.Module):
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
 
-    def forward(self, fixed, moving, compute_residual=False):
+    def forward(self, fixed, moving, compute_residuals=False):
 
         def registration(fixed, moving, encoder, decoder):
             # repeated operation 
@@ -220,8 +220,8 @@ class PAMNetwork(nn.Module):
 
         # residuals
         residual = None
-        if compute_residual:
-            _, (z, _, _), _  = self.forward(fixed, wD, compute_residual=False)
+        if compute_residuals:
+            _, (z, _, _), _  = self.forward(fixed, wD, compute_residuals=False)
             residual = z[-self.latent_dim:]
 
         return (zA, tA, wA), (zD, tD, wD), residual
