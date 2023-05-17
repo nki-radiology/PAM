@@ -47,7 +47,7 @@ class Conv(nn.Module):
         out = self.conv3(out)
         out = self.gnorm3(out)
 
-        if self.downsample:
+        if self.downsample or (self.in_ch != self.out_ch):
             x = self.conv0(x)
 
         out = out + x
