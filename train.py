@@ -8,6 +8,7 @@ import numpy as np
 import wandb
 import torch
 import torch.nn as nn
+import SimpleITK as sitk
 
 from torch.utils.data               import DataLoader
 from utils.utils_torch              import weights_init
@@ -156,29 +157,29 @@ def training(
 
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
-            _, w_0, t_1, w_1, residual = pam_network(fixed, moving)
+            (_, _, wA), (_, tD, wD), residual = pam_network(fixed, moving, compute_residuals=True)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
-            _, features_w1      = discriminator(w_1) 
-            _, features_w0      = discriminator(w_0) 
-            generator_adv_loss  = mse_distance(features_w1, features_w0)
+            _, features_wA      = discriminator(wA) 
+            _, features_wD      = discriminator(wD) 
+            generator_adv_loss  = mse_distance(features_wA, features_wD)
 
             # registration loss
-            registration_affine_loss = correlation(fixed, w_0)
-            registration_deform_loss = correlation(fixed, w_1)
+            registration_affine_loss = correlation(fixed, wA)
+            registration_deform_loss = correlation(fixed, wD)
 
             # circuit residual loss
             residual_loss       = l2_norm(residual)
 
             # energy-like penalty loss
-            enegry_deformation  = energy(t_1)
+            enegry_deformation  = energy(tD)
 
             # total loss            
             loss = \
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
-                0.01    * generator_adv_loss + \
+                0.1     * generator_adv_loss + \
                 0.01    * enegry_deformation + \
                 0.001   * residual_loss 
             
@@ -188,8 +189,8 @@ def training(
             # *** Train Discriminator ***
             discriminator_optimizer.zero_grad()
 
-            real, _ = discriminator(w_0.detach()) 
-            fake, _ = discriminator(w_1.detach())
+            real, _ = discriminator(wA.detach()) 
+            fake, _ = discriminator(wD.detach())
 
             b_size   = real.shape
             label_r  = torch.full(b_size, real_label, dtype=torch.float, device=device)
@@ -220,13 +221,25 @@ def training(
             })
             
         # Save checkpoints
-        if (epoch % 25 == 0) and (epoch > 0):
+        if (epoch % 5 == 0) and (epoch > 0):
             name_pam = 'PAMModel.pth'
             name_dis = 'DisModel.pth'
             torch.save(pam_network.state_dict(), os.path.join(PARAMS.project_folder, name_pam))
             torch.save(discriminator_network.state_dict(), os.path.join(PARAMS.project_folder, name_dis))
             print('Model saved!')
+
+        # Save example images
+        if (epoch % 5 == 0) and (epoch > 0):
             
+            def save_example_image(im, name):
+                path = os.path.join(PARAMS.project_folder, name + '.nii.gz')
+                sitk_im = sitk.GetImageFromArray(im.cpu().numpy()[0,0,:,:,:])
+                sitk.WriteImage(sitk_im, path)
+
+            save_example_image(fixed, 'fixed')
+            save_example_image(moving, 'moving')
+            save_example_image(w_1, 'test_deformable')
+            save_example_image(w_0, 'test_affine')          
 
 def are_models_trained():
     name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')

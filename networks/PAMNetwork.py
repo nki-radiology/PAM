@@ -191,54 +191,40 @@ class PAMNetwork(nn.Module):
         self.filters = filters
         self.latent_dim = latent_dim
 
-        self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.affine_decoder     = AffineDecoder(self.img_size, self.latent_dim*2)
-        self.elastic_decoder    = ElasticDecoder(self.img_size, self.filters, self.latent_dim*2)
+        self.encoder_affine     = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
+        self.decoder_affine     = AffineDecoder(self.img_size, self.latent_dim*2)
+
+        self.encoder_deform     = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
+        self.decoder_deform     = ElasticDecoder(self.img_size, self.filters, self.latent_dim*2)
+
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
 
-    def encode(self, fixed, moving):
-        z_fixed = self.encoder(fixed)
-        z_moving = self.encoder(moving)
+    def forward(self, fixed, moving, compute_residual=False):
 
-        z_diff = z_fixed - z_moving
-        z = torch.concat((z_fixed, z_diff), dim=1)
+        def registration(fixed, moving, encoder, decoder):
+            # repeated operation 
+            z_fixed = encoder(fixed)
+            z_moving = encoder(moving)
 
-        return z, (z_fixed, z_moving, z_diff)
-    
+            z_diff = z_fixed - z_moving
+            z = torch.concat((z_fixed, z_diff), dim=1)
 
-    def forward(self, fixed, moving):
-        # registration
-        z, _ = self.encode(fixed, moving)
+            t = decoder(z)
+            w = self.spatial_layer(moving, t)
+            return z, t, w
 
-        tA = self.affine_decoder(z)
-        wA = self.spatial_layer(moving, tA)
+        # registrations
+        zA, tA, wA = registration(fixed, moving, self.encoder_affine, self.decoder_affine)
+        zD, tD, wD = registration(fixed, wA, self.encoder_deform, self.decoder_deform)
 
-        z, _ = self.encode(fixed, wA)
-        tD = self.elastic_decoder(z)
-        wD = self.spatial_layer(wA, tD)
+        # residuals
+        residual = None
+        if compute_residual:
+            _, (z, _, _), _  = self.forward(fixed, wD, compute_residual=False)
+            residual = z[-self.latent_dim:]
 
-        # residual 
-        _, (_, _, residual) = self.encode(fixed, wD)
-
-        return tA, wA, tD, wD, residual
-
-
-    def get_features(self, fixed, moving):
-        # registration
-        z, _ = self.encode(fixed, moving)
-
-        tA = self.affine_decoder(z)
-        wA = self.spatial_layer(moving, tA)
-
-        z, _ = self.encode(fixed, wA)
-        tD = self.elastic_decoder(z)
-        wD = self.spatial_layer(wA, tD)
-
-        # residual 
-        _, (_, _, residual) = self.encode(fixed, wD)
-
-        return z, residual
+        return (zA, tA, wA), (zD, tD, wD), residual
 
 """
 # To summarize the complete model
