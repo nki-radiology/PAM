@@ -15,28 +15,43 @@ class Conv(nn.Module):
     def __init__(self, in_ch, out_ch, downsample=False):
         super(Conv, self).__init__()
 
+        self.in_ch = in_ch
+        self.out_ch = out_ch
+        self.downsample = downsample
+
         s = 2 if downsample else 1
+        p = 'valid' if downsample else 'same'
 
-        self.identity   = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=s, padding='same', bias=False)
-        
-        self.conv1      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
-        self.conv2      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=s, padding='same', bias=False)
+        self.conv0      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=s, padding=p, bias=False)
 
-        self.relu       = nn.LeakyReLU(inplace=True)
+        self.conv1      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
+        self.conv2      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
+        self.conv3      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=1, stride=s, padding=p, bias=False)
+
+        self.relu1      = nn.LeakyReLU(inplace=True)
+        self.relu2      = nn.LeakyReLU(inplace=True)
+        self.relu3      = nn.LeakyReLU(inplace=True)
 
         self.gnorm1     = nn.GroupNorm(num_groups=4, num_channels=out_ch)
         self.gnorm2     = nn.GroupNorm(num_groups=4, num_channels=out_ch)
+        self.gnorm3     = nn.GroupNorm(num_groups=4, num_channels=out_ch)
 
     def forward(self, x):
 
         out = self.conv1(x)
         out = self.gnorm1(out)
-        out = self.relu(out)
-
+        out = self.relu1(out)
         out = self.conv2(out)
         out = self.gnorm2(out)
+        out = self.relu2(out)
+        out = self.conv3(out)
+        out = self.gnorm3(out)
 
-        out = out + self.identity(x)
+        if self.downsample:
+            x = self.conv0(x)
+
+        out = out + x
+        out = self.relu3(out)
 
         return out 
 
