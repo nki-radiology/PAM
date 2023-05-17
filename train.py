@@ -157,7 +157,7 @@ def training(
 
             # *** Train Generator ***
             pam_network_optimizer.zero_grad()
-            (_, _, wA), (_, tD, wD), residual = pam_network(fixed, moving, compute_residuals=True)
+            (_, _, wA), (_, tD, wD), _ = pam_network(fixed, moving, compute_residuals=False)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -170,7 +170,7 @@ def training(
             registration_deform_loss = correlation(fixed, wD)
 
             # circuit residual loss
-            residual_loss       = l2_norm(residual)
+            #residual_loss       = l2_norm(residual)
 
             # energy-like penalty loss
             enegry_deformation  = energy(tD)
@@ -180,8 +180,8 @@ def training(
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
                 0.1     * generator_adv_loss + \
-                0.01    * enegry_deformation + \
-                0.001   * residual_loss 
+                0.01    * enegry_deformation #+ \
+                #0.001   * residual_loss 
             
             loss.backward()
             pam_network_optimizer.step()
@@ -214,7 +214,7 @@ def training(
             wandb.log({ 'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Energy loss': enegry_deformation.item(),
-                        'Train: Residual Loss': residual_loss.item(),
+                        #'Train: Residual Loss': residual_loss.item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()
