@@ -24,7 +24,7 @@ parser.add_argument('--filters-discriminator',
 
 parser.add_argument('--latent-dim',     
                     type = list,  
-                    default = 128,    
+                    default = 512,    
                     help = 'latent dimension')
 
 parser.add_argument('--train-folder',      
