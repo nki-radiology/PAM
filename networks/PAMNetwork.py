@@ -41,9 +41,11 @@ class Conv(nn.Module):
         out = self.conv1(x)
         out = self.gnorm1(out)
         out = self.relu1(out)
+
         out = self.conv2(out)
         out = self.gnorm2(out)
         out = self.relu2(out)
+        
         out = self.conv3(out)
         out = self.gnorm3(out)
 
@@ -67,18 +69,10 @@ class Encoder(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        self.Maxpool1 = nn.MaxPool3d(kernel_size=2, stride=2) # 96, 80
-        self.Maxpool2 = nn.MaxPool3d(kernel_size=2, stride=2) # 48, 40
-        self.Maxpool3 = nn.MaxPool3d(kernel_size=2, stride=2) # 24, 20
-        self.Maxpool4 = nn.MaxPool3d(kernel_size=2, stride=2) # 12, 10
-        self.Maxpool5 = nn.MaxPool3d(kernel_size=2, stride=2) # 6, 5
-
         self.Conv1    = Conv   (self.in_channels, self.filters[0], downsample=True)
         self.Conv2    = Conv   (self.filters[0],  self.filters[1], downsample=True)
         self.Conv3    = Conv   (self.filters[1],  self.filters[2], downsample=True)
-        self.Conv3_1  = Conv   (self.filters[2],  self.filters[2])
         self.Conv4    = Conv   (self.filters[2],  self.filters[3], downsample=True)
-        self.Conv4_1  = Conv   (self.filters[3],  self.filters[3])
         self.Conv5    = Conv   (self.filters[3],  self.filters[4], downsample=True)
         self.Conv6    = Conv   (self.filters[4],  self.filters[5])
 
@@ -91,9 +85,7 @@ class Encoder(nn.Module):
             x = self.Conv1(image)
             x = self.Conv2(x)
             x = self.Conv3(x)
-            x = self.Conv3_1(x)
             x = self.Conv4(x)
-            x = self.Conv4_1(x)
             x = self.Conv5(x)
             x = self.Conv6(x)
 
@@ -211,21 +203,22 @@ class PAMNetwork(nn.Module):
 
     def forward(self, fixed, moving, compute_residuals=False):
 
-        def registration(fixed, moving, encoder, decoder):
+        def compute_t(fixed, moving, encoder, decoder):
             # repeated operation 
             z_fixed = encoder(fixed)
-            z_moving = encoder(moving)
+            z_moving = encoder(moving if w_ is None else w_)
 
             z_diff = z_fixed - z_moving
             z = torch.concat((z_fixed, z_diff), dim=1)
 
             t = decoder(z)
-            w = self.spatial_layer(moving, t)
-            return z, t, w
+            return z, t
 
         # registrations
-        zA, tA, wA = registration(fixed, moving, self.encoder, self.decoder_affine)
-        zD, tD, wD = registration(fixed, wA, self.encoder, self.decoder_deform)
+        zA, tA = compute_t(fixed, moving, self.encoder, self.decoder_affine)
+        wA = self.spatial_layer(moving, tA)
+        zD, tD = compute_t(fixed, wA, self.encoder, self.decoder_deform)
+        wD = self.spatial_layer(moving, tA + tD)
 
         # residuals
         residual = None
