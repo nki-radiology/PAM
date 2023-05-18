@@ -206,7 +206,7 @@ class PAMNetwork(nn.Module):
         def compute_t(fixed, moving, encoder, decoder):
             # repeated operation 
             z_fixed = encoder(fixed)
-            z_moving = encoder(moving if w_ is None else w_)
+            z_moving = encoder(moving)
 
             z_diff = z_fixed - z_moving
             z = torch.concat((z_fixed, z_diff), dim=1)
@@ -217,6 +217,7 @@ class PAMNetwork(nn.Module):
         # registrations
         zA, tA = compute_t(fixed, moving, self.encoder, self.decoder_affine)
         wA = self.spatial_layer(moving, tA)
+        
         zD, tD = compute_t(fixed, wA, self.encoder, self.decoder_deform)
         wD = self.spatial_layer(moving, tA + tD)
 
