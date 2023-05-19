@@ -12,21 +12,34 @@ from networks.SpatialTransformer import SpatialTransformer
 Convolution Class 
 """
 class Conv(nn.Module):
-    def __init__(self, in_ch, out_ch, downsample=False):
+    def __init__(self, in_ch, out_ch):
         super(Conv, self).__init__()
-
         self.in_ch = in_ch
         self.out_ch = out_ch
-        self.downsample = downsample
 
-        s = 2 if downsample else 1
-        p = 'valid' if downsample else 'same'
+        self.conv      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
+        self.gnorm     = nn.GroupNorm(num_groups=8, num_channels=out_ch)
+        self.relu      = nn.LeakyReLU(inplace=True)
 
-        self.conv0      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=s, padding=p, bias=False)
+    def forward(self, x):
+        out = self.conv(x)
+        out = self.gnorm(out)
+        out = self.relu(out)
+
+        return out
+
+
+class ResConv(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(ResConv, self).__init__()
+        self.in_ch = in_ch
+        self.out_ch = out_ch
+
+        self.conv0      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
 
         self.conv1      = nn.Conv3d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
         self.conv2      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=3, stride=1, padding='same', bias=False)
-        self.conv3      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=1, stride=s, padding=p, bias=False)
+        self.conv3      = nn.Conv3d(in_channels=out_ch, out_channels=out_ch, kernel_size=1, stride=1, padding='same', bias=False)
 
         self.relu1      = nn.LeakyReLU(inplace=True)
         self.relu2      = nn.LeakyReLU(inplace=True)
@@ -49,7 +62,7 @@ class Conv(nn.Module):
         out = self.conv3(out)
         out = self.gnorm3(out)
 
-        if self.downsample or (self.in_ch != self.out_ch):
+        if self.in_ch != self.out_ch:
             x = self.conv0(x)
 
         out = out + x
@@ -75,12 +88,12 @@ class Encoder(nn.Module):
         self.MaxPool4 = nn.MaxPool3d(kernel_size=2, stride=2)
         self.MaxPool5 = nn.MaxPool3d(kernel_size=2, stride=2)
 
-        self.Conv1    = Conv   (self.in_channels, self.filters[0])
-        self.Conv2    = Conv   (self.filters[0],  self.filters[1])
-        self.Conv3    = Conv   (self.filters[1],  self.filters[2])
-        self.Conv4    = Conv   (self.filters[2],  self.filters[3])
-        self.Conv5    = Conv   (self.filters[3],  self.filters[4])
-        self.Conv6    = Conv   (self.filters[4],  self.filters[5])
+        self.Conv1    = ResConv   (self.in_channels, self.filters[0])
+        self.Conv2    = ResConv   (self.filters[0],  self.filters[1])
+        self.Conv3    = ResConv   (self.filters[1],  self.filters[2])
+        self.Conv4    = ResConv   (self.filters[2],  self.filters[3])
+        self.Conv5    = ResConv   (self.filters[3],  self.filters[4])
+        self.Conv6    = ResConv   (self.filters[4],  self.filters[5])
 
         self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
         self.Flatten  = nn.Flatten()
@@ -212,7 +225,7 @@ class PAMNetwork(nn.Module):
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
 
-    def forward(self, fixed, moving, compute_residuals=False):
+    def forward(self, fixed, moving):
 
         def compute_t(fixed, moving, encoder, decoder):
             # repeated operation 
@@ -232,13 +245,7 @@ class PAMNetwork(nn.Module):
         zD, tD = compute_t(fixed, wA, self.encoder, self.decoder_deform)
         wD = self.spatial_layer(moving, tA + tD)
 
-        # residuals
-        residual = None
-        if compute_residuals:
-            _, (z, _, _), _  = self.forward(fixed, wD, compute_residuals=False)
-            residual = z[-self.latent_dim:]
-
-        return (zA, tA, wA), (zD, tD, wD), residual
+        return (zA, tA, wA), (zD, tD, wD)
 
 """
 # To summarize the complete model
