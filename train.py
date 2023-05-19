@@ -169,7 +169,8 @@ def training(
             registration_deform_loss = correlation(fixed, wD)
 
             # circuit residual loss
-            residual_loss = l2_norm(residual)
+            #residual_loss = l2_norm(residual)
+            residual_loss = torch.tensor([0.0]).to(device)
 
             # energy-like penalty loss
             enegry_deformation  = energy(tD) + energy(tA)
