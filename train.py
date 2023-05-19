@@ -156,7 +156,7 @@ def training(
             moving = x_2.to(device)
 
             # *** Train Generator ***
-            (_, tA, wA), (_, tD, wD), residual = pam_network(fixed, moving, compute_residuals=True)
+            (_, tA, wA), (_, tD, wD), _ = pam_network(fixed, moving, compute_residuals=False)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -175,12 +175,15 @@ def training(
             # energy-like penalty loss
             enegry_deformation  = energy(tD) + energy(tA)
 
+            iteration = epoch * len(train_dataloader) + i
+            factor  = np.minimum(iteration / 1000., 1.0)
+
             # total loss            
             loss = \
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
-                0.1     * generator_adv_loss + \
-                0.01    * enegry_deformation + \
+                0.1     * factor * generator_adv_loss + \
+                0.01    * factor * enegry_deformation + \
                 0.001   * residual_loss 
             
             loss.backward()
