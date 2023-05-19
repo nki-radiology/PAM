@@ -205,10 +205,8 @@ class PAMNetwork(nn.Module):
         self.filters = filters
         self.latent_dim = latent_dim
 
-        self.encoder_affine     = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.decoder_affine     = AffineDecoder(self.img_size, self.latent_dim*2)
-        
-        self.encoder_deform     = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
+        self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
+        self.decoder_affine     = AffineDecoder(self.img_size, self.latent_dim*2)        
         self.decoder_deform     = ElasticDecoder(self.img_size, self.filters, self.latent_dim*2)
 
         self.spatial_layer      = SpatialTransformer(self.img_size)
@@ -228,10 +226,10 @@ class PAMNetwork(nn.Module):
             return z, t
 
         # registrations
-        zA, tA = compute_t(fixed, moving, self.encoder_affine, self.decoder_affine)
+        zA, tA = compute_t(fixed, moving, self.encoder, self.decoder_affine)
         wA = self.spatial_layer(moving, tA)
 
-        zD, tD = compute_t(fixed, wA, self.encoder_deform, self.decoder_deform)
+        zD, tD = compute_t(fixed, wA, self.encoder, self.decoder_deform)
         wD = self.spatial_layer(moving, tA + tD)
 
         # residuals

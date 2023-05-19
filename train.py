@@ -156,7 +156,7 @@ def training(
             moving = x_2.to(device)
 
             # *** Train Generator ***
-            (_, tA, wA), (_, tD, wD), residuals = pam_network(fixed, moving, compute_residuals=True)
+            (_, _, wA), (_, _, wD), _ = pam_network(fixed, moving, compute_residuals=False)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -165,26 +165,26 @@ def training(
             generator_adv_loss  = mse_distance(features_wA, features_wD)
 
             # registration loss
-            registration_affine_loss = correlation(fixed, wA)
+            #registration_affine_loss = correlation(fixed, wA)
             registration_deform_loss = correlation(fixed, wD)
 
             # circuit residual loss
-            residual_loss = l2_norm(residuals)
+            #residual_loss = l2_norm(residuals)
             #residual_loss = torch.tensor([0.0]).to(device)
 
             # energy-like penalty loss
-            enegry_deformation  = energy(tD) + energy(tA)
+            #enegry_deformation  = energy(tD) + energy(tA)
 
             iteration = epoch * len(train_dataloader) + i
             factor  = np.maximum(np.minimum((iteration - 100) / 10000., 1.0), 0.0)
 
             # total loss            
             loss = \
-                1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
-                0.1     * factor * generator_adv_loss + \
-                0.01    * factor * enegry_deformation + \
-                0.001   * residual_loss 
+                0.1     * factor * generator_adv_loss #+ \
+                #1.0     * registration_affine_loss + \
+                #0.01    * factor * enegry_deformation + \
+                #0.001   * residual_loss 
             
             loss.backward()
             pam_network_optimizer.step()
@@ -214,11 +214,11 @@ def training(
 
             # Display in tensorboard
             # ========
-            wandb.log({ 'Train: Similarity Affine loss': registration_affine_loss.item(),
+            wandb.log({ #'Train: Similarity Affine loss': registration_affine_loss.item(),
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
-                        'Train: Energy loss': enegry_deformation.item(),
-                        'Train: Residual Loss': residual_loss.item(),
-                        'Train: Adversarial Loss': generator_adv_loss.item(),
+                        #'Train: Energy loss': enegry_deformation.item(),
+                        #'Train: Residual Loss': residual_loss.item(),
+                        #'Train: Adversarial Loss': generator_adv_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()
             })
