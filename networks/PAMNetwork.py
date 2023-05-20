@@ -211,7 +211,16 @@ class UNet(nn.Module):
         self.out_channels = out_channels
 
         self.encoder = Encoder(self.img_size, self.filters, in_channels=self.in_channels, out_channels=self.filters[-1], flatten=False)
-        self.decoder = Decoder(self.img_size, self.filters, in_channels=self.filters[-1], out_channels=self.out_channels, deflatten=False)
+
+        self.UpSample = nn.Upsample(scale_factor=2, mode='trilinear')
+
+        self.DeConv6 = Conv       (self.filters[5]+self.filters[4], self.filters[4])
+        self.DeConv5 = Conv       (self.filters[4]+self.filters[3], self.filters[3])
+        self.DeConv4 = Conv       (self.filters[3]+self.filters[2], self.filters[2])
+        self.DeConv3 = Conv       (self.filters[2]+self.filters[1], self.filters[1])
+        self.DeConv2 = Conv       (self.filters[1]+self.filters[0], self.filters[0])
+
+        self.OutConv = nn.Conv3d(self.filters[0], self.out_channels, kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, image):
 
@@ -233,27 +242,27 @@ class UNet(nn.Module):
 
         x   = self.encoder.Conv6(x)
 
-        x   = self.decoder.UpSample(x)
+        x   = self.UpSample(x)
         x   = torch.cat((x, x5), dim=1)
-        x   = self.decoder.DeConv6(x)
+        x   = self.DeConv6(x)
 
-        x   = self.decoder.UpSample(x)
+        x   = self.UpSample(x)
         x   = torch.cat((x, x4), dim=1)
-        x   = self.decoder.DeConv5(x)
+        x   = self.DeConv5(x)
 
-        x   = self.decoder.UpSample(x)
+        x   = self.UpSample(x)
         x   = torch.cat((x, x3), dim=1)
-        x   = self.decoder.DeConv4(x)
+        x   = self.DeConv4(x)
 
-        x   = self.decoder.UpSample(x)
+        x   = self.UpSample(x)
         x   = torch.cat((x, x2), dim=1)
-        x   = self.decoder.DeConv3(x)
+        x   = self.DeConv3(x)
 
-        x   = self.decoder.UpSample(x)
+        x   = self.UpSample(x)
         x   = torch.cat((x, x1), dim=1)
-        x   = self.decoder.DeConv2(x)
+        x   = self.DeConv2(x)
 
-        x   = self.decoder.OutConv(x)
+        x   = self.OutConv(x)
 
         return x
     
@@ -323,7 +332,7 @@ class PAMNetwork(nn.Module):
 from torchsummary import summary
 img_size = [192, 192, 160]
 filters = [8, 8, 16, 32, 64, 128]
-model  = PAMNetwork(img_size, filters)
+model  = PAMNetwork(img_size, filters, latent_dim=64)
 print(model)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model  = model.to(device)
