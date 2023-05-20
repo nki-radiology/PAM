@@ -282,13 +282,6 @@ class RegistrationNetwork(nn.Module):
 
 
     def forward(self, fixed, moving):
-
-        def compute_t(fixed, moving, encoder, decoder):
-            # repeated operation 
-            z = encoder(torch.cat((fixed, moving), dim=1))
-            t = decoder(z)
-            return t
-
         # compute affine transform
         z = self.encoder(torch.cat((fixed, moving), dim=1))
         tA = self.decoder_affine(z)
@@ -299,6 +292,28 @@ class RegistrationNetwork(nn.Module):
         wD = self.spatial_layer(moving, tA + tD)
 
         return (wA, wD), (tA, tD)
+    
+
+class RegistrationStudentNetwork(nn.Module):
+    
+        def __init__(self, img_size, filters, latent_dim) -> None:
+            super().__init__()
+            self.img_size = img_size
+            self.filters = filters
+            self.latent_dim = latent_dim
+    
+            self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
+            self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
+    
+    
+        def forward(self, fixed, moving):    
+            # student network
+            z_fixed = self.encoder(fixed)
+            z_moving = self.encoder(moving)
+            z = torch.cat((z_fixed, z_moving), dim=1)
+            w = self.decoder(z)
+    
+            return w
 
 
 class PAMNetwork(nn.Module):    

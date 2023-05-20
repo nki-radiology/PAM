@@ -17,7 +17,7 @@ from pathlib                        import Path
 from datetime                       import datetime
 
 from RegistrationDataset            import RegistrationDataSet
-from networks.PAMNetwork             import PAMNetwork
+from networks.PAMNetwork            import RegistrationNetwork, RegistrationStudentNetwork
 from networks.DiscriminatorNetwork  import DiscriminatorNetwork
 from metrics.LossPam                import Energy_Loss, Cross_Correlation_Loss
 
@@ -61,21 +61,20 @@ def model_init():
     device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
     # Network Definitions to the device
-    pam_net = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    reg_net = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    std_net = RegistrationStudentNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     dis_net = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters_discriminator)
-    pam_net.to(device)
+
+    reg_net.to(device)
+    std_net.to(device)
     dis_net.to(device)
 
-    # Handle multi-gpu if desired
-    if (device.type == 'cuda') and (ngpu > 1):
-        pam_net = nn.DataParallel(pam_net, list(range(ngpu)))
-        dis_net = nn.DataParallel(dis_net, list(range(ngpu)))
-
     # Init weights for Generator and Discriminator
-    pam_net.apply(weights_init)
+    reg_net.apply(weights_init)
+    std_net.apply(weights_init)
     dis_net.apply(weights_init)
 
-    return pam_net, dis_net, device
+    return reg_net, std_net, dis_net, device
 
 
 def init_loss_functions():
@@ -94,11 +93,12 @@ def init_loss_functions():
     return (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm)
 
 
-def get_optimizers(pam_net, dis_net):
-    pam_optimizer = torch.optim.Adam(pam_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
+def get_optimizers(reg_net, std_net, dis_net):
+    reg_optimizer = torch.optim.Adam(reg_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
+    std_optimizer = torch.optim.Adam(std_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
     dis_optimizer = torch.optim.Adam(dis_net.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
-    return pam_optimizer, dis_optimizer
+    return reg_optimizer, std_optimizer, dis_optimizer
 
 
 def load_dataloader():
@@ -125,7 +125,8 @@ def load_dataloader():
 
 
 def training(
-        pam_network, 
+        registration_network,
+        student_network, 
         discriminator, 
         train_dataloader, 
         device
@@ -138,13 +139,14 @@ def training(
     fake_label   = 0.
 
     (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm) = init_loss_functions()
-    pam_network_optimizer, discriminator_optimizer = get_optimizers(pam_network, discriminator_network)
+    registration_opt, student_opt, discriminator_opt = get_optimizers(registration_network, student_network, discriminator_network)
 
     # wandb Initialization
     wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
-    wandb.watch(pam_network, log=None)
+    wandb.watch(registration_network, log=None)
 
-    pam_network.train()
+    registration_network.train()
+    student_network.train()
     discriminator.train()
 
     for epoch in range(epoch, n_epochs):
@@ -155,8 +157,10 @@ def training(
             fixed  = x_1.to(device)
             moving = x_2.to(device)
 
-            # *** Train Generator ***
-            (wA, wD), (tA, tD), student_estiamte = pam_network(fixed, moving)
+            # *** Train Registration ***
+            registration_opt.zero_grad()
+
+            (wA, wD), (tA, tD) = registration_network(fixed, moving)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -171,13 +175,10 @@ def training(
             # energy-like penalty loss
             enegry_deformation  = energy(tD) + energy(tA)
 
-            # student loss
-            student_loss = mse_distance(student_estiamte, tA + tD)
-
             # incremental factor for penalties and student loss
             itr = epoch * len(train_dataloader) + i
 
-            def fact(itr, start=0, stop=1000):
+            def fact(itr, start=0, stop=1000.):
                 factor = (itr - start)/stop
                 factor = np.maximum(factor, 0.0)
                 factor = np.minimum(factor, 1.0)
@@ -187,15 +188,22 @@ def training(
             loss = \
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
-                0.1     * fact(itr, stop=10000) * generator_adv_loss + \
-                0.01    * fact(itr, stop=10000) * enegry_deformation + \
-                0.01    * fact(itr, start=1000, stop=10000) * student_loss
+                0.1     * fact(itr, start=1000, stop=10000) * generator_adv_loss + \
+                0.01    * fact(itr, start=1000, stop=10000) * enegry_deformation 
             
             loss.backward()
-            pam_network_optimizer.step()
+            registration_network.step()
+
+            # *** Train Student ***
+            student_opt.zero_grad()
+            student_estimate = student_network(fixed, moving)
+            student_loss = mse_distance(student_estimate, tA + tD)
+            
+            student_loss.backward()
+            student_network.step()
 
             # *** Train Discriminator ***
-            discriminator_optimizer.zero_grad()
+            discriminator_opt.zero_grad()
 
             real, _ = discriminator(wA.detach()) 
             fake, _ = discriminator(wD.detach())
@@ -208,9 +216,8 @@ def training(
             loss_d_fake = binary_entropy(fake, label_f)
             loss_d_t    = (loss_d_real + loss_d_fake) * 0.5
 
-            # -- accu_loss_discriminator += loss_d_t.item()
             loss_d_t.backward()
-            discriminator_optimizer.step()
+            discriminator_opt.step()
 
             # Reinit the affine network weights
             if loss_d_t.item() < 1e-5:  # >
@@ -230,10 +237,14 @@ def training(
             
         # Save checkpoints
         if (epoch % 5 == 0) and (epoch > 0):
-            name_pam = 'PAMModel.pth'
-            name_dis = 'DisModel.pth'
-            torch.save(pam_network.state_dict(), os.path.join(PARAMS.project_folder, name_pam))
-            torch.save(discriminator_network.state_dict(), os.path.join(PARAMS.project_folder, name_dis))
+            def save_model(model, name):
+                path = os.path.join(PARAMS.project_folder, name + '.pth')
+                torch.save(model.state_dict(), path)
+
+            save_model(registration_network, 'RegModel')
+            save_model(student_network, 'StdModel')
+            save_model(discriminator, 'DisModel')
+
             print('Model saved!')
 
         # Save example images
@@ -250,34 +261,39 @@ def training(
             save_example_image(wA, 'test_affine')          
 
 def are_models_trained():
-    name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
+    name_reg = os.path.join(PARAMS.project_folder, 'RegModel.pth')
+    name_std = os.path.join(PARAMS.project_folder, 'StdModel.pth')
     name_dis = os.path.join(PARAMS.project_folder, 'DisModel.pth')
-    return os.path.exists(name_pam) and os.path.exists(name_dis)
+    return os.path.exists(name_reg) and os.path.exists(name_std) and os.path.exists(name_dis)
 
 
 def backup_existing_checkpoints():
-    name_pam = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
-    shutil.copyfile(name_pam, os.path.join(PARAMS.project_folder, 'PAMModel.pth.bak'))
+    name_reg = os.path.join(PARAMS.project_folder, 'RegModel.pth')
+    shutil.copyfile(name_reg, os.path.join(PARAMS.project_folder, 'RegModel.pth.bak'))
+    name_std = os.path.join(PARAMS.project_folder, 'StdModel.pth')
+    shutil.copyfile(name_std, os.path.join(PARAMS.project_folder, 'StdModel.pth.bak'))
     name_dis = os.path.join(PARAMS.project_folder, 'DisModel.pth')
     shutil.copyfile(name_dis, os.path.join(PARAMS.project_folder, 'DisModel.pth.bak'))
     
 
 def load_trained_models():
     # Network definition
-    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    std_net     = RegistrationStudentNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     dis_net     = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters_discriminator)
     
     device      = torch.device('cuda:0')
-    pam_net.to(device)
-    dis_net.to(device)
 
-    # Loading the model weights
-    pam_chkpt = os.path.join(PARAMS.project_folder, 'PAMModel.pth')
-    dis_chkpt = os.path.join(PARAMS.project_folder, 'DisModel.pth')
-    pam_net.load_state_dict(torch.load(pam_chkpt))
-    dis_net.load_state_dict(torch.load(dis_chkpt))
+    def load_model(model, name):
+        model.to(device)
+        path = os.path.join(PARAMS.project_folder, name + '.pth')
+        model.load_state_dict(torch.load(path))
 
-    return pam_net, dis_net, device
+    load_model(reg_net, 'RegModel')
+    load_model(std_net, 'StdModel')
+    load_model(dis_net, 'DisModel')
+
+    return reg_net, std_net, dis_net, device
 
 
 if __name__ == "__main__":
@@ -287,9 +303,9 @@ if __name__ == "__main__":
     if are_models_trained():
         print("Models already trained. Backing up existing checkpoints.")
         backup_existing_checkpoints()
-        pam_network, discriminator_network, device  = load_trained_models()
+        registration_network, student_network, discriminator_network, device  = load_trained_models()
     else:
-        pam_network, discriminator_network, device  = model_init()
+        registration_network, student_network, discriminator_network, device = model_init()
 
     train_dataloader, _  = load_dataloader()
-    training(pam_network, discriminator_network, train_dataloader, device)
+    training(registration_network, student_network, discriminator_network, train_dataloader, device)
