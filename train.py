@@ -197,7 +197,7 @@ def training(
             # *** Train Student ***
             student_opt.zero_grad()
             student_estimate = student_network(fixed, moving)
-            student_loss = mse_distance(student_estimate, tA + tD)
+            student_loss = mse_distance(student_estimate, tA.detach() + tD.detach())
             
             student_loss.backward()
             student_opt.step()
