@@ -192,7 +192,7 @@ def training(
                 0.01    * fact(itr, start=1000, stop=10000) * enegry_deformation 
             
             loss.backward()
-            registration_network.step()
+            registration_opt.step()
 
             # *** Train Student ***
             student_opt.zero_grad()
@@ -200,7 +200,7 @@ def training(
             student_loss = mse_distance(student_estimate, tA + tD)
             
             student_loss.backward()
-            student_network.step()
+            student_opt.step()
 
             # *** Train Discriminator ***
             discriminator_opt.zero_grad()
