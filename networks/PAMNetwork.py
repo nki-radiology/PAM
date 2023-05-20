@@ -311,7 +311,7 @@ class PAMNetwork(nn.Module):
 
         self.registr_net    = RegistrationNetwork(self.img_size, self.filters)
         self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
-        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=3, deflatten=True)
+        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
 
 
     def forward(self, fixed, moving):
