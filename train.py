@@ -17,7 +17,7 @@ from pathlib                        import Path
 from datetime                       import datetime
 
 from RegistrationDataset            import RegistrationDataSet
-from networks.PAMNetwork            import PAMNetwork
+from networks.PAMNetwork             import PAMNetwork
 from networks.DiscriminatorNetwork  import DiscriminatorNetwork
 from metrics.LossPam                import Energy_Loss, Cross_Correlation_Loss
 
@@ -156,7 +156,7 @@ def training(
             moving = x_2.to(device)
 
             # *** Train Generator ***
-            (_, tA, wA), (_, tD, wD) = pam_network(fixed, moving)
+            (wA, wD), (tA, tD), student_estiamte = pam_network(fixed, moving)
 
             # adversarial loss
             # we use the affine as real and the elastic as fake
@@ -171,15 +171,25 @@ def training(
             # energy-like penalty loss
             enegry_deformation  = energy(tD) + energy(tA)
 
-            iteration = epoch * len(train_dataloader) + i
-            factor  = np.minimum(iteration / 10000., 1.0)
+            # student loss
+            student_loss = mse_distance(student_estiamte, tA + tD)
+
+            # incremental factor for penalties and student loss
+            itr = epoch * len(train_dataloader) + i
+
+            def fact(itr, start=0, stop=1000):
+                factor = (itr - start)/stop
+                factor = np.maximum(factor, 0.0)
+                factor = np.minimum(factor, 1.0)
+                return factor
 
             # total loss            
             loss = \
                 1.0     * registration_affine_loss + \
                 1.0     * registration_deform_loss + \
-                0.1     * factor * generator_adv_loss + \
-                0.01    * factor * enegry_deformation
+                0.1     * fact(itr, stop=10000) * generator_adv_loss + \
+                0.01    * fact(itr, stop=10000) * enegry_deformation + \
+                0.01    * fact(itr, start=1000, stop=10000) * student_loss
             
             loss.backward()
             pam_network_optimizer.step()
@@ -213,6 +223,7 @@ def training(
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Energy loss': enegry_deformation.item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
+                        'Train: Student Loss': student_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()
             })

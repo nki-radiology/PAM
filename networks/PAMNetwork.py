@@ -8,9 +8,6 @@ from networks.SpatialTransformer import SpatialTransformer
 #from SpatialTransformer import SpatialTransformer # local 
 
 
-"""
-Convolution Class 
-"""
 class Conv(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(Conv, self).__init__()
@@ -70,23 +67,18 @@ class ResConv(nn.Module):
 
         return out 
 
-"""
-Encoder
-"""
+
 class Encoder(nn.Module):
 
-    def __init__(self, img_size, filters, in_channels, out_channels) -> None:
+    def __init__(self, img_size, filters, in_channels, out_channels, flatten=False) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.flatten = flatten
 
-        self.MaxPool1 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.MaxPool2 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.MaxPool3 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.MaxPool4 = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.MaxPool5 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.MaxPool = nn.MaxPool3d(kernel_size=2, stride=2)
 
         self.Conv1    = ResConv   (self.in_channels, self.filters[0])
         self.Conv2    = ResConv   (self.filters[0],  self.filters[1])
@@ -95,42 +87,105 @@ class Encoder(nn.Module):
         self.Conv5    = ResConv   (self.filters[3],  self.filters[4])
         self.Conv6    = ResConv   (self.filters[4],  self.filters[5])
 
-        self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
-        self.Flatten  = nn.Flatten()
-        self.Fc       = nn.Linear(self.filters[5], self.out_channels, bias=False)
+        if self.flatten:
+            self.AvgPool  = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+            self.Flatten  = nn.Flatten()
+            self.Fc       = nn.Linear(self.filters[5], self.out_channels, bias=False)
 
     def forward(self, image):
 
             x = self.Conv1(image)
-            x = self.MaxPool1(x)
+            x = self.MaxPool(x)
+
             x = self.Conv2(x)
-            x = self.MaxPool2(x)
+            x = self.MaxPool(x)
+
             x = self.Conv3(x)
-            x = self.MaxPool3(x)
+            x = self.MaxPool(x)
+
             x = self.Conv4(x)
-            x = self.MaxPool4(x)
+            x = self.MaxPool(x)
+
             x = self.Conv5(x)
-            x = self.MaxPool5(x)
+            x = self.MaxPool(x)
+            
             x = self.Conv6(x)
 
-            x = self.AvgPool(x)
-            x = self.Flatten(x)
-            x = self.Fc(x)
+            if self.flatten:
+                x = self.AvgPool(x)
+                x = self.Flatten(x)
+                x = self.Fc(x)
 
             return x
 
-"""
-Decoder
-"""
+
+class Decoder(nn.Module):
+
+    def __init__(self, img_size, filters, in_channels, out_channels, deflatten=False) -> None:
+        super().__init__()
+        self.img_size = img_size
+        self.filters = filters
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.deflatten = deflatten
+
+        if self.deflatten:
+            feature_maps_size       = [int(s/(2**5)) for s in self.img_size]
+            elements                = np.prod(feature_maps_size) * self.filters[5]
+
+            self.deflatten_layer    = nn.Sequential(
+                nn.Linear(in_channels, elements, bias=False),
+                nn.LeakyReLU()
+            )
+
+        self.UpSample = nn.Upsample(scale_factor=2, mode='trilinear')
+
+        self.DeConv6 = Conv       (self.filters[5], self.filters[4])
+        self.DeConv5 = Conv       (self.filters[4], self.filters[3])
+        self.DeConv4 = Conv       (self.filters[3], self.filters[2])
+        self.DeConv3 = Conv       (self.filters[2], self.filters[1])
+        self.DeConv2 = Conv       (self.filters[1], self.filters[0])
+
+        self.OutConv = nn.Conv3d(self.filters[0], self.out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+
+    def forward(self, z):
+                
+        if self.deflatten:
+            x = self.deflatten_layer(z)
+
+            s = [int(s/(2**5)) for s in self.img_size]
+            s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
+            z = torch.reshape(x, s)
+                
+        x  = self.DeConv6(z)
+        x  = self.UpSample(x) #12
+
+        x  = self.DeConv5(x)
+        x  = self.UpSample(x) #24
+
+        x  = self.DeConv4(x)
+        x  = self.UpSample(x) #48
+
+        x  = self.DeConv3(x)
+        x  = self.UpSample(x) #96
+
+        x  = self.DeConv2(x)
+        x  = self.UpSample(x) #192
+
+        x = self.OutConv(x)
+
+        return x
+
+
 class AffineDecoder(nn.Module):
 
-    def __init__(self, image_dim, latent_dim) -> None:
+    def __init__(self, image_dim, in_channels) -> None:
         super().__init__()
         self.image_dim = image_dim
-        self.latent_dim = latent_dim
+        self.in_channels = in_channels
 
-        self.dense_w = nn.Linear(in_features=self.latent_dim, out_features=9, bias=False)
-        self.dense_b = nn.Linear(in_features=self.latent_dim, out_features=3, bias=False)
+        self.dense_w = nn.Linear(in_features=self.in_channels, out_features=9, bias=False)
+        self.dense_b = nn.Linear(in_features=self.in_channels, out_features=3, bias=False)
 
     def forward(self, z):            
         # compute affine transform
@@ -146,81 +201,73 @@ class AffineDecoder(nn.Module):
         return tA
     
 
-class ElasticDecoder(nn.Module):
+class UNet(nn.Module):
 
-    def __init__(self, img_size, filters, latent_dim) -> None:
+    def __init__(self, img_size, filters, in_channels, out_channels) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
-        self.latent_dim = latent_dim
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
-        feature_maps_size   = [int(s/(2**5)) for s in self.img_size]
-        elements            = np.prod(feature_maps_size) * self.filters[5]
+        self.encoder = Encoder(self.img_size, self.filters, in_channels=self.in_channels, out_channels=self.filters[-1], flatten=False)
+        self.decoder = Decoder(self.img_size, self.filters, in_channels=self.filters[-1], out_channels=self.out_channels, deflatten=False)
 
-        self.deflatten      = nn.Sequential(
-            nn.Linear(latent_dim, elements, bias=False),
-            nn.LeakyReLU()
-        )
+    def forward(self, image):
 
-        self.DeConv6 = Conv       (self.filters[5], self.filters[4])
-        self.UpConv6 = nn.Upsample(scale_factor=2, mode='trilinear')
 
-        self.DeConv5 = Conv       (self.filters[4], self.filters[3])
-        self.UpConv5 = nn.Upsample(scale_factor=2, mode='trilinear')
+        x1  = self.encoder.Conv1(image)
+        x   = self.encoder.MaxPool(x1)
 
-        self.DeConv4 = Conv       (self.filters[3], self.filters[2])
-        self.UpConv4 = nn.Upsample(scale_factor=2, mode='trilinear')
+        x2  = self.encoder.Conv2(x)
+        x   = self.encoder.MaxPool(x2)
 
-        self.DeConv3 = Conv       (self.filters[2], self.filters[1])
-        self.UpConv3 = nn.Upsample(scale_factor=2, mode='trilinear')
+        x3  = self.encoder.Conv3(x)
+        x   = self.encoder.MaxPool(x3)
 
-        self.DeConv2 = Conv       (self.filters[1], self.filters[0])
-        self.UpConv2 = nn.Upsample(scale_factor=2, mode='trilinear')
+        x4  = self.encoder.Conv4(x)
+        x   = self.encoder.MaxPool(x4)
 
-        self.OutConv = nn.Conv3d(self.filters[0], 3, kernel_size=1, stride=1, padding=0, bias=False)
+        x5  = self.encoder.Conv5(x)
+        x   = self.encoder.MaxPool(x5)
 
-    def forward(self, z):
-                
-        x = self.deflatten(z)
+        x   = self.encoder.Conv6(x)
 
-        s = [int(s/(2**5)) for s in self.img_size]
-        s = (z.shape[0], self.filters[5], s[0], s[1], s[2])
-        feature_maps = torch.reshape(x, s)
-            
-        x  = self.DeConv6(feature_maps)
-        x  = self.UpConv6(x) #12
+        x   = self.decoder.UpSample(x)
+        x   = torch.cat((x, x5), dim=1)
+        x   = self.decoder.DeConv6(x)
 
-        x  = self.DeConv5(x)
-        x  = self.UpConv5(x) #24
+        x   = self.decoder.UpSample(x)
+        x   = torch.cat((x, x4), dim=1)
+        x   = self.decoder.DeConv5(x)
 
-        x  = self.DeConv4(x)
-        x  = self.UpConv4(x) #48
+        x   = self.decoder.UpSample(x)
+        x   = torch.cat((x, x3), dim=1)
+        x   = self.decoder.DeConv4(x)
 
-        x  = self.DeConv3(x)
-        x  = self.UpConv3(x) #96
+        x   = self.decoder.UpSample(x)
+        x   = torch.cat((x, x2), dim=1)
+        x   = self.decoder.DeConv3(x)
 
-        x  = self.DeConv2(x)
-        x  = self.UpConv2(x) #192
+        x   = self.decoder.UpSample(x)
+        x   = torch.cat((x, x1), dim=1)
+        x   = self.decoder.DeConv2(x)
 
-        x = self.OutConv(x)
+        x   = self.decoder.OutConv(x)
 
         return x
+    
 
+class RegistrationNetwork(nn.Module):
 
-"""
-Registration Network
-"""
-class PAMNetwork(nn.Module):    
-
-    def __init__(self, img_size, filters, latent_dim) -> None:
+    def __init__(self, img_size, filters) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
-        self.latent_dim = latent_dim
 
-        self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim)
-        self.decoder_affine     = AffineDecoder(self.img_size, self.latent_dim*2)        
-        self.decoder_deform     = ElasticDecoder(self.img_size, self.filters, self.latent_dim*2)
+        self.encoder            = Encoder(self.img_size, self.filters, in_channels=2, out_channels=self.filters[-1], flatten=True)
+        self.decoder_affine     = AffineDecoder(self.img_size, in_channels=self.filters[-1])
+        self.unet               = UNet(self.img_size, self.filters, in_channels=2, out_channels=3)
 
         self.spatial_layer      = SpatialTransformer(self.img_size)
 
@@ -229,23 +276,47 @@ class PAMNetwork(nn.Module):
 
         def compute_t(fixed, moving, encoder, decoder):
             # repeated operation 
-            z_fixed = encoder(fixed)
-            z_moving = encoder(moving)
-
-            z_diff = z_fixed - z_moving
-            z = torch.concat((z_fixed, z_diff), dim=1)
-
+            z = encoder(torch.cat((fixed, moving), dim=1))
             t = decoder(z)
-            return z, t
+            return t
 
-        # registrations
-        zA, tA = compute_t(fixed, moving, self.encoder, self.decoder_affine)
+        # compute affine transform
+        z = self.encoder(torch.cat((fixed, moving), dim=1))
+        tA = self.decoder_affine(z)
         wA = self.spatial_layer(moving, tA)
 
-        zD, tD = compute_t(fixed, wA, self.encoder, self.decoder_deform)
+        # compute deformation field
+        tD = self.unet(torch.cat((fixed, wA), dim=1))
         wD = self.spatial_layer(moving, tA + tD)
 
-        return (zA, tA, wA), (zD, tD, wD)
+        return (wA, wD), (tA, tD)
+
+
+class PAMNetwork(nn.Module):    
+
+    def __init__(self, img_size, filters, latent_dim) -> None:
+        super().__init__()
+        self.img_size = img_size
+        self.filters = filters
+        self.latent_dim = latent_dim
+
+        self.registr_net    = RegistrationNetwork(self.img_size, self.filters)
+        self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
+        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=3, deflatten=True)
+
+
+    def forward(self, fixed, moving):
+        # teacher network
+        (wA, wD), (tA, tD) = self.registr_net(fixed, moving)
+
+        # student network
+        z_fixed = self.encoder(fixed)
+        z_moving = self.encoder(moving)
+        z_diff = z_fixed - z_moving
+        z = torch.concat((z_fixed, z_diff), dim=1)
+        student_estiamte = self.decoder(z)
+
+        return (wA, wD), (tA, tD), student_estiamte
 
 """
 # To summarize the complete model
