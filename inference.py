@@ -122,6 +122,7 @@ def zero_at_edges(im):
 def np2torch(arr):
     arr = arr.transpose(1, 2, 0)
     arr = torch.from_numpy(arr).type(torch.float32)
+    arr = arr[None, :]
     return arr
 
 
@@ -134,7 +135,7 @@ def test(registration_network, student_network, dataset, device):
         ReadVolume(),
         ZeroOneScaling(),
         TransformFromNumpyFunction(zero_at_edges),
-        ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
+        ToNumpyArray(add_batch_dim=True)
     )
 
     (correlation, energy), (_, mse_distance), (_, _) = init_loss_functions()
