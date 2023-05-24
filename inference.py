@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from pydicom                import dcmread
 
-from networks.PAMNetwork    import PAMNetwork
+from networks.PAMNetwork    import RegistrationNetwork, RegistrationStudentNetwork
 from metrics.LossPam        import Energy_Loss, Cross_Correlation_Loss
 
 from libs.frida.io          import ImageLoader, ReadVolume
@@ -37,17 +37,22 @@ def init_loss_functions():
     return discriminator_loss, l2_loss, nn_loss, penalty    
 
 
-def load_model_weights():
+def load_trained_models():
     # Network definition
-    pam_net     = PAMNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    std_net     = RegistrationStudentNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    
     device      = torch.device('cuda:0')
-    pam_net.to(device)
 
-    # Loading the model weights
-    pam_chkpt = os.path.join(PARAMS.project_folder, 'PAMModel.pth.bk')
-    pam_net.load_state_dict(torch.load(pam_chkpt))
+    def load_model(model, name):
+        model.to(device)
+        path = os.path.join(PARAMS.project_folder, name + '.pth')
+        model.load_state_dict(torch.load(path))
 
-    return pam_net, device
+    load_model(reg_net, 'RegModel')
+    load_model(std_net, 'StdModel')
+
+    return reg_net, std_net, device
 
 
 def load_dicom_tagssafely(path, prefix = ''):
@@ -106,7 +111,13 @@ def zero_at_edges(im):
     return im
 
 
-def test(pam_network, dataset, device):
+def np2torch(arr):
+    arr = arr.transpose(1, 2, 0)
+    arr = torch.from_numpy(arr).type(torch.float32)
+    return arr
+
+
+def test(registration_network, student_network, dataset, device):
 
     dataset = pd.read_csv(dataset, index_col=0)
     print('loaded dataset', str(dataset.shape[0]), 'rows')
@@ -118,8 +129,9 @@ def test(pam_network, dataset, device):
         ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
     )
 
-    _, _, cc_loss, penalty = init_loss_functions()
-    pam_network.eval()
+    (correlation, energy), (binary_entropy, mse_distance), (_, _) = init_loss_functions()
+    registration_network.eval()
+    student_network.eval()
 
     result = []
 
@@ -139,22 +151,21 @@ def test(pam_network, dataset, device):
         sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
         # +++
 
-        baseline_im = torch.from_numpy(baseline_im).type(torch.float32).to(device)
-        followup_im = torch.from_numpy(followup_im).type(torch.float32).to(device)
+        baseline_im = np2torch(baseline_im).to(device)
+        followup_im = np2torch(followup_im).to(device)
 
         # compute embedding
-        z, residual = pam_network.get_features(baseline_im, followup_im)
+        (_, wD), (_, tD) = registration_network(baseline_im, followup_im)
+        tD_, z = student_network(baseline_im, followup_im, return_embedding=True)
 
         z = z.detach().cpu().numpy().squeeze()
-        residual = residual.detach().cpu().numpy().squeeze()
+        features = array_to_dict(z, 'z_')
 
-        features = array_to_dict(z, 'features')
-        residual = array_to_dict(residual, 'residual')
-
-        # compute loss
-        _, _, tD, wD, _ = pam_network(baseline_im, followup_im)
-        loss = cc_loss(baseline_im, wD)
-        energy = penalty(tD)
+        # compute error metrics
+        registration_loss           = correlation(baseline_im, wD)
+        deformation_energy          = energy(tD)
+        estimate_divergence         = mse_distance(tD, tD_)
+        estimate_correlate          = correlation(tD, tD_)
 
         # +++
         import SimpleITK as sitk
@@ -164,12 +175,13 @@ def test(pam_network, dataset, device):
 
         # store results
         entry = {
-            'i': i,
-            'loss': loss.item(),
-            'energy': energy.item()
+            'pair_index':           i,
+            'registration_loss':    registration_loss.item(),
+            'deformation_energy':   deformation_energy.item(),
+            'estimate_divergence':  estimate_divergence.item(),
+            'estimate_correlate':   estimate_correlate.item()
         }
         entry.update(features)
-        entry.update(residual)
         entry.update(baseline_tags)
         entry.update(followup_tags)
 
@@ -184,10 +196,10 @@ def test(pam_network, dataset, device):
 if __name__ == "__main__":
 
     cuda_seeds()
-    pam_network, device = load_model_weights()
+    reg_net, std_net, device = load_trained_models()
 
     with torch.no_grad():
-        test(pam_network, PARAMS.inference, device)
+        test(reg_net, PARAMS.inference, device)
 
 
 

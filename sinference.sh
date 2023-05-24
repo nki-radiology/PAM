@@ -7,7 +7,6 @@
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
 #SBATCH --mem=25G                                   # Memory
-#SBATCH --cpus-per-task=5                           # Number of cores
 #SBATCH --output=/home/s.trebeschi/log-slurm/slurm_%j.log # Standard output and error log
 pwd; hostname; date
 

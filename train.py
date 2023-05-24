@@ -138,7 +138,7 @@ def training(
     real_label   = 1.
     fake_label   = 0.
 
-    (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm) = init_loss_functions()
+    (correlation, energy), (binary_entropy, mse_distance), (_, _) = init_loss_functions()
     registration_opt, student_opt, discriminator_opt = get_optimizers(registration_network, student_network, discriminator_network)
 
     # wandb Initialization
@@ -259,6 +259,7 @@ def training(
             save_example_image(moving, 'moving')
             save_example_image(wD, 'test_deformable')
             save_example_image(wA, 'test_affine')          
+
 
 def are_models_trained():
     name_reg = os.path.join(PARAMS.project_folder, 'RegModel.pth')

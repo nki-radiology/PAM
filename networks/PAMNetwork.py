@@ -306,13 +306,15 @@ class RegistrationStudentNetwork(nn.Module):
             self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
     
     
-        def forward(self, fixed, moving):    
+        def forward(self, fixed, moving, return_embedding=False):    
             # student network
             z_fixed = self.encoder(fixed)
             z_moving = self.encoder(moving)
             z = torch.cat((z_fixed, z_moving), dim=1)
             w = self.decoder(z)
-    
+
+            if return_embedding:
+                return w, z
             return w
 
 
