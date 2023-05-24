@@ -30,11 +30,19 @@ def cuda_seeds():
 
 
 def init_loss_functions():
-    discriminator_loss = nn.BCELoss()  
-    l2_loss = nn.MSELoss()  
-    nn_loss = Cross_Correlation_Loss().pearson_correlation
-    penalty = Energy_Loss().energy_loss
-    return discriminator_loss, l2_loss, nn_loss, penalty    
+    # registration loss
+    correlation     = Cross_Correlation_Loss().pearson_correlation
+    energy          = Energy_Loss().energy_loss
+
+    # adversatial loss
+    binary_entropy  = nn.BCELoss()
+    mse_distance    = nn.MSELoss()
+
+    # latent loss
+    l2_norm     = lambda x:torch.norm(x, p=2)
+    l1_norm     = lambda x:torch.norm(x, p=1)
+
+    return (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm)   
 
 
 def load_trained_models():
