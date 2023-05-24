@@ -33,7 +33,7 @@ def read_train_data():
     data_index= []
 
     for f in filenames:
-        data_index.append(int(str(f).split('/')[7].split('_')[0])) 
+        data_index.append(int(str(f).split('/')[-1].split('_')[0])) 
 
     train_data = list(zip(data_index, filenames))
     train_data = pd.DataFrame(train_data, columns=['tcia_idx', 'dicom_path'])
