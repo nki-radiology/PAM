@@ -29,7 +29,8 @@ parser.add_argument('--latent-dim',
 
 parser.add_argument('--train-folder',      
                     type = str,
-                    default = '/data/groups/beets-tan/l.estacio/data_tcia/train/',
+                    #default = '/data/groups/beets-tan/l.estacio/data_tcia/train/',
+                    default = '/processing/s.trebeschi/tcia_train/',
                     help = 'folder that contains the training dataset')
 
 parser.add_argument('--test-folder',      

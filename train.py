@@ -285,7 +285,7 @@ def backup_existing_checkpoints():
 
 def load_trained_models():
     # Network definition
-    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters)
     std_net     = RegistrationStudentNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     dis_net     = DiscriminatorNetwork(PARAMS.img_dim, PARAMS.filters_discriminator)
     
