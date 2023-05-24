@@ -129,7 +129,7 @@ def test(registration_network, student_network, dataset, device):
         ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
     )
 
-    (correlation, energy), (binary_entropy, mse_distance), (_, _) = init_loss_functions()
+    (correlation, energy), (_, mse_distance), (_, _) = init_loss_functions()
     registration_network.eval()
     student_network.eval()
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     reg_net, std_net, device = load_trained_models()
 
     with torch.no_grad():
-        test(reg_net, PARAMS.inference, device)
+        test(reg_net, std_net, PARAMS.inference, device)
 
 
 
