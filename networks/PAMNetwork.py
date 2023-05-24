@@ -304,45 +304,22 @@ class RegistrationStudentNetwork(nn.Module):
     
             self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
             self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
-    
+            self.spatial_layer  = SpatialTransformer(self.img_size)
+
     
         def forward(self, fixed, moving, return_embedding=False):    
             # student network
             z_fixed = self.encoder(fixed)
             z_moving = self.encoder(moving)
-            z = torch.cat((z_fixed, z_moving), dim=1)
-            w = self.decoder(z)
+            z_diff = z_fixed - z_moving
+            z = torch.cat((z_fixed, z_diff), dim=1)
+            t = self.decoder(z)
+            w = self.spatial_layer(moving, t)
 
             if return_embedding:
-                return w, z
-            return w
-
-
-class PAMNetwork(nn.Module):    
-
-    def __init__(self, img_size, filters, latent_dim) -> None:
-        super().__init__()
-        self.img_size = img_size
-        self.filters = filters
-        self.latent_dim = latent_dim
-
-        self.registr_net    = RegistrationNetwork(self.img_size, self.filters)
-        self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
-        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
-
-
-    def forward(self, fixed, moving):
-        # teacher network
-        (wA, wD), (tA, tD) = self.registr_net(fixed, moving)
-
-        # student network
-        z_fixed = self.encoder(fixed)
-        z_moving = self.encoder(moving)
-        z_diff = z_fixed - z_moving
-        z = torch.concat((z_fixed, z_diff), dim=1)
-        student_estiamte = self.decoder(z)
-
-        return (wA, wD), (tA, tD), student_estiamte
+                return t, w, (z_fixed, z_moving, z_diff)
+            
+            return t, w
 
 """
 # To summarize the complete model

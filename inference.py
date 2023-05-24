@@ -167,7 +167,7 @@ def test(registration_network, student_network, dataset, device):
         tD_, z = student_network(baseline_im, followup_im, return_embedding=True)
 
         z = z.detach().cpu().numpy().squeeze()
-        features = array_to_dict(z, 'z_')
+        features = array_to_dict(z, 'z')
 
         # compute error metrics
         registration_loss           = correlation(baseline_im, wD)

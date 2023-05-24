@@ -196,8 +196,13 @@ def training(
 
             # *** Train Student ***
             student_opt.zero_grad()
-            student_estimate = student_network(fixed, moving)
-            student_loss = mse_distance(student_estimate, tA.detach() + tD.detach())
+            student_t, student_w        = student_network(fixed, moving)
+            student_consistency_loss    = mse_distance(student_t, tA.detach() + tD.detach())
+            student_registration_loss   = correlation(fixed, student_w)
+
+            student_loss = \
+                1.0     * student_registration_loss + \
+                0.001   * student_consistency_loss
             
             student_loss.backward()
             student_opt.step()
@@ -230,7 +235,8 @@ def training(
                         'Train: Similarity Elastic loss': registration_deform_loss.item(),
                         'Train: Energy loss': enegry_deformation.item(),
                         'Train: Adversarial Loss': generator_adv_loss.item(),
-                        'Train: Student Loss': student_loss.item(),
+                        'Train: Student Consistency Loss': student_consistency_loss.item(),
+                        'Train: Student Registration Loss': student_registration_loss.item(),
                         'Train: Total loss': loss.item(),
                         'Train: Discriminator Loss': loss_d_t.item()
             })
