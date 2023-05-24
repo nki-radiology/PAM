@@ -39,7 +39,7 @@ def init_loss_functions():
 
 def load_trained_models():
     # Network definition
-    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
+    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters)
     std_net     = RegistrationStudentNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
     
     device      = torch.device('cuda:0')
