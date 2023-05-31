@@ -309,10 +309,13 @@ class RegistrationStudentNetwork(nn.Module):
     
         def forward(self, fixed, moving, return_embedding=False):    
             # student network
-            z_fixed = self.encoder(fixed)
-            z_moving = self.encoder(moving)
-            z_diff = z_fixed - z_moving
-            z = torch.cat((z_fixed, z_diff), dim=1)
+            z_fixed     = self.encoder(fixed)
+            z_moving    = self.encoder(moving)
+
+            z_diff      = z_moving - z_fixed
+
+            z = torch.cat((z_moving, z_diff), dim=1)
+
             t = self.decoder(z)
             w = self.spatial_layer(moving, t)
 

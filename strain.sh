@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=7-00:00:00                           # Time limit hrs:min:sec
+#SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
 #SBATCH --job-name=baudolino                        # Job name
 #SBATCH --partition=a6000                         # Partition
 #SBATCH --qos=a6000_qos 

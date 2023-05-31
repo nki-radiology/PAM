@@ -9,7 +9,7 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--batch-size',
                     type = int,
-                    default = 2,
+                    default = 4,
                     help = 'batch size')
 
 parser.add_argument('--filters',
@@ -24,7 +24,7 @@ parser.add_argument('--filters-discriminator',
 
 parser.add_argument('--latent-dim',     
                     type = list,  
-                    default = 512,    
+                    default = 128,    
                     help = 'latent dimension')
 
 parser.add_argument('--train-folder',      
