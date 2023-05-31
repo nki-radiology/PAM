@@ -164,16 +164,23 @@ def test(registration_network, student_network, dataset, device):
 
         # compute embedding
         (_, wD), (_, tD) = registration_network(baseline_im, followup_im)
-        tD_, z = student_network(baseline_im, followup_im, return_embedding=True)
+        tD_, wD_, Z = student_network(baseline_im, followup_im, return_embedding=True)
+        z_fixed, z_moving, z_diff = Z
 
-        z = z.detach().cpu().numpy().squeeze()
-        features = array_to_dict(z, 'z')
+        z_diff = z_diff.detach().cpu().numpy().squeeze()
+        features = array_to_dict(z_diff, 'z')
+
+        z_moving = z_moving.detach().cpu().numpy().squeeze()
+        features.update(array_to_dict(z_moving, 'z_moving'))
+
+        z_fixed = z_fixed.detach().cpu().numpy().squeeze()
+        features.update(array_to_dict(z_fixed, 'z_fixed'))
 
         # compute error metrics
         registration_loss           = correlation(baseline_im, wD)
         deformation_energy          = energy(tD)
-        estimate_divergence         = mse_distance(tD, tD_)
-        estimate_correlate          = correlation(tD, tD_)
+        estimate_divergence         = correlation(tD, tD_)
+        estimate_registration_loss  = correlation(baseline_im, wD_)
 
         # +++
         import SimpleITK as sitk
@@ -183,11 +190,11 @@ def test(registration_network, student_network, dataset, device):
 
         # store results
         entry = {
-            'pair_index':           i,
-            'registration_loss':    registration_loss.item(),
-            'deformation_energy':   deformation_energy.item(),
-            'estimate_divergence':  estimate_divergence.item(),
-            'estimate_correlate':   estimate_correlate.item()
+            'pair_index':                   i,
+            'registration_loss':            registration_loss.item(),
+            'deformation_energy':           deformation_energy.item(),
+            'estimate_divergence':          estimate_divergence.item(),
+            'estimate_registration_loss':   estimate_registration_loss.item()
         }
         entry.update(features)
         entry.update(baseline_tags)
