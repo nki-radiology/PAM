@@ -154,13 +154,15 @@ def test(registration_network, student_network, dataset, device):
         followup_im = loader(row['SUBSQ_PATH_NRRD'])
 
         # +++
-        import SimpleITK as sitk
-        sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
-        sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
+        #import SimpleITK as sitk
+        #sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
+        #sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
         # +++
 
         baseline_im = np2torch(baseline_im).to(device)
         followup_im = np2torch(followup_im).to(device)
+
+        breakpoint()
 
         # compute embedding
         (_, wD), (_, tD) = registration_network(baseline_im, followup_im)
@@ -183,9 +185,9 @@ def test(registration_network, student_network, dataset, device):
         estimate_registration_loss  = correlation(baseline_im, wD_)
 
         # +++
-        import SimpleITK as sitk
-        temp = wD.detach().cpu().numpy().squeeze()
-        sitk.WriteImage(sitk.GetImageFromArray(temp.squeeze()), 'WD.nii.gz')
+        #import SimpleITK as sitk
+        #temp = wD.detach().cpu().numpy().squeeze()
+        #sitk.WriteImage(sitk.GetImageFromArray(temp.squeeze()), 'WD.nii.gz')
         # +++
 
         # store results
@@ -205,7 +207,7 @@ def test(registration_network, student_network, dataset, device):
         pd.DataFrame(result).to_csv('results.csv')
 
         # +++
-        break
+        #break
         # +++
 
 if __name__ == "__main__":
