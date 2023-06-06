@@ -162,8 +162,6 @@ def test(registration_network, student_network, dataset, device):
         baseline_im = np2torch(baseline_im).to(device)
         followup_im = np2torch(followup_im).to(device)
 
-        breakpoint()
-
         # compute embedding
         (_, wD), (_, tD) = registration_network(baseline_im, followup_im)
         tD_, wD_, Z = student_network(baseline_im, followup_im, return_embedding=True)
