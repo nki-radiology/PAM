@@ -202,7 +202,7 @@ def test(registration_network, student_network, dataset, device):
 
         result.append(entry)
 
-        pd.DataFrame(result).to_csv('results.csv')
+    pd.DataFrame(result).to_csv('results.csv')
 
         # +++
         #break
