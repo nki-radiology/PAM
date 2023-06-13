@@ -65,7 +65,7 @@ class RegistrationDataSet(data.Dataset):
         # Select the sample
         image_path = self.dataset.iloc[index]
         image_path = str(image_path.squeeze().dicom_path)
-        fx = load_image(image_path)
+        fx = load_image(image_path, self.body_part)
 
         # Make random pair
         moving_path = self.dataset.sample(n=1)
