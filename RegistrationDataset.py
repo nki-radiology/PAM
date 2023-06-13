@@ -18,11 +18,16 @@ def zero_pad_inplace(arr):
     return arr
 
 
-def load_image(path):
+def load_image(path, body_part):
     im = ReadImage(path)
     im = GetArrayFromImage(im)
     im = (im - im.min()) / (im.max() - im.min())
-    im = im[-160:] # thorax # this needs to be checked 
+    if body_part == 'thorax':
+        im = im[-160:] 
+    elif body_part == 'abdomen':
+        im = im[:160] 
+    else:
+        raise ValueError('body part not recognized')
     im = zero_pad_inplace(im)
     return im
 
@@ -38,7 +43,8 @@ class RegistrationDataSet(data.Dataset):
     def __init__(self,
                  path_dataset: str,
                  input_shape : tuple,
-                 transform   = None
+                 transform   = None,
+                 body_part   = 'thorax'
                  ):
         
         self.dataset     = path_dataset
@@ -48,6 +54,7 @@ class RegistrationDataSet(data.Dataset):
         self.random_seed = int(0)
         self.inp_dtype   = torch.float32
         self.log         = []
+        self.body_part   = body_part
 
     def __len__(self):
         return len(self.dataset)
@@ -63,7 +70,7 @@ class RegistrationDataSet(data.Dataset):
         # Make random pair
         moving_path = self.dataset.sample(n=1)
         moving_path = str(moving_path.squeeze().dicom_path)
-        mv = load_image(moving_path)
+        mv = load_image(moving_path, self.body_part)
 
         # to torch
         fx = np2torch(fx)

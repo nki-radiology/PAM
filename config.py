@@ -7,6 +7,11 @@ parser.add_argument('--img-dim',
                     default = (192, 192, 160), 
                     help = 'Image dimension')
 
+parser.add_argument('--body_part',
+                    type = str,
+                    default = 'abdomen',
+                    help = 'body part to train on')
+
 parser.add_argument('--batch-size',
                     type = int,
                     default = 6,

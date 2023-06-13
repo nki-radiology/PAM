@@ -323,6 +323,8 @@ class RegistrationStudentNetwork(nn.Module):
                 return t, w, (z_fixed, z_moving, z_diff)
             
             return t, w
+        
+
 
 """
 # To summarize the complete model

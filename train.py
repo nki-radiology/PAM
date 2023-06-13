@@ -112,11 +112,13 @@ def load_dataloader():
 
     train_dataset = RegistrationDataSet(path_dataset = inputs_train,
                                         input_shape  = (300, 192, 192, 1),
-                                        transform    = None)
+                                        transform    = None,
+                                        body_part    = PARAMS.body_part)
 
     valid_dataset = RegistrationDataSet(path_dataset = inputs_valid,
                                         input_shape  = (300, 192, 192, 1),
-                                        transform    = None)
+                                        transform    = None,
+                                        body_part    = PARAMS.body_part)
 
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=PARAMS.batch_size, shuffle=True)
     valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=PARAMS.batch_size, shuffle=True)
