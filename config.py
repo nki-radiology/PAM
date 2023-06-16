@@ -38,6 +38,12 @@ parser.add_argument('--train-folder',
                     default = '/processing/s.trebeschi/tcia_train/',
                     help = 'folder that contains the training dataset')
 
+parser.add_argument('--train-folder-segmentations',
+                    type = str,
+                    #default = '/data/groups/beets-tan/s.trebeschi/tcia_train_segmentations/',
+                    default = '/processing/s.trebeschi/tcia_train_segmentations/',
+                    help = 'folder that contains the training dataset segmentations')
+
 parser.add_argument('--test-folder',      
                     type = str,
                     default = '/data/groups/beets-tan/l.estacio/data_tcia/test/',
@@ -45,7 +51,7 @@ parser.add_argument('--test-folder',
 
 parser.add_argument('--inference',
                     type = str,
-                    default = '/home/s.trebeschi/thorax_pairs_only_succeed_nrrd.csv',
+                    default = '/home/s.trebeschi/abdomen_pairs_only_succeed_nrrd.csv',
                     help = 'csv that contains the testing dataset')
 
 parser.add_argument('--project-folder',      
