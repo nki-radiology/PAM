@@ -1,0 +1,12 @@
+{
+  "thorax_raw_file_path": "/DATA/laura/external_data_remaning/thorax/ThoraxScanPairs.xlsx",
+  "thorax_pam_checkpoint": "/SHARED/active_Laura/temporal_data/DATA/tcia/models/pam_adv_fts_sit/PAMModel_50.pth",
+  "thorax_dis_checkpoint": "/SHARED/active_Laura/temporal_data/DATA/tcia/models/pam_adv_fts_sit/DisModel_50.pth",
+  "thorax_path_to_save_file": "/DATA/laura/external_data_remaning/thorax/",
+  "thorax_name_to_save_xlsx": "features_pam_thorax",
+  "abdomen_raw_file_path": "/DATA/laura/external_data_remaning/abdomen/AbdomenScanPairs.xlsx",
+  "abdomen_pam_checkpoint": "/SHARED/active_Laura/temporal_data/DATA/tcia_abdomen/models/PAMModel_50.pth",
+  "abdomen_dis_checkpoint": "/SHARED/active_Laura/temporal_data/DATA/tcia_abdomen/models/DisModel_50.pth",
+  "abdomen_path_to_save_file": "/DATA/laura/external_data_remaning/abdomen/",
+  "abdomen_name_to_save_xlsx": "features_pam_abdomen"
+}

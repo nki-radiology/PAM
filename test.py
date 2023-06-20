@@ -10,10 +10,10 @@ from sklearn.model_selection        import train_test_split
 from pathlib                        import Path
 
 
-from RegistrationDataset            import RegistrationDataSet
+from PAMDataset            import PAMDataset
 from networks.PAMNetwork            import PAMNetwork
 from networks.DiscriminatorNetwork  import DiscriminatorNetwork
-from metrics.LossPam                import Energy_Loss, Cross_Correlation_Loss
+from metrics.PAMLoss                import Energy_Loss, Cross_Correlation_Loss
 
 from config import PARAMS
 
@@ -62,8 +62,8 @@ def load_dataloader():
         filenames, random_state=RANDOM_SEED, train_size=0.8, shuffle=True
     )
 
-    test_dataset    = RegistrationDataSet(
-        path_dataset = inputs_test,
+    test_dataset    = PAMDataset(
+        dataset = inputs_test,
         input_shape  = (300, 192, 192, 1),
         transform    = None
     )

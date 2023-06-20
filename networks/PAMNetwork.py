@@ -325,6 +325,70 @@ class RegistrationStudentNetwork(nn.Module):
             return t, w
         
 
+class SegmentationNetwork(nn.Module):
+
+    def __init__(self, img_size, n_classes, filters) -> None:
+        super().__init__()
+        self.img_size = img_size
+        self.filters = filters
+        self.n_classes = n_classes
+
+        self.unet       = UNet(self.img_size, self.filters, in_channels=1, out_channels=n_classes)
+        self.softmax    = nn.Softmax(dim=1)
+
+
+    def forward(self, image):
+        x = self.unet(image)
+        x = self.softmax(x)
+
+        return x
+
+
+class StudentNetwork(nn.Module):
+    
+        def __init__(self, img_size, n_classes, filters, latent_dim) -> None:
+            super().__init__()
+            self.img_size   = img_size
+            self.n_classes  = n_classes
+            self.filters    = filters
+            self.latent_dim = latent_dim
+    
+            self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
+
+            # registration pathway
+            self.decoder_reg    = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=3, deflatten=True)
+            self.spatial_layer  = SpatialTransformer(self.img_size)
+
+            # segmentation pathway
+            self.decoder_seg    = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=self.n_classes, deflatten=True)
+            self.softmax        = nn.Softmax(dim=1)
+
+    
+        def forward(self, fixed, moving, return_embedding=False):    
+            # encoding
+            z_fixed     = self.encoder(fixed)
+            z_moving    = self.encoder(moving)
+
+            z_diff      = z_moving - z_fixed
+            z           = torch.concat((z_moving, z_diff), dim=1)
+
+            if return_embedding:
+                return z_fixed, z_moving, z_diff
+
+            # registration pathway
+            t = self.decoder_reg(z)
+            w = self.spatial_layer(moving, t)
+
+            # segmentation pathway
+            s_fixed = self.decoder_seg(z_fixed)
+            s_fixed = self.softmax(s_fixed)
+
+            s_moving = self.decoder_seg(z_moving)
+            s_moving = self.softmax(s_moving)
+            
+            return (w, t), (s_fixed, s_moving)
+        
+
 
 """
 # To summarize the complete model

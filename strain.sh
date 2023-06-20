@@ -17,6 +17,7 @@ source /home/s.trebeschi/miniconda3/bin/activate pytorch2
 
 # move data to processing
 rsync -avv --info=progress2 /data/groups/beets-tan/l.estacio/data_tcia/train/ /processing/s.trebeschi/tcia_train/
+rsync -avv --info=progress2 /data/groups/beets-tan/s.trebeschi/tcia_train_segmentations/ /processing/s.trebeschi/tcia_train_segmentations/
 
 # Load cuda and cudnn (make sure versions match)
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`

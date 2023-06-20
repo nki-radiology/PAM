@@ -7,7 +7,7 @@ import torch.nn as nn
 from pydicom                import dcmread
 
 from networks.PAMNetwork    import RegistrationNetwork, RegistrationStudentNetwork
-from metrics.LossPam        import Energy_Loss, Cross_Correlation_Loss
+from metrics.PAMLoss        import Energy_Loss, Cross_Correlation_Loss
 
 from libs.frida.io          import ImageLoader, ReadVolume
 from libs.frida.transforms  import TransformFromNumpyFunction, ZeroOneScaling, ToNumpyArray
