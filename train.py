@@ -411,10 +411,12 @@ def training(
             print('Model saved!')
 
 
-
 if __name__ == "__main__":
     
     cuda_seeds()
+
+    breakpoint()
+
     networks, device = model_init()
     train_dataloader, _  = load_dataloader()
 
