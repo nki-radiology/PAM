@@ -253,7 +253,7 @@ class SegmentationNetworkTrainer(Trainer):
     def train(self, image, target):
         self.inc_iterator()
         self.optimizer.zero_grad()
-
+        breakpoint()
         # forward pass
         predicted = self.model(image)
 
@@ -350,7 +350,7 @@ def training(
 
             fixed_mask  = fixed_mask.to(device)
             moving_mask = moving_mask.to(device)
-            breakpoint()
+
             # registration training
             L = registration_trainer.train(fixed, moving)
             registration_affine_loss, registration_elastic_loss, adversarial_loss, energy_loss = L
