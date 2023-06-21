@@ -145,7 +145,9 @@ class Trainer():
         if os.path.exists(self.backup_path):
             shutil.copyfile(self.backup_path, self.backup_path + '.backup')
             self.model.load_state_dict(torch.load(self.backup_path))
-        print('backup loaded:', self.backup_path, '.')
+            print('backup loaded:', self.backup_path, '.')
+        else:
+            print('no backup found:', self.backup_path, '.')
 
     def inc_iterator(self):
         self.itr += 1

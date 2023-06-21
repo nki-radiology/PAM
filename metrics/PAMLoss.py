@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
     
 
-def correlation_coefficient_loss(self, fixed, warped):
+def correlation_coefficient_loss(fixed, warped):
         """
         This loss represents the correlation coefficient loss of PAM
         fixed and warped have shapes (batch, 1, 192, 192, 160)
@@ -34,7 +34,7 @@ def correlation_coefficient_loss(self, fixed, warped):
         return raw_loss
     
 
-def variatinal_energy_loss(self, flows):
+def variatinal_energy_loss(flow):
         """
         This loss represents the total variation loss or the elastic loss of PAM
         flow has shape (batch, 3, D1, D2, D3)
