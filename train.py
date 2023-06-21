@@ -257,7 +257,7 @@ class SegmentationNetworkTrainer(Trainer):
         breakpoint()
         # forward pass
         predicted = self.model(image)
-
+        # >>> target is [1, 192, 192, 160]
         # segmentation loss
         loss    = self.dice_loss_fn(target, predicted)
         loss   += self.xent_loss_fn(target, predicted)
@@ -362,6 +362,7 @@ def training(
             discriminator_loss = L
 
             # segmentation training
+            breakpoint()
             L = segmentation_trainer.train(fixed, fixed_mask)
             segmentation_loss_fixed = L
 
