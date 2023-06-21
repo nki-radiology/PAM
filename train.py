@@ -34,6 +34,7 @@ RANDOM_SEED = 42
 
 
 def read_train_data(load_segmentations = False):
+    breakpoint()
     path_im   = PARAMS.train_folder
 
     def list_files(path, extension = '*.nrrd'):
@@ -325,8 +326,8 @@ def training(
     n_epochs     = 10001
 
     # wandb Initialization
-    wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
-    wandb.watch(registration_network, log=None)
+    #wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
+    #wandb.watch(registration_network, log=None)
 
     registration_trainer    = RegistrationNetworkTrainer(
         registration_network, discriminator, device, os.path.join(PARAMS.project_folder, 'RegNet.pth'))
@@ -338,7 +339,7 @@ def training(
         student_network, device, os.path.join(PARAMS.project_folder, 'StuNet.pth'))
 
     for epoch in range(epoch, n_epochs):
-
+        breakpoint()
         for _, (x_1, x_2) in enumerate(train_dataloader):
             # data loading
             fixed, fixed_mask   = x_1
@@ -414,8 +415,6 @@ def training(
 if __name__ == "__main__":
     
     cuda_seeds()
-
-    breakpoint()
 
     networks, device    = model_init()
     train_dataloader, _ = data_init()
