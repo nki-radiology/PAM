@@ -68,7 +68,7 @@ def dice_loss(true, logits, eps=1e-7):
     Source:
         https://github.com/kevinzakka/pytorch-goodies/blob/master/losses.py
     """
-
+    breakpoint()
     num_classes = logits.shape[1]
 
     if num_classes == 1:
