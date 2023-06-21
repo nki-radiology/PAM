@@ -27,6 +27,7 @@ from networks.PAMNetwork            import StudentNetwork
 from metrics.PAMLoss                import correlation_coefficient_loss
 from metrics.PAMLoss                import variatinal_energy_loss
 from metrics.PAMLoss                import dice_loss
+from metrics.PAMLoss                import xent_segmentation
 
 from config import PARAMS
 
@@ -247,7 +248,7 @@ class SegmentationNetworkTrainer(Trainer):
 
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
         self.dice_loss_fn   = dice_loss
-        self.xent_loss_fn   = nn.CrossEntropyLoss()
+        self.xent_loss_fn   = xent_segmentation
         self.model.train()
 
     def train(self, image, target):
