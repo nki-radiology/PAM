@@ -14,7 +14,7 @@ parser.add_argument('--body_part',
 
 parser.add_argument('--batch-size',
                     type = int,
-                    default = 4,
+                    default = 3,
                     help = 'batch size')
 
 parser.add_argument('--filters',
