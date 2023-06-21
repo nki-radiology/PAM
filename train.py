@@ -34,7 +34,6 @@ RANDOM_SEED = 42
 
 
 def read_train_data(load_segmentations = False):
-    breakpoint()
     path_im   = PARAMS.train_folder
 
     def list_files(path, extension = '*.nrrd'):
@@ -196,8 +195,8 @@ class RegistrationNetworkTrainer(Trainer):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            0.1     * fact(self.itr, start=1000, stop=10000) * adv_loss + \
-            0.01    * fact(self.itr, start=1000, stop=10000) * energy_loss 
+            0.1     * fact(start=1000, stop=10000) * adv_loss + \
+            0.01    * fact(start=1000, stop=10000) * energy_loss 
         
         loss.backward()
         self.optimizer.step()
