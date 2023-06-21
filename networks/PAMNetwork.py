@@ -356,7 +356,7 @@ class StudentNetwork(nn.Module):
             self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
 
             # registration pathway
-            self.decoder_reg    = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=3, deflatten=True)
+            self.decoder_reg    = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
             self.spatial_layer  = SpatialTransformer(self.img_size)
 
             # segmentation pathway

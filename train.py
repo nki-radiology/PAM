@@ -362,7 +362,6 @@ def training(
             discriminator_loss = L
 
             # segmentation training
-            breakpoint()
             L = segmentation_trainer.train(fixed, fixed_mask)
             segmentation_loss_fixed = L
 
@@ -376,7 +375,7 @@ def training(
             registration_outputs = (tA.detach(), tD.detach())
             segmentation_outputs = (fixed_mask_pred.detach(), moving_mask_pred.detach())
             segmentation_targets = (fixed_mask, moving_mask)
-
+            breakpoint()
             L = student_trainer.train(fixed, moving, registration_outputs, segmentation_outputs, segmentation_targets)
             student_loss, student_consistency_loss = L
 
