@@ -286,7 +286,7 @@ class StudentNetworkTrainer(Trainer):
         ):
         self.inc_iterator()
         self.optimizer.zero_grad()
-        
+
         # forward pass
         (w, t), (s_fixed, s_moving) = self.model(fixed, moving)
 
@@ -308,7 +308,7 @@ class StudentNetworkTrainer(Trainer):
             1.0     * reg_loss + \
             0.001   * reg_consistency_loss + \
             0.5     * dice_loss + \
-            0.01    * seg_consistency_loss
+            50      * seg_consistency_loss
         
         loss.backward()
         self.optimizer.step()
