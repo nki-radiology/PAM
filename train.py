@@ -417,7 +417,7 @@ if __name__ == "__main__":
     cuda_seeds()
 
     networks, device    = model_init()
-    train_dataloader, _ = data_init()
+    train_dataloader, _ = data_init(load_segmentations=True)
 
     registration_network, discriminator_network, segmentation_network, student_network = networks
     
