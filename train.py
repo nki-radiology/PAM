@@ -274,6 +274,7 @@ class StudentNetworkTrainer(Trainer):
 
         self.correlation_fn = correlation_coefficient_loss
         self.mse_fn         = nn.MSELoss()
+        self.dice_loss_fn   = dice_loss
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
     def train(self, 
@@ -285,7 +286,7 @@ class StudentNetworkTrainer(Trainer):
         ):
         self.inc_iterator()
         self.optimizer.zero_grad()
-
+        
         # forward pass
         (w, t), (s_fixed, s_moving) = self.model(fixed, moving)
 
@@ -300,8 +301,8 @@ class StudentNetworkTrainer(Trainer):
         seg_consistency_loss   += self.mse_fn(prob_moving, s_moving)
 
         mask_fixed, mask_moving = segmentation_targets
-        dice_loss               = dice_loss(mask_fixed, s_fixed)
-        dice_loss              += dice_loss(mask_moving, s_moving)
+        dice_loss               = self.dice_loss_fn(mask_fixed, s_fixed)
+        dice_loss              += self.dice_loss_fn(mask_moving, s_moving)
 
         loss = \
             1.0     * reg_loss + \
