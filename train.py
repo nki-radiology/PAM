@@ -422,4 +422,11 @@ if __name__ == "__main__":
 
     registration_network, discriminator_network, segmentation_network, student_network = networks
     
-    training(registration_network, segmentation_network, student_network, discriminator_network, device)
+    training(
+        registration_network    = registration_network, 
+        segmentation_network    = segmentation_network, 
+        student_network         = student_network, 
+        discriminator           = discriminator_network, 
+        train_dataloader        = train_dataloader, 
+        device                  = device
+    )
