@@ -48,59 +48,28 @@ def variatinal_energy_loss(flow):
         return d / 3.0
 
 
-def dice_loss(true, logits, eps=1e-7):
-    """
-    Computes the Sørensen–Dice loss.
-
-    Note that PyTorch optimizers minimize a loss. In this
-    case, we would like to maximize the dice loss so we
-    return the negated dice loss.
-
-    Args:
-        true: a tensor of shape [B, 1, H, W].
-        logits: a tensor of shape [B, C, H, W]. Corresponds to
-            the raw output or logits of the model.
-        eps: added to the denominator for numerical stability.
-
-    Returns:
-        dice_loss: the Sørensen–Dice loss.
-
-    Source:
-        https://github.com/kevinzakka/pytorch-goodies/blob/master/losses.py
-    """
-    breakpoint()
-    num_classes = logits.shape[1]
-
-    if num_classes == 1:
-        # Convert true to one-hot encoded tensor
-        true_1_hot = torch.eye(num_classes + 1)[true.squeeze(1)]
-        true_1_hot = true_1_hot.permute(0, 3, 1, 2).float()
-        true_1_hot_f = true_1_hot[:, 0:1, :, :]
-        true_1_hot_s = true_1_hot[:, 1:2, :, :]
-        true_1_hot = torch.cat([true_1_hot_s, true_1_hot_f], dim=1)
-
-        # Compute positive and negative probabilities
-        pos_prob = torch.sigmoid(logits)
-        neg_prob = 1 - pos_prob
-        probas = torch.cat([pos_prob, neg_prob], dim=1)
-
+def dice_loss(pred, target, smooth=1e-5):
+    num_classes = pred.size(1)
+    dice = 0
+    class_count = 0
+    
+    for class_idx in range(num_classes):
+        class_pred = pred[:, class_idx, ...]
+        class_target = (target == class_idx).float()
+        
+        intersection = torch.sum(class_pred * class_target)
+        cardinality = torch.sum(class_pred) + torch.sum(class_target)
+        
+        # Check if the class is present in the target
+        if torch.sum(class_target) > 0:
+            dice_class = (2.0 * intersection + smooth) / (cardinality + smooth)
+            dice += dice_class
+            class_count += 1
+    
+    # Check if any class was present in the target
+    if class_count > 0:
+        dice_loss = 1 - dice / class_count
     else:
-        # Convert true to one-hot encoded tensor
-        true_1_hot = torch.eye(num_classes)[true.squeeze(1)]
-        true_1_hot = true_1_hot.permute(0, 3, 1, 2).float()
-
-        # Compute class probabilities using softmax
-        probas = F.softmax(logits, dim=1)
-
-    true_1_hot = true_1_hot.type(logits.type())
-
-    # Calculate intersection and cardinality
-    dims = (0,) + tuple(range(2, true.ndimension()))
-    intersection = torch.sum(probas * true_1_hot, dims)
-    cardinality = torch.sum(probas + true_1_hot, dims)
-
-    # Compute dice loss
-    dice_loss = (2. * intersection / (cardinality + eps)).mean()
-
-    # Return negated dice loss
-    return (1 - dice_loss)
+        dice_loss = torch.tensor(0.0)
+    
+    return dice_loss
