@@ -329,8 +329,8 @@ def training(
     n_epochs     = 10001
 
     # wandb Initialization
-    #wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
-    #wandb.watch(registration_network, log=None)
+    wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
+    wandb.watch(registration_network, log=None)
 
     registration_trainer    = RegistrationNetworkTrainer(
         registration_network, discriminator, device, os.path.join(PARAMS.project_folder, 'RegNet.pth'))
@@ -376,7 +376,7 @@ def training(
             registration_outputs = (tA.detach(), tD.detach())
             segmentation_outputs = (fixed_mask_pred.detach(), moving_mask_pred.detach())
             segmentation_targets = (fixed_mask, moving_mask)
-            breakpoint()
+            
             L = student_trainer.train(fixed, moving, registration_outputs, segmentation_outputs, segmentation_targets)
             student_loss, student_consistency_loss = L
 
