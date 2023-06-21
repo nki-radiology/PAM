@@ -254,13 +254,13 @@ class SegmentationNetworkTrainer(Trainer):
     def train(self, image, target):
         self.inc_iterator()
         self.optimizer.zero_grad()
-        breakpoint()
+
         # forward pass
         predicted = self.model(image)
-        # >>> target is [1, 192, 192, 160]
+
         # segmentation loss
         loss    = self.dice_loss_fn(target, predicted)
-        loss   += self.xent_loss_fn(target, predicted)
+        #loss   += self.xent_loss_fn(target, predicted)
 
         loss.backward()
         self.optimizer.step()
