@@ -327,7 +327,7 @@ class RegistrationStudentNetwork(nn.Module):
 
 class SegmentationNetwork(nn.Module):
 
-    def __init__(self, img_size, n_classes, filters) -> None:
+    def __init__(self, img_size, filters, n_classes) -> None:
         super().__init__()
         self.img_size = img_size
         self.filters = filters
@@ -346,7 +346,7 @@ class SegmentationNetwork(nn.Module):
 
 class StudentNetwork(nn.Module):
     
-        def __init__(self, img_size, n_classes, filters, latent_dim) -> None:
+        def __init__(self, img_size, filters, n_classes, latent_dim) -> None:
             super().__init__()
             self.img_size   = img_size
             self.n_classes  = n_classes

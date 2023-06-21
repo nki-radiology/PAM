@@ -59,7 +59,7 @@ def read_train_data(load_segmentations = False):
     return train_data
 
 
-def load_dataloader(load_segmentations = False):
+def data_init(load_segmentations = False):
     filenames   = read_train_data(load_segmentations)
 
     inputs_train, inputs_valid = train_test_split(
@@ -118,7 +118,7 @@ def model_init():
     seg_net.apply(weights_init)
 
     # Student
-    stu_net = StudentNetwork(  PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part))
+    stu_net = StudentNetwork(  PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part), PARAMS.latent_dim)
     stu_net.to(device)
     stu_net.apply(weights_init)
 
@@ -417,8 +417,8 @@ if __name__ == "__main__":
 
     breakpoint()
 
-    networks, device = model_init()
-    train_dataloader, _  = load_dataloader()
+    networks, device    = model_init()
+    train_dataloader, _ = data_init()
 
     registration_network, discriminator_network, segmentation_network, student_network = networks
     
