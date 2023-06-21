@@ -70,8 +70,8 @@ def get_num_classes(body_part):
 
 def filter_segmentation_mask(segmentation_mask, labels):
     filtered_mask = np.zeros_like(segmentation_mask)
-    for label in labels:
-        filtered_mask[segmentation_mask == label] = label
+    for i, label in enumerate(labels):
+        filtered_mask[segmentation_mask == label] = i + 1
 
     return filtered_mask
 

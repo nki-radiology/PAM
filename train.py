@@ -340,7 +340,6 @@ def training(
         student_network, device, os.path.join(PARAMS.project_folder, 'StuNet.pth'))
 
     for epoch in range(epoch, n_epochs):
-        breakpoint()
         for _, (x_1, x_2) in enumerate(train_dataloader):
             # data loading
             fixed, fixed_mask   = x_1
@@ -351,7 +350,7 @@ def training(
 
             fixed_mask  = fixed_mask.to(device)
             moving_mask = moving_mask.to(device)
-
+            breakpoint()
             # registration training
             L = registration_trainer.train(fixed, moving)
             registration_affine_loss, registration_elastic_loss, adversarial_loss, energy_loss = L
