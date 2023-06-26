@@ -176,10 +176,10 @@ if __name__ == "__main__":
         print('no breakpoint set')
 
     cuda_seeds()
-    reg_net, std_net, device = load_trained_models()
+    std_net, device = load_trained_models()
 
     with torch.no_grad():
-        test(reg_net, std_net, PARAMS.inference, device)
+        test(std_net, PARAMS.inference, device)
 
 
 
