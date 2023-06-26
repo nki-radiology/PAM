@@ -39,7 +39,7 @@ def load_trained_models():
         path = os.path.join(PARAMS.project_folder, name + '.pth')
         model.load_state_dict(torch.load(path))
 
-    load_model(std_net, 'StdModel')
+    load_model(std_net, 'StuNet')
 
     return std_net, device
 
