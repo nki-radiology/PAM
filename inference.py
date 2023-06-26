@@ -172,6 +172,8 @@ if __name__ == "__main__":
 
     if PARAMS.debug:
         breakpoint()
+    else:
+        print('no breakpoint set')
 
     cuda_seeds()
     reg_net, std_net, device = load_trained_models()
