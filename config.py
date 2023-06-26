@@ -64,4 +64,9 @@ parser.add_argument('--wandb',
                     default = "split-encoders",
                     help = "folder to save the model checkpoints")
 
+parser.add_argument('--debug',
+                    type = bool,
+                    default = False,
+                    help = 'debug mode')                    
+
 PARAMS = parser.parse_args()

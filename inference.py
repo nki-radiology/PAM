@@ -6,8 +6,8 @@ import torch.nn as nn
 
 from pydicom                import dcmread
 
-from networks.PAMNetwork    import RegistrationNetwork, RegistrationStudentNetwork
-from metrics.PAMLoss        import Energy_Loss, Cross_Correlation_Loss
+from networks.PAMNetwork    import StudentNetwork
+from PAMDataset             import get_num_classes
 
 from libs.frida.io          import ImageLoader, ReadVolume
 from libs.frida.transforms  import TransformFromNumpyFunction, ZeroOneScaling, ToNumpyArray
@@ -29,38 +29,19 @@ def cuda_seeds():
     torch.backends.cudnn.benchmark    = False
 
 
-def init_loss_functions():
-    # registration loss
-    correlation     = Cross_Correlation_Loss().pearson_correlation
-    energy          = Energy_Loss().energy_loss
-
-    # adversatial loss
-    binary_entropy  = nn.BCELoss()
-    mse_distance    = nn.MSELoss()
-
-    # latent loss
-    l2_norm     = lambda x:torch.norm(x, p=2)
-    l1_norm     = lambda x:torch.norm(x, p=1)
-
-    return (correlation, energy), (binary_entropy, mse_distance), (l2_norm, l1_norm)   
-
-
 def load_trained_models():
     # Network definition
-    reg_net     = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters)
-    std_net     = RegistrationStudentNetwork(PARAMS.img_dim, PARAMS.filters, PARAMS.latent_dim)
-    
-    device      = torch.device('cuda:0')
+    std_net = StudentNetwork(  PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part), PARAMS.latent_dim)
+    device  = torch.device('cuda:0')
 
     def load_model(model, name):
         model.to(device)
         path = os.path.join(PARAMS.project_folder, name + '.pth')
         model.load_state_dict(torch.load(path))
 
-    load_model(reg_net, 'RegModel')
     load_model(std_net, 'StdModel')
 
-    return reg_net, std_net, device
+    return std_net, device
 
 
 def load_dicom_tagssafely(path, prefix = ''):
@@ -102,13 +83,6 @@ def load_dicom_tagssafely(path, prefix = ''):
         return result
 
 
-def array_to_dict(array, name):
-    result = {}
-    for i, value in enumerate(array):
-        result[f'{name}_{i}'] = value
-    return result
-    
-
 def zero_at_edges(im):
     im[:,  :,  0]  = 0
     im[:,  :, -1]  = 0
@@ -125,7 +99,7 @@ def np2torch(arr):
     return arr
 
 
-def test(registration_network, student_network, dataset, device):
+def test(student_network, dataset, device):
 
     dataset = pd.read_csv(dataset, index_col=0)
     print('loaded dataset', str(dataset.shape[0]), 'rows')
@@ -137,8 +111,6 @@ def test(registration_network, student_network, dataset, device):
         ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
     )
 
-    (correlation, energy), (_, mse_distance), (_, _) = init_loss_functions()
-    registration_network.eval()
     student_network.eval()
 
     result = []
@@ -146,69 +118,60 @@ def test(registration_network, student_network, dataset, device):
     for i, row in dataset.iterrows():
 
         print('processing row', i, 'of', dataset.shape[0])
+        features = {}
 
         baseline_tags = load_dicom_tagssafely(row['PRIOR_PATH'], prefix='baseline_')
+        features.update(baseline_tags)
+
         followup_tags = load_dicom_tagssafely(row['SUBSQ_PATH'], prefix='followup_')
+        features.update(followup_tags)
 
         baseline_im = loader(row['PRIOR_PATH_NRRD'])
         followup_im = loader(row['SUBSQ_PATH_NRRD'])
 
         # +++
-        #import SimpleITK as sitk
-        #sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
-        #sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
+        if __debug__:
+            import SimpleITK as sitk
+            sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
+            sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
         # +++
 
         baseline_im = np2torch(baseline_im).to(device)
         followup_im = np2torch(followup_im).to(device)
 
         # compute embedding
-        (_, wD), (_, tD) = registration_network(baseline_im, followup_im)
-        tD_, wD_, Z = student_network(baseline_im, followup_im, return_embedding=True)
-        z_fixed, z_moving, z_diff = Z
+        Z = student_network(baseline_im, followup_im, return_embedding=True)
+        z_baseline, z_followup, z_diff = Z
 
-        z_diff = z_diff.detach().cpu().numpy().squeeze()
-        features = array_to_dict(z_diff, 'z')
-
-        z_moving = z_moving.detach().cpu().numpy().squeeze()
-        features.update(array_to_dict(z_moving, 'z_moving'))
-
-        z_fixed = z_fixed.detach().cpu().numpy().squeeze()
-        features.update(array_to_dict(z_fixed, 'z_fixed'))
-
-        # compute error metrics
-        registration_loss           = correlation(baseline_im, wD)
-        deformation_energy          = energy(tD)
-        estimate_divergence         = correlation(tD, tD_)
-        estimate_registration_loss  = correlation(baseline_im, wD_)
+        def append_embedding(embedding, dictionary, prefix):
+            embedding = embedding.detach().cpu().numpy().squeeze()
+            for i, value in enumerate(embedding):
+                dictionary[f'{prefix}_{i}'] = value
+            return dictionary
+        
+        features = {}
+        features = append_embedding(z_diff,       features, 'feature')
+        features = append_embedding(z_baseline,   features, 'feature_baseline')
+        features = append_embedding(z_followup,   features, 'feature_followup')
 
         # +++
-        #import SimpleITK as sitk
-        #temp = wD.detach().cpu().numpy().squeeze()
-        #sitk.WriteImage(sitk.GetImageFromArray(temp.squeeze()), 'WD.nii.gz')
+        if __debug__:
+            import SimpleITK as sitk
+            (w, t), (s_fixed, s_moving) = student_network(baseline_im, followup_im)
+            sitk.WriteImage(sitk.GetImageFromArray(w.detach().cpu().numpy().squeeze()), 'w.nii.gz')
+            sitk.WriteImage(sitk.GetImageFromArray(t.detach().cpu().numpy().squeeze()), 't.nii.gz')
+            sitk.WriteImage(sitk.GetImageFromArray(s_fixed.detach().cpu().numpy().squeeze()), 's_fixed.nii.gz')
+            sitk.WriteImage(sitk.GetImageFromArray(s_moving.detach().cpu().numpy().squeeze()), 's_moving.nii.gz')
         # +++
 
-        # store results
-        entry = {
-            'pair_index':                   i,
-            'registration_loss':            registration_loss.item(),
-            'deformation_energy':           deformation_energy.item(),
-            'estimate_divergence':          estimate_divergence.item(),
-            'estimate_registration_loss':   estimate_registration_loss.item()
-        }
-        entry.update(features)
-        entry.update(baseline_tags)
-        entry.update(followup_tags)
-
-        result.append(entry)
+        result.append(features)
 
     pd.DataFrame(result).to_csv('results.csv')
 
-        # +++
-        #break
-        # +++
-
 if __name__ == "__main__":
+
+    if PARAMS.debug:
+        breakpoint()
 
     cuda_seeds()
     reg_net, std_net, device = load_trained_models()

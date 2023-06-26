@@ -75,16 +75,12 @@ def dice_loss(target, pred, smooth=1e-5):
     return dice_loss
 
 
-def xent_segmentation(target, pred, ignore_index=None):
+def xent_segmentation(target, pred):
     # Flatten the predictions and targets
-    pred_flat = pred.view(-1, pred.size(-1))
-    target_flat = target.view(-1)
+    pred_flat = pred.view(-1, pred.size(1))
+    target_flat = target.view(-1, pred.size)
 
-    # Apply ignore mask if provided
-    if ignore_index is not None:
-        ignore_mask = (target_flat != ignore_index)
-        pred_flat = pred_flat[ignore_mask]
-        target_flat = target_flat[ignore_mask]
+
 
     # Calculate cross entropy loss
     loss = F.cross_entropy(pred_flat, target_flat)
