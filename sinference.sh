@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=1-00:00:00                           # Time limit hrs:min:sec
+#SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
 #SBATCH --job-name=topazia                          # Job name
 #SBATCH --partition=p6000                            
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
