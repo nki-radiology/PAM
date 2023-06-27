@@ -130,7 +130,7 @@ def test(student_network, dataset, device):
         followup_im = loader(row['SUBSQ_PATH_NRRD'])
 
         # +++
-        if __debug__:
+        if PARAMS.debug:
             import SimpleITK as sitk
             sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
             sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
@@ -155,7 +155,7 @@ def test(student_network, dataset, device):
         features = append_embedding(z_followup,   features, 'feature_followup')
 
         # +++
-        if __debug__:
+        if PARAMS.debug:
             import SimpleITK as sitk
             (w, t), (s_fixed, s_moving) = student_network(baseline_im, followup_im)
             sitk.WriteImage(sitk.GetImageFromArray(w.detach().cpu().numpy().squeeze()), 'w.nii.gz')
