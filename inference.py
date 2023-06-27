@@ -118,7 +118,7 @@ def test(student_network, dataset, device):
     for i, row in dataset.iterrows():
 
         print('processing row', i, 'of', dataset.shape[0])
-        features = {}
+        features = {'index_pair': i}
 
         baseline_tags = load_dicom_tagssafely(row['PRIOR_PATH'], prefix='baseline_')
         features.update(baseline_tags)
@@ -149,7 +149,6 @@ def test(student_network, dataset, device):
                 dictionary[f'{prefix}_{i}'] = value
             return dictionary
         
-        features = {}
         features = append_embedding(z_diff,       features, 'feature')
         features = append_embedding(z_baseline,   features, 'feature_baseline')
         features = append_embedding(z_followup,   features, 'feature_followup')
