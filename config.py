@@ -9,7 +9,7 @@ parser.add_argument('--img-dim',
 
 parser.add_argument('--body_part',
                     type = str,
-                    default = 'abdomen',
+                    default = 'thorax',
                     help = 'body part to train on')
 
 parser.add_argument('--batch-size',
