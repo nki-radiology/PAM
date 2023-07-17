@@ -236,7 +236,7 @@ class DiscriminatorNetworkTrainer(Trainer):
 
         # Reinit the affine network weights
         if loss.item() < 1e-5:  # 
-            self.optimizer.apply(weights_init)
+            self.model.apply(weights_init)
             print("Reloading discriminator weights")
 
         return loss
