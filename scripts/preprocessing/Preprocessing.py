@@ -1,4 +1,5 @@
 
+import pandas as pd
 import os
 import argparse
 import pydicom
@@ -121,3 +122,5 @@ with tqdm(total=len(dcm_folders)) as pbar:
             
         # update progress bar
         pbar.update(1)
+
+pd.DataFrame(df).to_csv(os.path.join(output_folder, "preprocessing.csv"), index=False)
