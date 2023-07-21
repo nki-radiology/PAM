@@ -101,10 +101,10 @@ with tqdm(total=len(dcm_folders)) as pbar:
             if not all_files_are_ct_scans(dcm_folder):
                 raise Exception("Not all files are CT scans")
             
-            import pdb; pdb.set_trace()
-            break_loop = False
-            if break_loop:
-                break
+            #import pdb; pdb.set_trace()
+            #break_loop = False
+            #if break_loop:
+            #    break
 
             # load image
             image = loader(dcm_folder)
