@@ -51,7 +51,7 @@ cast.SetOutputPixelType(sitk.sitkInt16)
 
 loader = ImageLoader(
     ReadDICOM(),
-    CropObj,
+    CropObj(),
     Resample(2),
     PadAndCropTo((192, 192, 160), cval=-1000),
     TransformFromITKFilter(clamp),
@@ -102,6 +102,9 @@ with tqdm(total=len(dcm_folders)) as pbar:
                 raise Exception("Not all files are CT scans")
             
             import pdb; pdb.set_trace()
+            break_loop = False
+            if break_loop:
+                break
 
             # load image
             image = loader(dcm_folder)
