@@ -37,6 +37,9 @@ data_folder     = args.data_folder
 body_part       = args.body_part
 output_folder   = args.output_folder
 
+import pdb
+pdb.set_trace()
+
 # define transforms
 CropObj = CropThorax if body_part == "thorax" else CropAbdomen
 
@@ -44,11 +47,8 @@ clamp = ClampImageFilter()
 clamp.SetUpperBound(300)
 clamp.SetLowerBound(-120)
 
-add = AddImageFilter()
-add.SetConstant2(-120)
-
 cast = CastImageFilter()
-cast.SetOutputPixelType(sitk.sitkUInt16)
+cast.SetOutputPixelType(sitk.sitkInt16)
 
 loader = ImageLoader(
     ReadDICOM(),
@@ -56,9 +56,9 @@ loader = ImageLoader(
     Resample(2),
     PadAndCropTo((192, 192, 160), cval=-1000),
     TransformFromITKFilter(clamp),
-    TransformFromITKFilter(add),
     TransformFromITKFilter(cast)
 )
+
 
 # list folders 
 def list_dicom_folders(root_folder):
@@ -74,15 +74,27 @@ def list_dicom_folders(root_folder):
 
 dcm_folders = list_dicom_folders(data_folder)
 
+
 # load images
+df = []
 with tqdm(total=len(dcm_folders)) as pbar:
     for ix, dcm_folder in enumerate(dcm_folders):
-        # load image
-        image = loader(dcm_folder)
-        
-        # save image
-        filename = str(ix).zfill(12) + ".nii.gz"
-        sitk.WriteImage(image, os.path.join(output_folder, filename + ".nii.gz"))
-        
+        try:
+            # load image
+            image = loader(dcm_folder)
+            
+            # save image
+            filename = str(ix).zfill(12) + ".nii.gz"
+            filename = os.path.join(output_folder, filename + ".nii.gz")
+            sitk.WriteImage(image, filename)
+
+        except:
+            filename = -1
+
+        df.append({
+            "input": dcm_folder,
+            "output": filename
+        })
+            
         # update progress bar
         pbar.update(1)
