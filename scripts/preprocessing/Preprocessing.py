@@ -102,7 +102,7 @@ with tqdm(total=len(dcm_folders)) as pbar:
         try:
             # check if all files are CT scans
             if not all_files_are_ct_scans(dcm_folder):
-                continue
+                raise Exception("Not all files are CT scans")
 
             # load image
             image = loader(dcm_folder)
@@ -115,12 +115,13 @@ with tqdm(total=len(dcm_folders)) as pbar:
         except:
             filename = -1
 
-        df.append({
-            "input": dcm_folder,
-            "output": filename
-        })
-            
-        # update progress bar
-        pbar.update(1)
+        finally:
+            df.append({
+                "input": dcm_folder,
+                "output": filename
+            })
+                
+            # update progress bar
+            pbar.update(1)
 
 pd.DataFrame(df).to_csv(os.path.join(output_folder, "preprocessing.csv"), index=False)
