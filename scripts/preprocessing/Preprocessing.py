@@ -37,9 +37,6 @@ data_folder     = args.data_folder
 body_part       = args.body_part
 output_folder   = args.output_folder
 
-import pdb
-pdb.set_trace()
-
 # define transforms
 CropObj = CropThorax if body_part == "thorax" else CropAbdomen
 
@@ -60,20 +57,21 @@ loader = ImageLoader(
 )
 
 
+import pdb
+pdb.set_trace()
+
 # list folders 
-def list_dicom_folders(root_folder):
-    dicom_folders = []
+def list_subdirectories_with_no_subdirectory(directory):
+    subdirectories_with_no_subdir = []
     
-    for root, dirs, files in os.walk(root_folder):
-        for file in files:
-            if file.lower().endswith(".dcm"):
-                dicom_folders.append(root)
-                break
+    for root, dirs, files in os.walk(directory):
+        if not dirs:  # Check if the current directory has no subdirectories
+            subdirectories_with_no_subdir.append(root)
     
-    return dicom_folders
+    return subdirectories_with_no_subdir
 
-dcm_folders = list_dicom_folders(data_folder)
 
+dcm_folders = list_subdirectories_with_no_subdirectory(data_folder)
 
 # load images
 df = []
