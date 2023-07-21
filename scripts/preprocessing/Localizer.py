@@ -1,6 +1,9 @@
 """
     This python file is working with the localizer-CT model from tensorflow
 """
+import os
+os['CUDA_VISIBLE_DEVICES'] = '0'
+
 import numpy                    as     np
 
 from   tensorflow.keras.models  import load_model

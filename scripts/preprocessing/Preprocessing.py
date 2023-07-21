@@ -52,7 +52,7 @@ cast.SetOutputPixelType(sitk.sitkInt16)
 
 loader = ImageLoader(
     ReadDICOM(),
-    CropAbdomen(margin=25), # CropThorax(margin=25),#(margin=5),
+    CropObj,
     Resample(2),
     PadAndCropTo((192, 192, 160), cval=-1000),
     TransformFromITKFilter(clamp),
