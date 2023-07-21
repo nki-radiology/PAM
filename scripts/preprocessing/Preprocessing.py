@@ -9,8 +9,8 @@ from tqdm import tqdm
 import SimpleITK as sitk
 
 from SimpleITK import ClampImageFilter
-from SimpleITK import AddImageFilter
 from SimpleITK import CastImageFilter
+from SimpleITK import WriteImage
 
 # import local libraries 
 import sys
@@ -92,9 +92,6 @@ def all_files_are_ct_scans(dicom_folder):
     return True
 
 
-import pdb
-pdb.set_trace()
-
 # load images
 df = []
 with tqdm(total=len(dcm_folders)) as pbar:
@@ -103,6 +100,8 @@ with tqdm(total=len(dcm_folders)) as pbar:
             # check if all files are CT scans
             if not all_files_are_ct_scans(dcm_folder):
                 raise Exception("Not all files are CT scans")
+            
+            import pdb; pdb.set_trace()
 
             # load image
             image = loader(dcm_folder)
@@ -110,7 +109,7 @@ with tqdm(total=len(dcm_folders)) as pbar:
             # save image
             filename = str(ix).zfill(12) + ".nii.gz"
             filename = os.path.join(output_folder, filename + ".nii.gz")
-            sitk.WriteImage(image, filename)
+            WriteImage(image, filename)
 
         except:
             filename = -1
