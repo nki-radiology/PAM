@@ -67,10 +67,10 @@ class CropThorax(SmartCrop):
     def __call__(self, image):
         outputs   = None
         image_arr = GetArrayFromImage(image)
-        pelvis, diaphram = self._SmartCrop__get_coordinates(image_arr, 10, 80) # Initially: (image_arr, 20, 70)
+        diaphram, neck = self._SmartCrop__get_coordinates(image_arr, 10, 80) # Initially: (image_arr, 20, 70)
 
-        if (pelvis >= 0) and (diaphram <= image_arr.shape[0]) and (pelvis < diaphram):
-            outputs = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - diaphram)])
+        if (diaphram >= 0) and (neck <= image_arr.shape[0]) and (diaphram < neck):
+            outputs = Crop(image, [0, 0, int(diaphram)], [0, 0, int(image_arr.shape[0] - neck)])
 
         return outputs
 
