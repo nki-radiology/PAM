@@ -1,6 +1,7 @@
 
 import os
 import argparse
+import pydicom
 
 from tqdm import tqdm
 
@@ -56,10 +57,6 @@ loader = ImageLoader(
     TransformFromITKFilter(cast)
 )
 
-
-import pdb
-pdb.set_trace()
-
 # list folders 
 def list_subdirectories_with_no_subdirectory(directory):
     subdirectories_with_no_subdir = []
@@ -73,8 +70,7 @@ def list_subdirectories_with_no_subdirectory(directory):
 
 dcm_folders = list_subdirectories_with_no_subdirectory(data_folder)
 
-import pydicom
-
+# check if ct scans
 def is_ct_scan(dicom_file):
     try:
         ds = pydicom.dcmread(dicom_file)
@@ -86,13 +82,27 @@ def is_ct_scan(dicom_file):
     except pydicom.errors.InvalidDicomError:
         return False
 
+def all_files_are_ct_scans(dicom_folder):
+    for root, _, files in os.walk(dicom_folder):
+        for file in files:
+            dicom_file = os.path.join(root, file)
+            if not is_ct_scan(dicom_file):
+                return False
+    return True
+
+
+import pdb
+pdb.set_trace()
 
 # load images
-# TODO need to check if the image is a CT
 df = []
 with tqdm(total=len(dcm_folders)) as pbar:
     for ix, dcm_folder in enumerate(dcm_folders):
         try:
+            # check if all files are CT scans
+            if not all_files_are_ct_scans(dcm_folder):
+                continue
+
             # load image
             image = loader(dcm_folder)
             
