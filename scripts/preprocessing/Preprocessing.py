@@ -73,7 +73,22 @@ def list_subdirectories_with_no_subdirectory(directory):
 
 dcm_folders = list_subdirectories_with_no_subdirectory(data_folder)
 
+import pydicom
+
+def is_ct_scan(dicom_file):
+    try:
+        ds = pydicom.dcmread(dicom_file)
+        modality = ds.get("Modality", "").upper()
+        if modality == "CT":
+            return True
+        else:
+            return False
+    except pydicom.errors.InvalidDicomError:
+        return False
+
+
 # load images
+# TODO need to check if the image is a CT
 df = []
 with tqdm(total=len(dcm_folders)) as pbar:
     for ix, dcm_folder in enumerate(dcm_folders):
