@@ -17,6 +17,37 @@ from config import PARAMS
 
 RANDOM_SEED = 42
 
+class LoaderWithCacheMemory():
+    def __init__(self, loader, queue_max = 10) -> None:
+        self.loader     = loader
+        self.cache      = {}
+        self.count      = 0
+
+    def __call__(self, path):
+        image = None
+
+        if path in self.cache:
+            image = self.cache[path][1]
+        else:
+            image = self.loader(path)
+            self.cache[path] = (self.count, image)
+            self.count += 1
+        
+        if len(self.cache) > self.queue_max:
+            self.__remove_oldest__()
+
+        return image
+        
+    def __remove_oldest__(self):
+        oldest = None
+        for key, value in self.cache.items():
+            if oldest is None:
+                oldest = key
+            elif value[0] < self.cache[oldest][0]:
+                oldest = key
+        del self.cache[oldest]
+        
+
 def cuda_seeds():
     # GPU operations have a separate seed we also want to set
     if torch.cuda.is_available():
@@ -110,6 +141,8 @@ def test(student_network, dataset, device):
         TransformFromNumpyFunction(zero_at_edges),
         ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
     )
+
+    loader = LoaderWithCacheMemory(loader, queue_max=10)
 
     student_network.eval()
 
