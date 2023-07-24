@@ -8,13 +8,11 @@ import numpy as np
 import wandb
 import torch
 import torch.nn as nn
-import SimpleITK as sitk
 
 from torch.utils.data               import DataLoader
 from utils.utils_torch              import weights_init
 from sklearn.model_selection        import train_test_split
 from pathlib                        import Path
-from datetime                       import datetime
 
 from PAMDataset                     import PAMDataset
 from PAMDataset                     import get_num_classes
@@ -97,49 +95,23 @@ def cuda_seeds():
     torch.backends.cudnn.benchmark    = False
 
 
-def model_init():
-    # Number of GPUs available. Use 0 for CPU mode.
-    ngpu = 1
-
-    # Device we want to run on
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
-
-    # Registration teacher
-    reg_net = RegistrationNetwork(  PARAMS.img_dim, PARAMS.filters)
-    reg_net.to(device)
-    reg_net.apply(weights_init)
-
-    dis_net = DiscriminatorNetwork( PARAMS.img_dim, PARAMS.filters_discriminator)
-    dis_net.to(device)
-    dis_net.apply(weights_init)
-
-    # Segmentation teacher
-    seg_net = SegmentationNetwork(  PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part))
-    seg_net.to(device)
-    seg_net.apply(weights_init)
-
-    # Student
-    stu_net = StudentNetwork(  PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part), PARAMS.latent_dim)
-    stu_net.to(device)
-    stu_net.apply(weights_init)
-
-    networks = [reg_net, dis_net, seg_net, stu_net]
-
-    return networks, device
-
-
-class Trainer():
-    def __init__(self, model, device, backup_path):
-        self.model          = model
+class NetworkFactory():
+    def __init__(self, device, backup_path):
         self.device         = device
         self.backup_path    = backup_path
-
         self.itr            = 0
 
+        self.init_model()
         self.load_backup_if_present()
+
+
+    def init_model(self):
+        raise NotImplementedError
+
 
     def save(self):
         torch.save(self.model.state_dict(), self.backup_path)
+
 
     def load_backup_if_present(self):
         if os.path.exists(self.backup_path):
@@ -149,72 +121,29 @@ class Trainer():
         else:
             print('no backup found:', self.backup_path, '.')
 
+
     def inc_iterator(self):
         self.itr += 1
 
 
-class RegistrationNetworkTrainer(Trainer):
-    def __init__(self, model, discriminator, device, backup_path):
-        super().__init__(model, device, backup_path)
-        self.discriminator  = discriminator
-
-        self.correlation_fn = correlation_coefficient_loss
-        self.energy_fn      = variatinal_energy_loss
-        self.mse_fn         = nn.MSELoss()
-
-        self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
-        self.model.train()
-
-
-    def train(self, fixed, moving):
-        self.inc_iterator()
-        self.optimizer.zero_grad()
-
-        # forward pass
-        (wA, wD), (tA, tD) = self.model(fixed, moving)
-
-        # adversarial loss
-        # we use the affine as real and the elastic as fake
-        _, features_wA      = self.discriminator(wA) 
-        _, features_wD      = self.discriminator(wD) 
-        adv_loss            = self.mse_fn(features_wA, features_wD)
-
-        # registration loss
-        reg_affine_loss   = self.correlation_fn(fixed, wA)
-        reg_deform_loss   = self.correlation_fn(fixed, wD)
-
-        # energy-like penalty loss
-        energy_loss = self.energy_fn(tA) + self.energy_fn(tD)
-
-        def fact(start=0, stop=1000.):
-            factor = (self.itr - start)/stop
-            factor = np.maximum(factor, 0.0)
-            factor = np.minimum(factor, 1.0)
-            return factor
-
-        # total loss            
-        loss = \
-            1.0     * reg_affine_loss + \
-            1.0     * reg_deform_loss + \
-            0.1     * fact(start=1000, stop=10000) * adv_loss + \
-            0.01    * fact(start=1000, stop=10000) * energy_loss 
-        
-        loss.backward()
-        self.optimizer.step()
-
-        return reg_affine_loss, reg_deform_loss, adv_loss, energy_loss
-
-
-class DiscriminatorNetworkTrainer(Trainer):
-    def __init__(self, model, device, backup_path):
-        super().__init__(model, device, backup_path)
-        self.model          = model
+class DiscriminatorNetworkFactory(NetworkFactory):
+    def __init__(self, device, backup_path):
+        super().__init__(device, backup_path)
         self.device         = device
         self.real_label     = 1.
 
         self.bce_fn         = nn.BCELoss()
+        self.mse_fn         = nn.MSELoss()
+
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
+
+
+    def init_model(self):
+        self.model = DiscriminatorNetwork( PARAMS.img_dim, PARAMS.filters_discriminator)
+        self.model.to(self.device)
+        self.model.apply(weights_init)
         self.model.train()
+
 
     def train(self, real, fake):
         self.inc_iterator()
@@ -242,14 +171,95 @@ class DiscriminatorNetworkTrainer(Trainer):
         return loss
     
 
-class SegmentationNetworkTrainer(Trainer):
-    def __init__(self, model, device, backup_path):
-        super().__init__(model, device, backup_path)
+    def adversarial_loss(self, real, fake):
+        _, features_real    = self.discriminator(real) 
+        _, features_fake    = self.discriminator(fake) 
+        loss                = self.mse_fn(features_real, features_fake)
+
+        return loss
+
+
+class RegistrationNetworkTrainer(NetworkFactory):
+    def __init__(self, device, backup_path):
+        super().__init__(device, backup_path)
+
+        self.correlation_fn = correlation_coefficient_loss
+        self.energy_fn      = variatinal_energy_loss
+        self.mse_fn         = nn.MSELoss()
+
+        self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
+
+        self.discriminator  = DiscriminatorNetworkFactory(device, backup_path.replace('.pth', '_discriminator.pth'))
+        self.adv_loss_fn    = self.discriminator.adversarial_loss
+
+
+    def init_model(self):
+        self.model = RegistrationNetwork( PARAMS.img_dim, PARAMS.filters)
+        self.model.to(self.device)
+        self.model.apply(weights_init)
+        self.model.train()
+
+
+    def train(self, fixed, moving):
+        self.inc_iterator()
+        self.optimizer.zero_grad()
+
+        # forward pass
+        (wA, wD), (tA, tD)  = self.model(fixed, moving)
+
+        # adversarial loss
+        # we use the affine as real and the elastic as fake
+        adv_loss            = self.adv_loss_fn(wA, wD)
+
+        # registration loss
+        reg_affine_loss     = self.correlation_fn(fixed, wA)
+        reg_deform_loss     = self.correlation_fn(fixed, wD)
+
+        # energy-like penalty loss
+        energy_loss         = self.energy_fn(tA) + self.energy_fn(tD)
+
+        def fact(start=0, stop=1000.):
+            factor = (self.itr - start)/stop
+            factor = np.maximum(factor, 0.0)
+            factor = np.minimum(factor, 1.0)
+            return factor
+
+        # total loss            
+        loss = \
+            1.0     * reg_affine_loss + \
+            1.0     * reg_deform_loss + \
+            1.0     * fact(start=1000, stop=10000) * adv_loss + \
+            0.1     * fact(start=1000, stop=10000) * energy_loss 
+        
+        loss.backward()
+        self.optimizer.step()
+
+        (wA, wD), (tA, tD)  = self.model(fixed, moving)
+        L = self.discriminator.train(wA.detach(), wD.detach())
+        discriminator_loss = L
+
+        return reg_affine_loss, reg_deform_loss, adv_loss, energy_loss, discriminator_loss
+    
+    def save(self):
+        super().save()
+        self.discriminator.save()
+
+
+class SegmentationNetworkTrainer(NetworkFactory):
+    def __init__(self, device, backup_path):
+        super().__init__(device, backup_path)
 
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
         self.dice_loss_fn   = dice_loss
         self.xent_loss_fn   = xent_segmentation
+
+
+    def init_model(self):
+        self.model = SegmentationNetwork( PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part))
+        self.model.to(self.device)
+        self.model.apply(weights_init)
         self.model.train()
+
 
     def train(self, image, target):
         self.inc_iterator()
@@ -268,59 +278,110 @@ class SegmentationNetworkTrainer(Trainer):
         return loss
 
 
-class StudentNetworkTrainer(Trainer):
-    def __init__(self, model, device, backup_path):
-        super().__init__(model, device, backup_path)
+class StudentNetworkTrainer(NetworkFactory):
+    def __init__(self, device, backup_path):
+        super().__init__(device, backup_path)
 
         self.correlation_fn = correlation_coefficient_loss
         self.mse_fn         = nn.MSELoss()
         self.dice_loss_fn   = dice_loss
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
+        self.discriminator  = DiscriminatorNetworkFactory(device, backup_path.replace('.pth', '_discriminator.pth'))
+        self.adv_loss_fn    = self.discriminator.adversarial_loss
+
+        self.registration   = RegistrationNetworkTrainer(device, backup_path.replace('.pth', '_registration.pth'))
+        self.segmentation   = SegmentationNetworkTrainer(device, backup_path.replace('.pth', '_segmentation.pth'))
+
+
+    def init_model(self):
+        self.model = StudentNetwork( PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part), PARAMS.latent_dim)
+        self.model.to(self.device)
+        self.model.apply(weights_init)
+        self.model.train()
+
+
     def train(self, 
               fixed, 
               moving, 
-              registration_outputs, 
-              segmentation_outputs,
-              segmentation_targets
+              fixed_mask,
+              moving_mask,
         ):
         self.inc_iterator()
         self.optimizer.zero_grad()
 
-        # forward pass
+        # registration training
+        L = self.registration.train(fixed, moving)
+
+        # segmentation training
+        L = self.segmentation.train(fixed, fixed_mask)
+        L = self.segmentation.train(moving, moving_mask)
+
+        # student training
         (w, t), (s_fixed, s_moving) = self.model(fixed, moving)
 
         # registration loss
-        tA, tD                  = registration_outputs
-        reg_consistency_loss    = self.mse_fn(tA + tD, t)
+        (wA, wD), (tA, tD)      = self.registration.model(fixed, moving)
+        reg_consistency_loss    = self.mse_fn(tA.detach() + tD.detach(), t)
         reg_loss                = self.correlation_fn(fixed, w)
+        adv_loss                = self.adv_loss_fn(wA, w)
 
         # segmentation loss
-        prob_fixed, prob_moving = segmentation_outputs
+        prob_fixed              = self.segmentation.model(fixed)
+        prob_moving             = self.segmentation.model(moving)
+
         seg_consistency_loss    = self.mse_fn(prob_fixed, s_fixed)
         seg_consistency_loss   += self.mse_fn(prob_moving, s_moving)
 
-        mask_fixed, mask_moving = segmentation_targets
-        dice_loss               = self.dice_loss_fn(mask_fixed, s_fixed)
-        dice_loss              += self.dice_loss_fn(mask_moving, s_moving)
+        dice_loss               = self.dice_loss_fn(fixed_mask, s_fixed)
+        dice_loss              += self.dice_loss_fn(moving_mask, s_moving)
+
+        def fact(start=0, stop=1000.):
+            factor = (self.itr - start)/stop
+            factor = np.maximum(factor, 0.0)
+            factor = np.minimum(factor, 1.0)
+            return factor
 
         loss = \
             1.0     * reg_loss + \
             0.001   * reg_consistency_loss + \
+            1.0     * fact(start=1000, stop=10000) * adv_loss + \
             0.5     * dice_loss + \
             50      * seg_consistency_loss
         
         loss.backward()
         self.optimizer.step()
 
-        return (reg_loss, dice_loss), (reg_consistency_loss, seg_consistency_loss)
+        (wA, wD), (tA, tD)  = self.model(fixed, moving)
+        L = self.discriminator.train(wA.detach(), wD.detach())
+        discriminator_loss = L
+
+        return (reg_loss, dice_loss), (reg_consistency_loss, seg_consistency_loss), discriminator_loss
+    
+    def save(self):
+        super().save()
+        self.registration.save()
+        self.segmentation.save()
+        self.discriminator.save()
+
+
+def model_init():
+    # Number of GPUs available. Use 0 for CPU mode.
+    ngpu = 1
+
+    # Device we want to run on
+    device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+    def get_path(name):
+        return os.path.join(PARAMS.project_folder, name + '.pth')
+
+    network  = StudentNetworkTrainer(device, get_path('StudentNetwork'))
+
+    return network, device
 
 
 def training(
-        registration_network,
-        segmentation_network,
-        student_network, 
-        discriminator, 
+        student_network,
         train_dataloader, 
         device
     ):
@@ -330,16 +391,7 @@ def training(
 
     # wandb Initialization
     wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
-    wandb.watch(registration_network, log=None)
 
-    registration_trainer    = RegistrationNetworkTrainer(
-        registration_network, discriminator, device, os.path.join(PARAMS.project_folder, 'RegNet.pth'))
-    discriminator_trainer   = DiscriminatorNetworkTrainer(
-        discriminator, device, os.path.join(PARAMS.project_folder, 'DiscNet.pth'))
-    segmentation_trainer    = SegmentationNetworkTrainer(
-        segmentation_network, device, os.path.join(PARAMS.project_folder, 'SegNet.pth'))
-    student_trainer         = StudentNetworkTrainer(
-        student_network, device, os.path.join(PARAMS.project_folder, 'StuNet.pth'))
 
     for epoch in range(epoch, n_epochs):
         for _, (x_1, x_2) in enumerate(train_dataloader):
@@ -353,63 +405,26 @@ def training(
             fixed_mask  = fixed_mask.to(device)
             moving_mask = moving_mask.to(device)
 
-            # registration training
-            L = registration_trainer.train(fixed, moving)
-            registration_affine_loss, registration_elastic_loss, adversarial_loss, energy_loss = L
+            L = student_network.train(fixed, moving, fixed_mask, moving_mask)
 
-            # discriminator training
-            (wA, wD), (tA, tD) = registration_network(fixed, moving)
-            L = discriminator_trainer.train(wA.detach(), wD.detach())
-            discriminator_loss = L
-
-            # segmentation training
-            L = segmentation_trainer.train(fixed, fixed_mask)
-            segmentation_loss_fixed = L
-
-            L = segmentation_trainer.train(moving, moving_mask)
-            segmentation_loss_moving = L
-
-            # student training
-            fixed_mask_pred     = segmentation_network(fixed)
-            moving_mask_pred    = segmentation_network(moving)
-
-            registration_outputs = (tA.detach(), tD.detach())
-            segmentation_outputs = (fixed_mask_pred.detach(), moving_mask_pred.detach())
-            segmentation_targets = (fixed_mask, moving_mask)
-            
-            L = student_trainer.train(fixed, moving, registration_outputs, segmentation_outputs, segmentation_targets)
-            student_loss, student_consistency_loss = L
-
-            student_registration_loss = student_loss[0]
-            student_segmentation_loss = student_loss[1]
-
-            student_registration_constistency_loss = student_consistency_loss[0]
-            student_segmentation_constistency_loss = student_consistency_loss[1]
+            student_registration_loss                   = L[0]
+            student_segmentation_loss                   = L[1]
+            student_registration_constistency_loss      = L[2]
+            student_segmentation_constistency_loss      = L[3]
+            student_discriminator_loss                  = L[4]
 
             # wandb logging
             wandb.log({ 
-                'Train: Registration Similarity Affine loss':   registration_affine_loss.item(),
-                'Train: Registration Similarity Elastic loss':  registration_elastic_loss.item(),
-                'Train: Registration Energy loss':              energy_loss.item(),
-                'Train: Registration Adversarial Loss':         adversarial_loss.item(),
-                'Train: Registration Discriminator Loss':       discriminator_loss.item(),
-
-                'Train: Segmentation Loss Fixed':               segmentation_loss_fixed.item(),
-                'Train: Segmentation Loss Moving':              segmentation_loss_moving.item(),
-
                 'Train: Student Segmentation Consistency Loss': student_segmentation_constistency_loss.item(),
                 'Train: Student Segmentation Loss':             student_segmentation_loss.item(),
                 'Train: Student Registration Consistency Loss': student_registration_constistency_loss.item(),
-                'Train: Student Registration Loss':             student_registration_loss.item()
+                'Train: Student Registration Loss':             student_registration_loss.item(),
+                'Train: Student Discriminator Loss':            student_discriminator_loss.item(),
             })
             
         # Save checkpoints
         if (epoch % 5 == 0) and (epoch > 0):
-
-            registration_trainer.save()
-            discriminator_trainer.save()
-            segmentation_trainer.save()
-            student_trainer.save()
+            student_network.save()
 
             print('Model saved!')
 
@@ -418,16 +433,11 @@ if __name__ == "__main__":
     
     cuda_seeds()
 
-    networks, device    = model_init()
-    train_dataloader, _ = data_init(load_segmentations=True)
+    student_netowkr, device     = model_init()
+    train_dataloader, _         = data_init(load_segmentations=True)
 
-    registration_network, discriminator_network, segmentation_network, student_network = networks
-    
     training(
-        registration_network    = registration_network, 
-        segmentation_network    = segmentation_network, 
-        student_network         = student_network, 
-        discriminator           = discriminator_network, 
+        student_network         = student_netowkr,
         train_dataloader        = train_dataloader, 
         device                  = device
     )
