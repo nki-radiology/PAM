@@ -365,19 +365,17 @@ class StudentNetworkTrainer(NetworkFactory):
         self.discriminator.save()
 
 
-def model_init():
+def hardware_init():
     # Number of GPUs available. Use 0 for CPU mode.
     ngpu = 1
 
     # Device we want to run on
     device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
-    def get_path(name):
-        return os.path.join(PARAMS.project_folder, name + '.pth')
+    # where to store the model
+    model_path = os.path.join(PARAMS.project_folder,  'StudentNetwork.pth')
 
-    network  = StudentNetworkTrainer(device, get_path('StudentNetwork'))
-
-    return network, device
+    return model_path, device
 
 
 def training(
@@ -431,13 +429,15 @@ def training(
 
 if __name__ == "__main__":
     
+    breakpoint()
     cuda_seeds()
 
-    student_netowkr, device     = model_init()
+    model_path, device          = hardware_init()
+    student_network             = StudentNetworkTrainer(device, model_path)
     train_dataloader, _         = data_init(load_segmentations=True)
 
     training(
-        student_network         = student_netowkr,
+        student_network         = student_network,
         train_dataloader        = train_dataloader, 
         device                  = device
     )
