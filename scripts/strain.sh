@@ -16,7 +16,10 @@ source ~/.bashrc
 source /home/s.trebeschi/miniconda3/bin/activate pytorch2
 
 # move data to processing
+mkdir /processing/s.trebeschi/tcia_train 2>/dev/null
 rsync -avv --info=progress2 /data/groups/beets-tan/l.estacio/data_tcia/train/ /processing/s.trebeschi/tcia_train/
+
+mkdir /processing/s.trebeschi/tcia_train_segmentations 2>/dev/null
 rsync -avv --info=progress2 /data/groups/beets-tan/s.trebeschi/tcia_train_segmentations/ /processing/s.trebeschi/tcia_train_segmentations/
 
 # Load cuda and cudnn (make sure versions match)
