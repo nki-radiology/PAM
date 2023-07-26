@@ -356,7 +356,7 @@ class StudentNetworkTrainer(NetworkFactory):
         L = self.discriminator.train(wA.detach(), w.detach())
         discriminator_loss = L
 
-        return (reg_loss, dice_loss), (reg_consistency_loss, seg_consistency_loss), discriminator_loss
+        return reg_loss, dice_loss, reg_consistency_loss, seg_consistency_loss, discriminator_loss
     
     def save(self):
         super().save()
