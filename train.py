@@ -433,8 +433,9 @@ if __name__ == "__main__":
     cuda_seeds()
 
     model_path, device          = hardware_init()
-    student_network             = StudentNetworkTrainer(device, model_path)
     train_dataloader, _         = data_init(load_segmentations=True)
+
+    student_network             = StudentNetworkTrainer(device, model_path)
 
     training(
         student_network         = student_network,
