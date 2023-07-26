@@ -352,8 +352,8 @@ class StudentNetworkTrainer(NetworkFactory):
         loss.backward()
         self.optimizer.step()
 
-        (wA, wD), (tA, tD)  = self.model(fixed, moving)
-        L = self.discriminator.train(wA.detach(), wD.detach())
+        (w, t), (_, _)  = self.model(fixed, moving)
+        L = self.discriminator.train(wA.detach(), w.detach())
         discriminator_loss = L
 
         return (reg_loss, dice_loss), (reg_consistency_loss, seg_consistency_loss), discriminator_loss
