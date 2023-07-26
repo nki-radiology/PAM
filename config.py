@@ -19,12 +19,12 @@ parser.add_argument('--batch-size',
 
 parser.add_argument('--filters',
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],      
+                    default = [4, 8, 16, 32, 64, 128, 256, 512, 1024],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],    
+                    default = [4, 8, 16, 32, 64, 128, 256, 512, 1024],    
                     help = 'filters number for each layer')
 
 parser.add_argument('--latent-dim',     
@@ -70,3 +70,6 @@ parser.add_argument('--debug',
                     help = 'debug mode')                    
 
 PARAMS = parser.parse_args()
+
+
+# TODO parse arguments better
