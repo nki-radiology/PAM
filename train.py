@@ -172,8 +172,8 @@ class DiscriminatorNetworkFactory(NetworkFactory):
     
 
     def adversarial_loss(self, real, fake):
-        _, features_real    = self.discriminator(real) 
-        _, features_fake    = self.discriminator(fake) 
+        _, features_real    = self.model(real) 
+        _, features_fake    = self.model(fake) 
         loss                = self.mse_fn(features_real, features_fake)
 
         return loss
