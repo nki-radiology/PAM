@@ -19,14 +19,14 @@ parser.add_argument('--batch-size',
 
 parser.add_argument('--filters',
                     type = list,  
-                    #default = [8, 16, 32, 64, 128, 256, 512, 1024],  
-                    default = [8, 8, 16, 16, 32, 32, 32, 32],      
+                    default = [8, 16, 32, 64, 128, 256, 512, 1024],  
+                    #default = [8, 8, 16, 16, 32, 32, 32, 32],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = list,  
-                    #default = [8, 16, 32, 64, 128, 256, 512, 1024],    
-                    default = [8, 8, 16, 16, 32, 32, 32, 32], 
+                    default = [8, 16, 32, 64, 128, 256, 512, 1024],    
+                    #default = [8, 8, 16, 16, 32, 32, 32, 32], 
                     help = 'filters number for each layer')
 
 parser.add_argument('--latent-dim',     
