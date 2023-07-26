@@ -383,12 +383,12 @@ def training(
         train_dataloader, 
         device
     ):
-    
+    breakpoint()
     epoch        = 0
     n_epochs     = 10001
 
     # wandb Initialization
-    wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
+    #wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
 
 
     for epoch in range(epoch, n_epochs):
@@ -412,13 +412,13 @@ def training(
             student_discriminator_loss                  = L[4]
 
             # wandb logging
-            wandb.log({ 
-                'Train: Student Segmentation Consistency Loss': student_segmentation_constistency_loss.item(),
-                'Train: Student Segmentation Loss':             student_segmentation_loss.item(),
-                'Train: Student Registration Consistency Loss': student_registration_constistency_loss.item(),
-                'Train: Student Registration Loss':             student_registration_loss.item(),
-                'Train: Student Discriminator Loss':            student_discriminator_loss.item(),
-            })
+            #wandb.log({ 
+            #    'Train: Student Segmentation Consistency Loss': student_segmentation_constistency_loss.item(),
+            #    'Train: Student Segmentation Loss':             student_segmentation_loss.item(),
+            #    'Train: Student Registration Consistency Loss': student_registration_constistency_loss.item(),
+            #    'Train: Student Registration Loss':             student_registration_loss.item(),
+            #    'Train: Student Discriminator Loss':            student_discriminator_loss.item(),
+            #})
             
         # Save checkpoints
         if (epoch % 5 == 0) and (epoch > 0):
@@ -429,7 +429,6 @@ def training(
 
 if __name__ == "__main__":
     
-    breakpoint()
     cuda_seeds()
 
     model_path, device          = hardware_init()
