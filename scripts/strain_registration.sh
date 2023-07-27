@@ -23,4 +23,4 @@ rsync -avv --info=progress2 /data/groups/beets-tan/l.estacio/data_tcia/train/ /p
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /home/s.trebeschi/PAM/train.py --batch-size 12 --registration-only True --wandb registration-only
+python /home/s.trebeschi/PAM/train.py --batch-size 12 --registration-only True --wandb registration-only --body-part thorax
