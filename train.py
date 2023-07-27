@@ -437,6 +437,8 @@ if __name__ == "__main__":
 
     if PARAMS.debug:
         breakpoint()
+    else:
+        print("Debug mode is off")
     
     cuda_seeds()
 
