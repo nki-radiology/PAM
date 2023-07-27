@@ -19,13 +19,13 @@ parser.add_argument('--batch-size',
 
 parser.add_argument('--filters',
                     type = str,  
-                    default = "32,64,128,256,512,1024,2048",  
+                    default = "8,16,32,64,128,256,512,1024,2048",  
                     #default = [8, 8, 16, 16, 32, 32, 32, 32],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
                     type = str,  
-                    default = "32,64,128,256,512,1024,2048",    
+                    default = "8,16,32,64,128,256,512,1024,2048",    
                     #default = [8, 8, 16, 16, 32, 32, 32, 32], 
                     help = 'filters number for each layer')
 
