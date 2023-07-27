@@ -406,7 +406,8 @@ def training(
     n_epochs     = 10001
 
     # wandb Initialization
-    wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
+    if not PARAMS.debug:
+        wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
 
 
     for epoch in range(epoch, n_epochs):
@@ -424,10 +425,11 @@ def training(
             loss_dict = network.train(fixed, moving, fixed_mask, moving_mask)
 
             # wandb logging
-            wandb.log(loss_dict)
+            if not PARAMS.debug:
+                wandb.log(loss_dict)
             
         # Save checkpoints
-        if (epoch % 5 == 0) and (epoch > 0):
+        if (epoch % 5 == 0) and (epoch > 0) and not PARAMS.debug:
             network.save()
 
             print('Model saved!')
