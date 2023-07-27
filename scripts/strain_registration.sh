@@ -26,4 +26,4 @@ rsync -avv --info=progress2 /data/groups/beets-tan/s.trebeschi/tcia_train_segmen
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /home/s.trebeschi/PAM/train.py --batch-size 6 --registration-only True --wandb registration-only --body-part thorax --filters "16,32,64,128,256,512,1024,1024" --filters-discriminator "16,32,64,128,256,512,1024,1024"
+python /home/s.trebeschi/PAM/train.py --batch-size 4 --registration-only True --wandb registration-only --body-part thorax --filters "16,32,64,128,256,512,1024,1024" --filters-discriminator "16,32,64,128,256,512,1024,1024"
