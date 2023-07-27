@@ -7,7 +7,7 @@ parser.add_argument('--img-dim',
                     default = (192, 192, 160), 
                     help = 'Image dimension')
 
-parser.add_argument('--body_part',
+parser.add_argument('--body-part',
                     type = str,
                     default = 'thorax',
                     help = 'body part to train on')
