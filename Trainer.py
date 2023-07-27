@@ -89,16 +89,27 @@ class DiscriminatorNetworkFactory(Trainer):
         self.model.train()
 
 
-    def train(self, real, fake):
+    def init_loss_funcions(self):
+        self.bce_fn         = nn.BCELoss()
+        self.mse_fn         = nn.MSELoss()
+
+
+    def init_optimizer(self):
+        self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
+
+
+    def train(self, batch):
         self.inc_iterator()
         self.optimizer.zero_grad()
 
-        real, _ = self.model(real)
-        fake, _ = self.model(fake)
+        real, fake  = batch
 
-        b_size = real.shape
-        label_r = torch.full(b_size, self.real_label, dtype=torch.float, device=self.device)
-        label_f = torch.full(b_size, 1 - self.real_label, dtype=torch.float, device=self.device)
+        real, _     = self.model(real)
+        fake, _     = self.model(fake)
+
+        b_size      = real.shape
+        label_r     = torch.full(b_size, self.real_label, dtype=torch.float, device=self.device)
+        label_f     = torch.full(b_size, 1 - self.real_label, dtype=torch.float, device=self.device)
 
         loss_d_real = self.bce_fn(real, label_r)
         loss_d_fake = self.bce_fn(fake, label_f)
@@ -192,7 +203,7 @@ class RegistrationNetworkTrainer(Trainer):
 
         # train discriminator
         (wA, wD), (tA, tD)  = self.model(fixed, moving)
-        L = self.discriminator.train(wA.detach(), wD.detach())
+        L = self.discriminator.train([wA.detach(), wD.detach()])
         discriminator_loss = L
 
         # return losses
