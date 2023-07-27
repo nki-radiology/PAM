@@ -294,35 +294,33 @@ class RegistrationNetwork(nn.Module):
         return (wA, wD), (tA, tD)
     
 
-class RegistrationStudentNetwork(nn.Module):
-    
-        def __init__(self, img_size, filters, latent_dim) -> None:
-            super().__init__()
-            self.img_size = img_size
-            self.filters = filters
-            self.latent_dim = latent_dim
-    
-            self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
-            self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
-            self.spatial_layer  = SpatialTransformer(self.img_size)
+class RegistrationNetworkV2(nn.Module):
 
-    
-        def forward(self, fixed, moving, return_embedding=False):    
-            # student network
-            z_fixed     = self.encoder(fixed)
-            z_moving    = self.encoder(moving)
+    def __init__(self, img_size, filters) -> None:
+        super().__init__()
+        self.img_size = img_size
+        self.filters = filters
 
-            z_diff      = z_moving - z_fixed
+        self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.filters[-1], flatten=True)
+        self.decoder_affine     = AffineDecoder(self.img_size, in_channels=self.filters[-1])
+        self.unet               = UNet(self.img_size, self.filters, in_channels=2, out_channels=3)
 
-            z = torch.cat((z_moving, z_diff), dim=1)
+        self.spatial_layer      = SpatialTransformer(self.img_size)
 
-            t = self.decoder(z)
-            w = self.spatial_layer(moving, t)
 
-            if return_embedding:
-                return t, w, (z_fixed, z_moving, z_diff)
-            
-            return t, w
+    def forward(self, fixed, moving):
+        # compute affine transform
+        z_fixed     = self.encoder(fixed)
+        z_moving    = self.encoder(moving)
+        z           = torch.cat((z_fixed, z_moving), dim=1)
+        tA          = self.decoder_affine(z)
+        wA          = self.spatial_layer(moving, tA)
+
+        # compute deformation field
+        tD          = self.unet(torch.cat((fixed, wA), dim=1))
+        wD          = self.spatial_layer(wA, tD)
+
+        return (wA, wD), (tA, tD)
         
 
 class SegmentationNetwork(nn.Module):
