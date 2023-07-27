@@ -302,7 +302,7 @@ class RegistrationNetworkV2(nn.Module):
         self.filters = filters
 
         self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.filters[-1], flatten=True)
-        self.decoder_affine     = AffineDecoder(self.img_size, in_channels=self.filters[-1])
+        self.decoder_affine     = AffineDecoder(self.img_size, in_channels=self.filters[-1]*2)
         self.unet               = UNet(self.img_size, self.filters, in_channels=2, out_channels=3)
 
         self.spatial_layer      = SpatialTransformer(self.img_size)
