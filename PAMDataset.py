@@ -47,7 +47,7 @@ def load_image(path, body_part):
     im = GetArrayFromImage(im)
     im = (im - im.min()) / (im.max() - im.min())
     
-    z = PARAMS.img_size[-1]
+    z = PARAMS.img_dim[-1]
     if body_part == 'thorax':
         im = im[-z:] 
     elif body_part == 'abdomen':
@@ -80,7 +80,7 @@ def load_segmentation(path, body_part):
     seg = ReadImage(path)
     seg = GetArrayFromImage(seg)
 
-    z = PARAMS.img_size[-1]
+    z = PARAMS.img_dim[-1]
     if body_part == 'thorax':
         seg = seg[-z:] 
         seg = filter_segmentation_mask(seg, TOTSEG_LABELS_THORAX)
