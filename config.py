@@ -78,3 +78,8 @@ parser.add_argument('--registration-only',
 
 PARAMS = parser.parse_args()
 
+if isinstance(PARAMS.filters, str):
+    PARAMS.filters = [int(i) for i in PARAMS.filters.split(',')]
+
+if isinstance(PARAMS.filters_discriminator, str):
+    PARAMS.filters_discriminator = [int(i) for i in PARAMS.filters_discriminator.split(',')]
