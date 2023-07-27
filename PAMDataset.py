@@ -2,10 +2,9 @@ import torch
 from   torch.utils import data
 import numpy as np
 
-from   libs.frida.io         import ImageLoader, ReadVolume
-from   libs.frida.transforms import  ZeroOneScaling, ToNumpyArray
-
 from SimpleITK import ReadImage, GetArrayFromImage
+
+from config import PARAMS
 
 
 TOTSEG_LABELS_THORAX = [
@@ -48,10 +47,11 @@ def load_image(path, body_part):
     im = GetArrayFromImage(im)
     im = (im - im.min()) / (im.max() - im.min())
     
+    z = PARAMS.img_size[-1]
     if body_part == 'thorax':
-        im = im[-160:] 
+        im = im[-z:] 
     elif body_part == 'abdomen':
-        im = im[:160] 
+        im = im[:z] 
     else:
         raise ValueError('body part not recognized')
     im = zero_pad_inplace(im)
@@ -80,11 +80,12 @@ def load_segmentation(path, body_part):
     seg = ReadImage(path)
     seg = GetArrayFromImage(seg)
 
+    z = PARAMS.img_size[-1]
     if body_part == 'thorax':
-        seg = seg[-160:] 
+        seg = seg[-z:] 
         seg = filter_segmentation_mask(seg, TOTSEG_LABELS_THORAX)
     elif body_part == 'abdomen':
-        seg = seg[:160] 
+        seg = seg[:z] 
         seg = filter_segmentation_mask(seg, TOTSEG_LABELS_ABDOMEN)
     else:
         raise ValueError('body part not recognized')

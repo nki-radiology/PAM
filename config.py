@@ -4,7 +4,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--img-dim',    
                     type = tuple, 
-                    default = (192, 192, 160), 
+                    default = (192, 192, 192), 
                     help = 'Image dimension')
 
 parser.add_argument('--body-part',
