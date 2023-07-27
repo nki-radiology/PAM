@@ -73,13 +73,7 @@ class Trainer():
 class DiscriminatorNetworkFactory(Trainer):
     def __init__(self, device, backup_path):
         super().__init__(device, backup_path)
-        self.device         = device
         self.real_label     = 1.
-
-        self.bce_fn         = nn.BCELoss()
-        self.mse_fn         = nn.MSELoss()
-
-        self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
 
     def init_model(self):
