@@ -234,11 +234,21 @@ class RegistrationNetworkTrainer(NetworkFactory):
         loss.backward()
         self.optimizer.step()
 
+        # train discriminator
         (wA, wD), (tA, tD)  = self.model(fixed, moving)
         L = self.discriminator.train(wA.detach(), wD.detach())
         discriminator_loss = L
 
-        return reg_affine_loss, reg_deform_loss, adv_loss, energy_loss, discriminator_loss
+        # return losses
+        loss_dict = {
+            'reg_affine_loss':              reg_affine_loss.item(),
+            'reg_deform_loss':              reg_deform_loss.item(),
+            'adv_loss':                     adv_loss.item(),
+            'energy_loss':                  energy_loss.item(),
+            'discriminator_loss':           discriminator_loss.item(),
+        }
+
+        return loss_dict
     
     def save(self):
         super().save()
@@ -311,11 +321,11 @@ class StudentNetworkTrainer(NetworkFactory):
         self.optimizer.zero_grad()
 
         # registration training
-        L = self.registration.train(fixed, moving)
+        _ = self.registration.train(fixed, moving)
 
         # segmentation training
-        L = self.segmentation.train(fixed, fixed_mask)
-        L = self.segmentation.train(moving, moving_mask)
+        _ = self.segmentation.train(fixed, fixed_mask)
+        _ = self.segmentation.train(moving, moving_mask)
 
         # student training
         (w, t), (s_fixed, s_moving) = self.model(fixed, moving)
@@ -356,7 +366,15 @@ class StudentNetworkTrainer(NetworkFactory):
         L = self.discriminator.train(wA.detach(), w.detach())
         discriminator_loss = L
 
-        return reg_loss, dice_loss, reg_consistency_loss, seg_consistency_loss, discriminator_loss
+        loss_dict = {
+            'reg_loss':                     reg_loss.item(),
+            'dice_loss':                    dice_loss.item(),
+            'reg_consistency_loss':         reg_consistency_loss.item(),
+            'seg_consistency_loss':         seg_consistency_loss.item(),
+            'discriminator_loss':           discriminator_loss.item(),
+        }
+
+        return loss_dict
     
     def save(self):
         super().save()
@@ -373,13 +391,13 @@ def hardware_init():
     device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
     # where to store the model
-    model_path = os.path.join(PARAMS.project_folder,  'StudentNetwork.pth')
+    model_path = os.path.join(PARAMS.project_folder,  'Network.pth')
 
     return model_path, device
 
 
 def training(
-        student_network,
+        network,
         train_dataloader, 
         device
     ):
@@ -403,26 +421,14 @@ def training(
             fixed_mask  = fixed_mask.to(device)
             moving_mask = moving_mask.to(device)
 
-            L = student_network.train(fixed, moving, fixed_mask, moving_mask)
-
-            student_registration_loss                   = L[0]
-            student_segmentation_loss                   = L[1]
-            student_registration_constistency_loss      = L[2]
-            student_segmentation_constistency_loss      = L[3]
-            student_discriminator_loss                  = L[4]
+            loss_dict = network.train(fixed, moving, fixed_mask, moving_mask)
 
             # wandb logging
-            wandb.log({ 
-                'Train: Student Segmentation Consistency Loss': student_segmentation_constistency_loss.item(),
-                'Train: Student Segmentation Loss':             student_segmentation_loss.item(),
-                'Train: Student Registration Consistency Loss': student_registration_constistency_loss.item(),
-                'Train: Student Registration Loss':             student_registration_loss.item(),
-                'Train: Student Discriminator Loss':            student_discriminator_loss.item(),
-            })
+            wandb.log(loss_dict)
             
         # Save checkpoints
         if (epoch % 5 == 0) and (epoch > 0):
-            student_network.save()
+            network.save()
 
             print('Model saved!')
 
@@ -434,10 +440,13 @@ if __name__ == "__main__":
     model_path, device          = hardware_init()
     train_dataloader, _         = data_init(load_segmentations=True)
 
-    student_network             = StudentNetworkTrainer(device, model_path)
+    if PARAMS.basic_registration:
+        network                 = RegistrationNetworkTrainer(device, model_path)
+    else:
+        network                 = StudentNetworkTrainer(device, model_path)
 
     training(
-        student_network         = student_network,
+        network                 = network,
         train_dataloader        = train_dataloader, 
         device                  = device
     )

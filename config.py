@@ -69,9 +69,12 @@ parser.add_argument('--wandb',
 parser.add_argument('--debug',
                     type = bool,
                     default = False,
-                    help = 'debug mode')                    
+                    help = 'debug mode')
+
+parser.add_argument('--registration-only',
+                    type = bool,
+                    default = True,
+                    help = 'registration mode')
 
 PARAMS = parser.parse_args()
 
-
-# TODO parse arguments better
