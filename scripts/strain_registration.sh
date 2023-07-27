@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=4-00:00:00                           # Time limit hrs:min:sec
-#SBATCH --job-name=topazia                          # Job name
+#SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
+#SBATCH --job-name=jumbo                            # Job name
 #SBATCH --partition=a100                            # Partition
 #SBATCH --qos=a100_qos 
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
