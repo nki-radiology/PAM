@@ -200,7 +200,7 @@ class RegistrationNetworkTrainer(NetworkFactory):
         self.model.train()
 
 
-    def train(self, fixed, moving):
+    def train(self, fixed, moving, fixed_mask=None, moving_mask=None):
         self.inc_iterator()
         self.optimizer.zero_grad()
 
