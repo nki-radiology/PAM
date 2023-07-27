@@ -228,8 +228,8 @@ class RegistrationNetworkTrainer(NetworkFactory):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            1.0     * fact(start=1000, stop=10000) * adv_loss + \
-            0.1     * fact(start=1000, stop=10000) * energy_loss 
+            1.0     * fact(start=100, stop=1000) * adv_loss + \
+            0.1     * fact(start=100, stop=1000) * energy_loss 
         
         loss.backward()
         self.optimizer.step()
