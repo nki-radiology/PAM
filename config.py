@@ -18,14 +18,14 @@ parser.add_argument('--batch-size',
                     help = 'batch size')
 
 parser.add_argument('--filters',
-                    type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],  
+                    type = str,  
+                    default = "32,64,128,256,512,1024,2048",  
                     #default = [8, 8, 16, 16, 32, 32, 32, 32],      
                     help = 'filters number for each layer')
 
 parser.add_argument('--filters-discriminator',     
-                    type = list,  
-                    default = [8, 16, 32, 64, 128, 256, 512, 1024],    
+                    type = str,  
+                    default = "32,64,128,256,512,1024,2048",    
                     #default = [8, 8, 16, 16, 32, 32, 32, 32], 
                     help = 'filters number for each layer')
 
@@ -78,8 +78,5 @@ parser.add_argument('--registration-only',
 
 PARAMS = parser.parse_args()
 
-if isinstance(PARAMS.filters, str):
-    PARAMS.filters = [int(i) for i in PARAMS.filters.split(',')]
-
-if isinstance(PARAMS.filters_discriminator, str):
-    PARAMS.filters_discriminator = [int(i) for i in PARAMS.filters_discriminator.split(',')]
+PARAMS.filters                  = [int(i) for i in PARAMS.filters.split(',')]
+PARAMS.filters_discriminator    = [int(i) for i in PARAMS.filters_discriminator.split(',')]
