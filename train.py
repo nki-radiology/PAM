@@ -445,7 +445,7 @@ if __name__ == "__main__":
     model_path, device          = hardware_init()
     train_dataloader, _         = data_init(load_segmentations=True)
 
-    if PARAMS.basic_registration:
+    if PARAMS.registration_only:
         network                 = RegistrationNetworkTrainer(device, model_path)
     else:
         network                 = StudentNetworkTrainer(device, model_path)
