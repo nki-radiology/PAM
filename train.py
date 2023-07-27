@@ -434,6 +434,9 @@ def training(
 
 
 if __name__ == "__main__":
+
+    if PARAMS.debug:
+        breakpoint()
     
     cuda_seeds()
 
