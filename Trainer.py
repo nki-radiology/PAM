@@ -178,19 +178,12 @@ class RegistrationNetworkTrainer(Trainer):
         # make reigstreed image look like the fixed image
         adv_loss            = self.adv_loss_fn(wA, wD)
 
-        # total loss
-        def fact(start=0, stop=1000.):
-            factor = (self.itr - start)/stop
-            factor = np.maximum(factor, 0.0)
-            factor = np.minimum(factor, 1.0)
-            return factor
-
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            1.0     * fact(start=100, stop=1000) * adv_loss + \
-            0.1     * fact(start=100, stop=1000) * energy_loss + \
-            0.1     * fact(start=100, stop=1000) * latent_loss
+            0.5     * adv_loss + \
+            0.1     * energy_loss + \
+            0.1     * latent_loss
         
         loss.backward()
         self.optimizer.step()
