@@ -95,6 +95,7 @@ def save_image(image, path):
     from SimpleITK import GetImageFromArray
     from SimpleITK import WriteImage
     from numpy import transpose
+
     image = image.cpu().detach().numpy().squeeze()
     image = transpose(image, (0, 2, 3, 4, 1))
     image = GetImageFromArray(image)
@@ -113,7 +114,6 @@ def training(
     # wandb Initialization
     if not PARAMS.debug:
         wandb.init(project=PARAMS.wandb, entity='s-trebeschi')
-
 
     for epoch in range(epoch, n_epochs):
         for _, (x_1, x_2) in enumerate(train_dataloader):
@@ -139,10 +139,10 @@ def training(
             print('Model saved!')
 
             (wA, wD), (tA, tD) = network(fixed, moving)
-            save_image(wA, os.path.join(PARAMS.project_folder, 'wA.nii.gz'))
-            save_image(wD, os.path.join(PARAMS.project_folder, 'wD.nii.gz'))
-            save_image(tA, os.path.join(PARAMS.project_folder, 'tA.nii.gz'))
-            save_image(tD, os.path.join(PARAMS.project_folder, 'tD.nii.gz'))
+            save_image(wA, os.path.join(PARAMS.project_folder, 'examples', 'wA.nii.gz'))
+            save_image(wD, os.path.join(PARAMS.project_folder, 'examples', 'wD.nii.gz'))
+            save_image(tA, os.path.join(PARAMS.project_folder, 'examples', 'tA.nii.gz'))
+            save_image(tD, os.path.join(PARAMS.project_folder, 'examples', 'tD.nii.gz'))
 
 
 if __name__ == "__main__":
