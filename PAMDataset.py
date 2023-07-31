@@ -95,7 +95,7 @@ def load_segmentation(path, body_part):
 
 
 def np2torch(arr):
-    arr = arr.transpose(1, 2, 0)
+    #arr = arr.transpose(1, 2, 0)
     arr = torch.from_numpy(arr).type(torch.float32)
     arr = arr[None, :]
     return arr

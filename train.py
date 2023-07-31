@@ -104,7 +104,7 @@ def save_image(image, path):
 
 
 def training(
-        network,
+        trainer,
         train_dataloader, 
         device
     ):
@@ -128,7 +128,7 @@ def training(
             fixed_mask  = fixed_mask.to(device)
             moving_mask = moving_mask.to(device)
 
-            loss_dict = network.train([fixed, moving])
+            loss_dict = trainer.train([fixed, moving])
 
             # wandb logging
             if not PARAMS.debug:
@@ -136,10 +136,10 @@ def training(
             
         # Save checkpoints
         if not PARAMS.debug:
-            network.save()
+            trainer.save()
             print('Model saved!')
 
-            (wA, wD), (tA, tD) = network(fixed, moving)
+            (wA, wD), (tA, tD) = trainer.model(fixed, moving)
             save_image(wA, os.path.join(PARAMS.project_folder, 'examples', 'wA.nii.gz'))
             save_image(wD, os.path.join(PARAMS.project_folder, 'examples', 'wD.nii.gz'))
             save_image(tA, os.path.join(PARAMS.project_folder, 'examples', 'tA.nii.gz'))
@@ -159,12 +159,12 @@ if __name__ == "__main__":
     train_dataloader, _         = data_init(load_segmentations=True)
 
     if PARAMS.registration_only:
-        network                 = RegistrationNetworkTrainer(device, model_path)
+        trainer                 = RegistrationNetworkTrainer(device, model_path)
     else:
-        network                 = StudentNetworkTrainer(device, model_path)
+        trainer                 = StudentNetworkTrainer(device, model_path)
 
     training(
-        network                 = network,
+        trainer                 = trainer,
         train_dataloader        = train_dataloader, 
         device                  = device
     )
