@@ -32,6 +32,8 @@ class Trainer():
         self.itr            = 0
 
         self.init_model()
+        self.model.half()
+        
         self.init_loss_funcions()
         self.init_optimizer()
         self.load_backup_if_present()

@@ -96,7 +96,7 @@ def load_segmentation(path, body_part):
 
 def np2torch(arr):
     #arr = arr.transpose(1, 2, 0)
-    arr = torch.from_numpy(arr).type(torch.float32)
+    arr = torch.from_numpy(arr).type(torch.float16)
     arr = arr[None, :]
     return arr
 
@@ -114,7 +114,6 @@ class PAMDataset(data.Dataset):
         self.indices     = dataset.index.values.copy()
         self.transform   = transform
         self.random_seed = int(0)
-        self.inp_dtype   = torch.float32
         self.log         = []
         self.body_part   = body_part
 
