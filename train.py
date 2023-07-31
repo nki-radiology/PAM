@@ -94,10 +94,11 @@ def hardware_init():
 def save_image(image, path):
     from SimpleITK import GetImageFromArray
     from SimpleITK import WriteImage
-    from numpy import transpose
+    from numpy import transpose, squeeze
 
-    image = image.cpu().detach().numpy().squeeze()
+    image = image.cpu().detach().numpy()
     image = transpose(image, (0, 2, 3, 4, 1))
+    image = squeeze(image)
     image = GetImageFromArray(image)
     WriteImage(image, path)
 
