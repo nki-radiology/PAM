@@ -289,7 +289,7 @@ class RegistrationNetwork(nn.Module):
 
         # compute deformation field
         tD = self.unet(torch.cat((fixed, wA), dim=1))
-        wD = self.spatial_layer(moving, tA + tD)
+        wD = self.spatial_layer(wA, tD)
 
         return (wA, wD), (tA, tD)
     
