@@ -125,8 +125,8 @@ def training(
             fixed               = fixed.to(device)
             moving              = moving.to(device)
 
-            fixed_mask          = fixed_mask.to(device)
-            moving_mask         = moving_mask.to(device)
+            #fixed_mask          = fixed_mask.to(device)
+            #moving_mask         = moving_mask.to(device)
 
             loss_dict           = trainer.train([fixed, moving])
 
