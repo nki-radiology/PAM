@@ -135,7 +135,7 @@ class RegistrationNetworkTrainer(Trainer):
 
 
     def init_model(self):
-        self.model = RegistrationNetworkV2(PARAMS.img_dim, PARAMS.filters)
+        self.model = RegistrationNetwork(PARAMS.img_dim, PARAMS.filters)
         self.model.to(self.device)
         self.model.apply(weights_init)
         self.model.train()
@@ -169,11 +169,6 @@ class RegistrationNetworkTrainer(Trainer):
         # make the transformation smooth
         energy_loss         = self.energy_fn(tA) + self.energy_fn(tD)
 
-        # latent loss
-        z_fixed             = self.model.encoder(fixed)
-        z_wD                = self.model.encoder(wD)
-        latent_loss         = self.mse_fn(z_fixed, z_wD)
-
         # adversarial loss
         # make reigstreed image look like the fixed image
         adv_loss            = self.adv_loss_fn(wA, wD)
@@ -181,9 +176,8 @@ class RegistrationNetworkTrainer(Trainer):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            0.5     * adv_loss + \
-            0.1     * energy_loss + \
-            0.1     * latent_loss
+            0.2     * adv_loss + \
+            0.1     * energy_loss 
         
         loss.backward()
         self.optimizer.step()
@@ -199,7 +193,6 @@ class RegistrationNetworkTrainer(Trainer):
             'reg_deform_loss':              reg_deform_loss.item(),
             'adv_loss':                     adv_loss.item(),
             'energy_loss':                  energy_loss.item(),
-            'latent_loss':                  latent_loss.item(),
             'discriminator_loss':           discriminator_loss.item(),
         }
 

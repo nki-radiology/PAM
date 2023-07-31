@@ -91,6 +91,16 @@ def hardware_init():
     return model_path, device
 
 
+def save_image(image, path):
+    from SimpleITK import GetImageFromArray
+    from SimpleITK import WriteImage
+    from numpy import transpose
+    image = image.cpu().detach().numpy().squeeze()
+    image = transpose(image, (0, 2, 3, 4, 1))
+    image = GetImageFromArray(image)
+    WriteImage(image, path)
+
+
 def training(
         network,
         train_dataloader, 
@@ -124,10 +134,15 @@ def training(
                 wandb.log(loss_dict)
             
         # Save checkpoints
-        if (epoch % 5 == 0) and (epoch > 0) and not PARAMS.debug:
+        if not PARAMS.debug:
             network.save()
-
             print('Model saved!')
+
+            (wA, wD), (tA, tD) = network(fixed, moving)
+            save_image(wA, os.path.join(PARAMS.project_folder, 'wA.nii.gz'))
+            save_image(wD, os.path.join(PARAMS.project_folder, 'wD.nii.gz'))
+            save_image(tA, os.path.join(PARAMS.project_folder, 'tA.nii.gz'))
+            save_image(tD, os.path.join(PARAMS.project_folder, 'tD.nii.gz'))
 
 
 if __name__ == "__main__":
