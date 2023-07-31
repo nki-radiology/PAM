@@ -122,13 +122,13 @@ def training(
             fixed, fixed_mask   = x_1
             moving, moving_mask = x_2
 
-            fixed  = fixed.to(device)
-            moving = moving.to(device)
+            fixed               = fixed.to(device)
+            moving              = moving.to(device)
 
-            fixed_mask  = fixed_mask.to(device)
-            moving_mask = moving_mask.to(device)
+            fixed_mask          = fixed_mask.to(device)
+            moving_mask         = moving_mask.to(device)
 
-            loss_dict = trainer.train([fixed, moving])
+            loss_dict           = trainer.train([fixed, moving])
 
             # wandb logging
             if not PARAMS.debug:
