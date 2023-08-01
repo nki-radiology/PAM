@@ -176,7 +176,7 @@ class RegistrationNetworkTrainer(Trainer):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            0.2     * adv_loss + \
+            1.0     * adv_loss + \
             0.01    * energy_loss 
         
         loss.backward()
