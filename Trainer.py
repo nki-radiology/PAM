@@ -166,9 +166,9 @@ class RegistrationNetworkTrainer(Trainer):
         # curriculum learning
         def smooth_images(*images):
             def get_k_p(itr):
-                thresholds  = [2500, 5000, 7500, 10000]
-                values_k    = [9, 7, 5, 3, 1]
-                values_p    = [4, 3, 2, 1, 0]
+                thresholds  = [2500,    5000,   7500,   10000]
+                values_k    = [9,       7,      5,      3,      1]
+                values_p    = [4,       3,      2,      1,      0]
 
                 for threshold, k, p in zip(thresholds, values_k, values_p):
                     if itr < threshold:
@@ -182,7 +182,7 @@ class RegistrationNetworkTrainer(Trainer):
                 i = nn.functional.avg_pool3d(i, kernel_size=k, stride=1, padding=p)
                 result.append(i)
 
-            return i
+            return result
         
         fixed, moving   = smooth_images(fixed, moving)
         wA, wD          = smooth_images(wA, wD)
