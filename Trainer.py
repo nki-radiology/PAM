@@ -151,6 +151,9 @@ class RegistrationNetworkTrainer(Trainer):
     def init_optimizer(self):
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
+    
+
+
 
     def train(self, batch):
         self.inc_iterator()
@@ -159,6 +162,30 @@ class RegistrationNetworkTrainer(Trainer):
 
         # forward pass
         (wA, wD), (tA, tD)  = self.model(fixed, moving)
+
+        # curriculum learning
+        def smooth_images(*images):
+            def get_k_p(itr):
+                thresholds  = [2500, 5000, 7500, 10000]
+                values_k    = [9, 7, 5, 3, 1]
+                values_p    = [4, 3, 2, 1, 0]
+
+                for threshold, k, p in zip(thresholds, values_k, values_p):
+                    if itr < threshold:
+                        return k, p
+                return values_k[-1], values_p[-1]
+            
+            k, p = get_k_p(self.itr)
+
+            result = []
+            for i in images:
+                i = nn.functional.avg_pool3d(i, kernel_size=k, stride=1, padding=p)
+                result.append(i)
+
+            return i
+        
+        fixed, moving   = smooth_images(fixed, moving)
+        wA, wD          = smooth_images(wA, wD)
 
         # registration loss
         # standard registration loss
@@ -176,7 +203,7 @@ class RegistrationNetworkTrainer(Trainer):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            1.0     * adv_loss + \
+            0.8     * adv_loss + \
             0.01    * energy_loss 
         
         loss.backward()
@@ -209,6 +236,13 @@ class StudentNetworkTrainer(Trainer):
         raise NotImplementedError
 
 """
+
+        def weight_fn():
+            w = np.sin(self.itr * np.pi / 1000.0)
+            w = 0.1 if w < 0.1 else w
+            return w
+
+
 class SegmentationNetworkTrainer(Trainer):
     def __init__(self, device, backup_path):
         super().__init__(device, backup_path)
