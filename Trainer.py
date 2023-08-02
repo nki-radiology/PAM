@@ -198,7 +198,8 @@ class RegistrationNetworkTrainer(Trainer):
 
         # adversarial loss
         # make reigstreed image look like the fixed image
-        adv_loss            = self.adv_loss_fn(wA, wD)
+        real_image          = wA.detach()
+        adv_loss            = self.adv_loss_fn(real_image, wD)
 
         loss = \
             1.0     * reg_affine_loss + \
