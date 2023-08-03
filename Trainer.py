@@ -146,7 +146,13 @@ class RegistrationNetworkTrainer(Trainer):
         self.mse_fn         = nn.MSELoss()
         self.adv_loss_fn    = self.discriminator.adversarial_loss
 
-        self.energy1_fn     = lambda x:torch.norm(x, dim=(1, 2, 3, 4))
+        def norm(x):
+            x = torch.square(x)
+            x = torch.sum(x, dim=(1, 2, 3, 4))
+            x = torch.sqrt(x)
+            return x
+
+        self.energy1_fn     = norm
         self.energy2_fn     = variatinal_energy_loss
 
 
