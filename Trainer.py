@@ -150,7 +150,7 @@ class RegistrationNetworkTrainer(Trainer):
             x = torch.square(x)
             x = torch.sum(x, dim=(1, 2, 3, 4))
             x = torch.sqrt(x)
-            return x
+            return x.mean()
 
         self.energy1_fn     = norm
         self.energy2_fn     = variatinal_energy_loss
@@ -175,8 +175,8 @@ class RegistrationNetworkTrainer(Trainer):
 
         # energy-like penalty loss
         # make the transformation smooth
-        energy_loss         = self.energy1_fn(tA) + self.energy1_fn(tD)
-        energy_loss        += self.energy2_fn(tA) + self.energy2_fn(tD) 
+        energy_loss         = (self.energy1_fn(tA) + self.energy1_fn(tD)) * 0.001
+        energy_loss        +=  self.energy2_fn(tA) + self.energy2_fn(tD) 
 
         # adversarial loss
         # make reigstreed image look like the fixed image
