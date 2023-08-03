@@ -143,16 +143,15 @@ class RegistrationNetworkTrainer(Trainer):
     
     def init_loss_funcions(self):
         self.correlation_fn = correlation_coefficient_loss
-        self.energy_fn      = variatinal_energy_loss
         self.mse_fn         = nn.MSELoss()
         self.adv_loss_fn    = self.discriminator.adversarial_loss
+
+        self.energy1_fn     = lambda x:torch.norm(x, dim=(1, 2, 3, 4))
+        self.energy2_fn     = variatinal_energy_loss
 
 
     def init_optimizer(self):
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
-
-    
-
 
 
     def train(self, batch):
@@ -163,30 +162,6 @@ class RegistrationNetworkTrainer(Trainer):
         # forward pass
         (wA, wD), (tA, tD)  = self.model(fixed, moving)
 
-        # curriculum learning
-        def smooth_images(*images):
-            def get_k_p(itr):
-                thresholds  = [2500,    5000,   7500,   10000]
-                values_k    = [9,       7,      5,      3,      1]
-                values_p    = [4,       3,      2,      1,      0]
-
-                for threshold, k, p in zip(thresholds, values_k, values_p):
-                    if itr < threshold:
-                        return k, p
-                return values_k[-1], values_p[-1]
-            
-            k, p = get_k_p(self.itr)
-
-            result = []
-            for i in images:
-                i = nn.functional.avg_pool3d(i, kernel_size=k, stride=1, padding=p)
-                result.append(i)
-
-            return result
-        
-        fixed, moving   = smooth_images(fixed, moving)
-        wA, wD          = smooth_images(wA, wD)
-
         # registration loss
         # standard registration loss
         reg_affine_loss     = self.correlation_fn(fixed, wA)
@@ -194,7 +169,8 @@ class RegistrationNetworkTrainer(Trainer):
 
         # energy-like penalty loss
         # make the transformation smooth
-        energy_loss         = self.energy_fn(tA) + self.energy_fn(tD)
+        energy_loss         = self.energy1_fn(tA) + self.energy1_fn(tD)
+        energy_loss        += self.energy2_fn(tA) + self.energy2_fn(tD) 
 
         # adversarial loss
         # make reigstreed image look like the fixed image
@@ -204,7 +180,7 @@ class RegistrationNetworkTrainer(Trainer):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            0.8     * adv_loss + \
+            1.0     * adv_loss + \
             0.01    * energy_loss 
         
         loss.backward()
