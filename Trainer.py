@@ -160,9 +160,6 @@ class RegistrationNetworkTrainer(Trainer):
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
 
-
-
-
     def train(self, batch):
         self.inc_iterator()
         self.optimizer.zero_grad()
@@ -176,8 +173,7 @@ class RegistrationNetworkTrainer(Trainer):
 
             for i in images:
                 i = nn.functional.avg_pool3d(i, kernel_size=3, stride=1, padding=1)
-            results.append(i)
-
+                results.append(i)
             return results
         
         fixed, moving, wA, wD  = smooth_images(fixed, moving, wA, wD)
