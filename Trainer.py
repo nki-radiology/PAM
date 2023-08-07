@@ -160,6 +160,9 @@ class RegistrationNetworkTrainer(Trainer):
         self.optimizer      = torch.optim.Adam(self.model.parameters(), lr = 3e-4, betas=(0.5, 0.999))
 
 
+
+
+
     def train(self, batch):
         self.inc_iterator()
         self.optimizer.zero_grad()
@@ -167,6 +170,17 @@ class RegistrationNetworkTrainer(Trainer):
 
         # forward pass
         (wA, wD), (tA, tD)  = self.model(fixed, moving)
+
+        def smooth_images(*images):
+            results = []
+
+            for i in images:
+                i = nn.functional.avg_pool3d(i, kernel_size=3, stride=1, padding=1)
+            results.append(i)
+
+            return results
+        
+        fixed, moving, wA, wD  = smooth_images(fixed, moving, wA, wD)
 
         # registration loss
         # standard registration loss
@@ -186,14 +200,14 @@ class RegistrationNetworkTrainer(Trainer):
         loss = \
             1.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
-            1.0     * adv_loss + \
+            0.8     * adv_loss + \
             0.01    * energy_loss 
         
         loss.backward()
         self.optimizer.step()
 
         # train discriminator
-        (wA, wD), (tA, tD)  = self.model(fixed, moving)
+        # (wA, wD), (tA, tD)  = self.model(fixed, moving)
         L = self.discriminator.train([wA.detach(), wD.detach()])
         discriminator_loss = L
 
