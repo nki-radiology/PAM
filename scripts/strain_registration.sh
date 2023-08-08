@@ -1,8 +1,7 @@
 #!/bin/bash
 #SBATCH --time=3-00:00:00                           # Time limit hrs:min:sec
 #SBATCH --job-name=jumbo                            # Job name
-#SBATCH --partition=a100                            # Partition
-#SBATCH --qos=a100_qos 
+#SBATCH --partition=a6000                           # Partition
 #SBATCH --gpus-per-task=1                           # Number of gpus per node
 #SBATCH --gpus=1                                    # Number of gpus in total
 #SBATCH --ntasks=1                                  # Run on a single node
@@ -26,4 +25,4 @@ rsync -avv --info=progress2 /data/groups/beets-tan/s.trebeschi/tcia_train_segmen
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /home/s.trebeschi/PAM/train.py --batch-size 4 --registration-only True --wandb registration-only --body-part thorax --filters "16,32,64,128,256,512,1024,1024" --filters-discriminator "16,32,64,128,256,512,1024,1024"
+python /home/s.trebeschi/PAM/train.py --batch-size 2 --registration-only True --wandb registration-only --body-part thorax --filters "16,32,64,128,256,512,1024,1024" --filters-discriminator "16,32,64,128,256,512,1024,1024"
