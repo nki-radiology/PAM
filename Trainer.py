@@ -18,6 +18,7 @@ from networks.PAMNetwork            import StudentNetwork
 
 from metrics.PAMLoss                import correlation_coefficient_loss
 from metrics.PAMLoss                import variatinal_energy_loss
+from metrics.PAMLoss                import orthogonal_loss
 from metrics.PAMLoss                import dice_loss
 from metrics.PAMLoss                import xent_segmentation
 
@@ -152,8 +153,9 @@ class RegistrationNetworkTrainer(Trainer):
             x = torch.sqrt(x)
             return x.mean()
 
-        self.energy1_fn     = norm
-        self.energy2_fn     = variatinal_energy_loss
+        self.l2_norm_fn     = norm
+        self.orthogonal_fn  = orthogonal_loss
+        self.variational_fn = variatinal_energy_loss
 
 
     def init_optimizer(self):
@@ -168,16 +170,6 @@ class RegistrationNetworkTrainer(Trainer):
         # forward pass
         (wA, wD), (tA, tD)  = self.model(fixed, moving)
 
-        def smooth_images(*images):
-            results = []
-
-            for i in images:
-                i = nn.functional.avg_pool3d(i, kernel_size=3, stride=1, padding=1)
-                results.append(i)
-            return results
-        
-        fixed, moving, wA, wD  = smooth_images(fixed, moving, wA, wD)
-
         # registration loss
         # standard registration loss
         reg_affine_loss     = self.correlation_fn(fixed, wA)
@@ -185,8 +177,8 @@ class RegistrationNetworkTrainer(Trainer):
 
         # energy-like penalty loss
         # make the transformation smooth
-        energy_loss         = (self.energy1_fn(tA) + self.energy1_fn(tD)) * 0.001
-        energy_loss        +=  self.energy2_fn(tA) + self.energy2_fn(tD) 
+        penalty_affine      = self.orthogonal_fn(tA) 
+        penalty_elastic     = self.variational_fn(tD) 
 
         # adversarial loss
         # make reigstreed image look like the fixed image
@@ -194,25 +186,28 @@ class RegistrationNetworkTrainer(Trainer):
         adv_loss            = self.adv_loss_fn(real_image, wD)
 
         loss = \
-            1.0     * reg_affine_loss + \
+            3.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
             0.8     * adv_loss + \
-            0.01    * energy_loss 
+            0.01    * penalty_affine + \
+            0.01    * penalty_elastic 
         
         loss.backward()
         self.optimizer.step()
 
         # train discriminator
-        # (wA, wD), (tA, tD)  = self.model(fixed, moving)
+        (wA, wD), (tA, tD)  = self.model(fixed, moving)
         L = self.discriminator.train([wA.detach(), wD.detach()])
         discriminator_loss = L
 
         # return losses
         loss_dict = {
+            'total_loss':                   loss.item(),
             'reg_affine_loss':              reg_affine_loss.item(),
             'reg_deform_loss':              reg_deform_loss.item(),
             'adv_loss':                     adv_loss.item(),
-            'energy_loss':                  energy_loss.item(),
+            'penalty_affine':               penalty_affine.item(),
+            'penalty_elastic':              penalty_elastic.item(),
             'discriminator_loss':           discriminator_loss.item(),
         }
 
@@ -229,11 +224,19 @@ class StudentNetworkTrainer(Trainer):
         raise NotImplementedError
 
 """
+def smooth_images(*images):
+    results = []
 
-        def weight_fn():
-            w = np.sin(self.itr * np.pi / 1000.0)
-            w = 0.1 if w < 0.1 else w
-            return w
+    for i in images:
+        i = nn.functional.avg_pool3d(i, kernel_size=3, stride=1, padding=1)
+        results.append(i)
+    return results
+
+
+def weight_fn():
+    w = np.sin(self.itr * np.pi / 1000.0)
+    w = 0.1 if w < 0.1 else w
+    return w
 
 
 class SegmentationNetworkTrainer(Trainer):

@@ -48,6 +48,24 @@ def variatinal_energy_loss(flow):
         return d / 3.0
 
 
+def orthogonal_loss(matrix):
+        """
+        This loss represents the orthogonal loss of PAM
+        matrix has shape (batch, 3, 3)
+        """
+        # Compute the orthogonal loss
+        identity        = torch.eye(3, dtype=matrix.dtype, device=matrix.device)
+        matrix          = identity[None, ...] + matrix[:, :3, :3]
+
+        covar           = torch.matmul(matrix, matrix.transpose(1, 2))
+        eigenvals, _    = torch.symeig(covar, eigenvectors=True)
+
+        eigenvals       = torch.square(eigenvals)
+        loss            = (eigenvals + 1e-6) + 1.0 / (eigenvals + 1e-6)
+        loss            = -6 + torch.sum(loss)
+        return loss
+     
+
 def dice_loss(target, pred, smooth=1e-5):
     num_classes = pred.size(1)
     dice = 0

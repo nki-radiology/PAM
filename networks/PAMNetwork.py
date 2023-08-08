@@ -192,13 +192,13 @@ class AffineDecoder(nn.Module):
         W = self.dense_w(z).view(-1, 3, 3)
         b = self.dense_b(z).view(-1, 3)
 
-        tA = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
-        tA = tA.view(-1, 3, 4)
+        mat = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
+        tA = mat.view(-1, 3, 4)
         target_shape = torch.Size((z.shape[0], 1, *self.image_dim))
         tA = F.affine_grid(tA, target_shape, align_corners=False)
         tA = tA.permute(0, 4, 1, 2, 3)
 
-        return tA
+        return mat, tA
     
 
 class UNet(nn.Module):
@@ -284,14 +284,14 @@ class RegistrationNetwork(nn.Module):
     def forward(self, fixed, moving):
         # compute affine transform
         z = self.encoder(torch.cat((fixed, moving), dim=1))
-        tA = self.decoder_affine(z)
+        mat, tA = self.decoder_affine(z)
         wA = self.spatial_layer(moving, tA)
 
         # compute deformation field
         tD = self.unet(torch.cat((fixed, wA), dim=1))
         wD = self.spatial_layer(wA, tD)
 
-        return (wA, wD), (tA, tD)
+        return (mat, wD), (tA, tD)
     
 
 class RegistrationNetworkV2(nn.Module):
