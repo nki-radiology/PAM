@@ -60,7 +60,7 @@ def data_init(load_segmentations = False):
                                 transform    = None,
                                 body_part    = PARAMS.body_part)
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=PARAMS.batch_size, shuffle=True)
+    train_dataloader = DataLoader(dataset=train_dataset, batch_size=PARAMS.batch_size, shuffle=True, pin_memory=True)
     valid_dataloader = DataLoader(dataset=valid_dataset, batch_size=PARAMS.batch_size, shuffle=True)
 
     return train_dataloader, valid_dataloader
@@ -143,7 +143,7 @@ def training(
             
             save_image(fixed,   os.path.join(PARAMS.project_folder, 'examples', 'fixed.nii.gz'))
             save_image(moving,  os.path.join(PARAMS.project_folder, 'examples', 'moving.nii.gz'))
-            save_image(wA,      os.path.join(PARAMS.project_folder, 'examples', 'wA.nii.gz'))
+            #save_image(wA,      os.path.join(PARAMS.project_folder, 'examples', 'wA.nii.gz'))
             save_image(wD,      os.path.join(PARAMS.project_folder, 'examples', 'wD.nii.gz'))
             save_image(tA,      os.path.join(PARAMS.project_folder, 'examples', 'tA.nii.gz'))
             save_image(tD,      os.path.join(PARAMS.project_folder, 'examples', 'tD.nii.gz'))
