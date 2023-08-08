@@ -58,7 +58,7 @@ def orthogonal_loss(matrix):
         matrix          = identity[None, ...] + matrix[:, :3, :3]
 
         covar           = torch.matmul(matrix, matrix.transpose(1, 2)) + 1e-5
-        eigenvals, _    = torch.linalg.eigvals(covar, eigenvectors=True)
+        eigenvals       = torch.linalg.eigvals(covar)
 
         eigenvals       = torch.square(eigenvals)
         loss            = (eigenvals + 1e-5) + 1.0 / (eigenvals + 1e-5)
