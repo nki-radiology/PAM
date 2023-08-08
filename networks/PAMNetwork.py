@@ -291,7 +291,7 @@ class RegistrationNetwork(nn.Module):
         tD = self.unet(torch.cat((fixed, wA), dim=1))
         wD = self.spatial_layer(wA, tD)
 
-        return (mat, wD), (tA, tD)
+        return (wA, wD), (mat, tD)
     
 
 class RegistrationNetworkV2(nn.Module):
