@@ -143,9 +143,9 @@ def training(
             
             save_image(fixed,   os.path.join(PARAMS.project_folder, 'examples', 'fixed.nii.gz'))
             save_image(moving,  os.path.join(PARAMS.project_folder, 'examples', 'moving.nii.gz'))
-            #save_image(wA,      os.path.join(PARAMS.project_folder, 'examples', 'wA.nii.gz'))
+            save_image(wA,      os.path.join(PARAMS.project_folder, 'examples', 'wA.nii.gz'))
             save_image(wD,      os.path.join(PARAMS.project_folder, 'examples', 'wD.nii.gz'))
-            save_image(tA,      os.path.join(PARAMS.project_folder, 'examples', 'tA.nii.gz'))
+            #save_image(tA,      os.path.join(PARAMS.project_folder, 'examples', 'tA.nii.gz'))
             save_image(tD,      os.path.join(PARAMS.project_folder, 'examples', 'tD.nii.gz'))
 
 
