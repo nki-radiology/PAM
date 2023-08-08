@@ -189,7 +189,7 @@ class RegistrationNetworkTrainer(Trainer):
             3.0     * reg_affine_loss + \
             1.0     * reg_deform_loss + \
             0.8     * adv_loss + \
-            0.001   * penalty_affine + \
+            0.00    * penalty_affine + \
             0.01    * penalty_elastic 
         
         loss.backward()

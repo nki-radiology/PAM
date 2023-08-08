@@ -57,12 +57,12 @@ def orthogonal_loss(matrix):
         identity        = torch.eye(3, dtype=matrix.dtype, device=matrix.device)
         matrix          = identity[None, ...] + matrix[:, :3, :3]
 
-        covar           = torch.matmul(matrix, matrix.transpose(1, 2))
-        eigenvals, _    = torch.symeig(covar, eigenvectors=True)
+        covar           = torch.matmul(matrix, matrix.transpose(1, 2)) + 1e-5
+        eigenvals, _    = torch.linalg.eigvals(covar, eigenvectors=True)
 
         eigenvals       = torch.square(eigenvals)
-        loss            = (eigenvals + 1e-6) + 1.0 / (eigenvals + 1e-6)
-        loss            = -6 + torch.sum(loss)
+        loss            = (eigenvals + 1e-5) + 1.0 / (eigenvals + 1e-5)
+        loss            = - 6. + torch.sum(loss)
         return loss
      
 
@@ -97,8 +97,6 @@ def xent_segmentation(target, pred):
     # Flatten the predictions and targets
     pred_flat = pred.view(-1, pred.size(1))
     target_flat = target.view(-1, pred.size)
-
-
 
     # Calculate cross entropy loss
     loss = F.cross_entropy(pred_flat, target_flat)

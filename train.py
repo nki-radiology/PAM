@@ -140,6 +140,8 @@ def training(
             print('Model saved!')
 
             (wA, wD), (tA, tD) = trainer.model(fixed, moving)
+
+            print(tA)
             
             save_image(fixed,   os.path.join(PARAMS.project_folder, 'examples', 'fixed.nii.gz'))
             save_image(moving,  os.path.join(PARAMS.project_folder, 'examples', 'moving.nii.gz'))
