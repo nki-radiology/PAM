@@ -187,8 +187,8 @@ class AffineDecoder(nn.Module):
         self.fn         = nn.Linear(in_features=self.in_channels, out_features=1024, bias=False)
         self.relu       = nn.LeakyReLU(inplace=True)
 
-        self.dense_w    = nn.Linear(in_features=self.in_channels, out_features=9, bias=False)
-        self.dense_b    = nn.Linear(in_features=self.in_channels, out_features=3, bias=False)
+        self.dense_w    = nn.Linear(in_features=1024, out_features=9, bias=False)
+        self.dense_b    = nn.Linear(in_features=1024, out_features=3, bias=False)
 
     def forward(self, z):
         z = self.relu(self.fn(z))
