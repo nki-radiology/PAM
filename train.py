@@ -128,8 +128,16 @@ def training(
             #fixed_mask          = fixed_mask.to(device)
             #moving_mask         = moving_mask.to(device)
 
-            loss_dict           = trainer.train([fixed, moving])
+            def add_noise(image):
+                noise = torch.randn_like(image) / 10.
+                return image + noise
 
+            loss_dict           = trainer.train([add_noise(fixed), add_noise(moving)])
+            # wandb logging
+            if not PARAMS.debug:
+                wandb.log(loss_dict)
+
+            loss_dict           = trainer.train([add_noise(moving), add_noise(fixed)])
             # wandb logging
             if not PARAMS.debug:
                 wandb.log(loss_dict)
