@@ -129,7 +129,7 @@ def training(
             #moving_mask         = moving_mask.to(device)
 
             def add_noise(image):
-                noise = torch.randn_like(image) / 10.
+                noise = torch.randn_like(image) / 100.
                 return image + noise
 
             loss_dict           = trainer.train([add_noise(fixed), add_noise(moving)])
