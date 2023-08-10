@@ -181,21 +181,24 @@ class AffineDecoder(nn.Module):
 
     def __init__(self, image_dim, in_channels) -> None:
         super().__init__()
-        self.image_dim = image_dim
+        self.image_dim  = image_dim
         self.in_channels = in_channels
 
-        self.dense_w = nn.Linear(in_features=self.in_channels, out_features=9, bias=False)
-        self.dense_b = nn.Linear(in_features=self.in_channels, out_features=3, bias=False)
+        self.fn         = nn.Linear(in_features=self.in_channels, out_features=1024, bias=False)
 
-    def forward(self, z):            
+        self.dense_w    = nn.Linear(in_features=self.in_channels, out_features=9, bias=False)
+        self.dense_b    = nn.Linear(in_features=self.in_channels, out_features=3, bias=False)
+
+    def forward(self, z):
+        z = self.relu(self.fn(z))
+        
         # compute affine transform
         W = self.dense_w(z).view(-1, 3, 3)
         b = self.dense_b(z).view(-1, 3)
 
-        mat = torch.cat((W, b.unsqueeze(dim=1)), dim=1)
-        tA = mat.view(-1, 3, 4)
+        mat = torch.cat((W, b.unsqueeze(dim=-1)), dim=2)
         target_shape = torch.Size((z.shape[0], 1, *self.image_dim))
-        tA = F.affine_grid(tA, target_shape, align_corners=False)
+        tA = F.affine_grid(mat, target_shape, align_corners=False)
         tA = tA.permute(0, 4, 1, 2, 3)
 
         return mat, tA
