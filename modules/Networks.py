@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from networks.SpatialTransformer import SpatialTransformer 
+from modules.SpatialTransformer import SpatialTransformer 
 #from SpatialTransformer import SpatialTransformer # local 
 
 
@@ -298,98 +298,97 @@ class RegistrationNetwork(nn.Module):
         return (wA, wD), (mat, tD)
     
 
-class RegistrationNetworkV2(nn.Module):
+class DualAffineEncoders(RegistrationNetwork):
 
     def __init__(self, img_size, filters) -> None:
-        super().__init__()
-        self.img_size = img_size
-        self.filters = filters
-
+        super().__init__(img_size, filters)
         self.encoder            = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.filters[-1], flatten=True)
-        self.decoder_affine     = AffineDecoder(self.img_size, in_channels=self.filters[-1]*2)
-        self.unet               = UNet(self.img_size, self.filters, in_channels=2, out_channels=3)
-
-        self.spatial_layer      = SpatialTransformer(self.img_size)
 
 
     def forward(self, fixed, moving):
         # compute affine transform
         z_fixed     = self.encoder(fixed)
         z_moving    = self.encoder(moving)
+
         z           = torch.cat((z_fixed, z_moving), dim=1)
-        tA          = self.decoder_affine(z)
+
+        mat, tA     = self.decoder_affine(z)
         wA          = self.spatial_layer(moving, tA)
 
         # compute deformation field
         tD          = self.unet(torch.cat((fixed, wA), dim=1))
         wD          = self.spatial_layer(wA, tD)
 
-        return (wA, wD), (tA, tD)
+        return (wA, wD), (mat, tD)
+    
+
+class MultiChannelRegistrationNetwork(RegistrationNetwork):
+
+    def __init__(self, img_size, filters, in_channels, is_channel_mask=[False]) -> None:
+        super().__init__(img_size, filters)
+        self.in_channels        = in_channels
+        self.is_channel_mask    = is_channel_mask
+
+        self.encoder            = Encoder(self.img_size, self.filters, in_channels=in_channels*2, out_channels=self.filters[-1], flatten=True)
+
+    def forward(self, fixed, moving):
+
+        def apply_multichannel_transform(image, transform):
+            warped = torch.zeros_like(image)
+            for ch in range(self.in_channels):
+
+                if self.is_channel_mask[ch]:
+                    self.spatial_layer.mode = 'nearest'
+                else:
+                    self.spatial_layer.mode = 'bilinear'
+
+                warped[:, ch, ...] = self.spatial_layer(image[:, ch, ...], transform)
+
+            return self.spatial_layer(image, transform)
+
+        # compute affine transform
+        z       = self.encoder(torch.cat((fixed, moving), dim=1))
+        mat, tA = self.decoder_affine(z)
+        wA      = apply_multichannel_transform(moving, tA)
+
+        # compute deformation field
+        tD = self.unet(torch.cat((fixed, wA), dim=1))
+        wD = apply_multichannel_transform(wA, tD)
+
+        return (wA, wD), (mat, tD)
         
-
-class SegmentationNetwork(nn.Module):
-
-    def __init__(self, img_size, filters, n_classes) -> None:
-        super().__init__()
-        self.img_size = img_size
-        self.filters = filters
-        self.n_classes = n_classes
-
-        self.unet       = UNet(self.img_size, self.filters, in_channels=1, out_channels=n_classes)
-        self.softmax    = nn.Softmax(dim=1)
-
-
-    def forward(self, image):
-        x = self.unet(image)
-        x = self.softmax(x)
-
-        return x
-
 
 class StudentNetwork(nn.Module):
-    
-        def __init__(self, img_size, filters, n_classes, latent_dim) -> None:
-            super().__init__()
-            self.img_size   = img_size
-            self.n_classes  = n_classes
-            self.filters    = filters
-            self.latent_dim = latent_dim
-    
-            self.encoder        = Encoder(self.img_size, self.filters, in_channels=1, out_channels=self.latent_dim, flatten=True)
 
-            # registration pathway
-            self.decoder_reg    = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
-            self.spatial_layer  = SpatialTransformer(self.img_size)
+    def __init__(self, img_size, in_channels, filters, latent_dim) -> None:
+        super().__init__()
+        self.img_size       = img_size
+        self.in_channels    = in_channels
+        self.filters        = filters
+        self.latent_dim     = latent_dim
 
-            # segmentation pathway
-            self.decoder_seg    = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=self.n_classes, deflatten=True)
-            self.softmax        = nn.Softmax(dim=1)
+        self.encoder        = Encoder(self.img_size, self.filters, in_channels=self.in_channels, out_channels=self.latent_dim, flatten=True)
+        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=3, deflatten=True)
+
+        self.spatial_layer  = SpatialTransformer(self.img_size)
 
     
-        def forward(self, fixed, moving, return_embedding=False):    
-            # encoding
-            z_fixed     = self.encoder(fixed)
-            z_moving    = self.encoder(moving)
+    def forward(self, fixed, moving):
+        # compute embedding for both images
+        z_fixed     = self.encoder(fixed)
+        z_moving    = self.encoder(moving)
 
-            z_diff      = z_moving - z_fixed
-            z           = torch.concat((z_moving, z_diff), dim=1)
+        # compute difference between embeddings
+        # inspired by Euler method
+        z_diff      = z_moving - z_fixed
+        z           = torch.cat((z_moving, z_diff), dim=1)
 
-            if return_embedding:
-                return z_fixed, z_moving, z_diff
+        # decode transformation
+        transform   = self.decoder(z)
+        warped      = self.spatial_layer(moving, transform)
 
-            # registration pathway
-            t = self.decoder_reg(z)
-            w = self.spatial_layer(moving, t)
+        return warped, transform
 
-            # segmentation pathway
-            s_fixed = self.decoder_seg(z_fixed)
-            s_fixed = self.softmax(s_fixed)
-
-            s_moving = self.decoder_seg(z_moving)
-            s_moving = self.softmax(s_moving)
-            
-            return (w, t), (s_fixed, s_moving)
-        
 
 
 """

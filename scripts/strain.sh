@@ -26,4 +26,4 @@ rsync -avv --info=progress2 /data/groups/beets-tan/s.trebeschi/tcia_train_segmen
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /home/s.trebeschi/PAM/train.py
+python /home/s.trebeschi/PAM/train.py --module student --batch-size 4 --body-part thorax
