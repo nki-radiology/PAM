@@ -220,7 +220,7 @@ class StudentNetworkTrainer(Trainer):
 
 
     def init_model(self):
-        self.model = StudentNetwork(IMG_DIM, FILTERS, LATENT_DIM)
+        self.model = StudentNetwork(IMG_DIM, 1, FILTERS, LATENT_DIM)
         self.model.to(self.device)
         self.model.apply(weights_init)
         self.model.train()
