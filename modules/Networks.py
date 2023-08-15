@@ -368,7 +368,7 @@ class StudentNetwork(nn.Module):
         self.latent_dim     = latent_dim
 
         self.encoder        = Encoder(self.img_size, self.filters, in_channels=self.in_channels, out_channels=self.latent_dim, flatten=True)
-        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim, out_channels=3, deflatten=True)
+        self.decoder        = Decoder(self.img_size, self.filters, in_channels=self.latent_dim*2, out_channels=3, deflatten=True)
 
         self.spatial_layer  = SpatialTransformer(self.img_size)
 
