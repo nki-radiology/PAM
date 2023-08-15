@@ -18,8 +18,8 @@ PARAMS                                      = parser.parse_args()
 
 # parameters that are fixed
 PARAMS.img_dim                              = [192, 192, 192]            
-PARAMS.filters                              = [16, 32, 64, 128, 256, 512, 1024, 2048]
-PARAMS.filters_discriminator                = [16, 32, 64, 128, 256, 512, 1024, 2048]
+PARAMS.filters                              = [16, 32, 64, 128, 256, 512, 1024, 1024]
+PARAMS.filters_discriminator                = [16, 32, 64, 128, 256, 512, 1024, 1024]
 PARAMS.latent_dim                           = 128
 
 if PARAMS.task == 'debug':
