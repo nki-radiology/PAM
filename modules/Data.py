@@ -7,6 +7,8 @@ from torch.utils                    import data
 
 from SimpleITK                      import ReadImage
 from SimpleITK                      import GetArrayFromImage
+from SimpleITK                      import GetImageFromArray
+from SimpleITK                      import WriteImage
 
 from pathlib                        import Path
 
@@ -58,6 +60,13 @@ def load(path):
     image = image[None, :]
 
     return image
+
+
+def save_image(image, path):
+    image = image.detach().cpu().numpy().squeeze()
+    image = image.astype(np.float32)
+    image = GetImageFromArray(image)
+    WriteImage(image, path)
 
 
 class SimpleDataset(data.Dataset):
