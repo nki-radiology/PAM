@@ -26,3 +26,9 @@ if PARAMS.task == 'debug':
     PARAMS.filters                          = [8, 16, 16, 16, 32, 32, 32, 64]
     PARAMS.filters_discriminator            = [8, 16, 16, 16, 32, 32, 32, 64]
     PARAMS.latent_dim                       = 16
+
+# print out parameters
+print('#############################################')
+print('Parameters:')
+print(PARAMS)
+print('#############################################')
