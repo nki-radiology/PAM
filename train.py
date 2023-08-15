@@ -115,7 +115,7 @@ if __name__ == "__main__":
     cuda_seeds()
 
     model_path, device          = hardware_init()
-    train_dataloader, _         = data_init()
+    train_dataloader            = data_init()
 
     if MODULE == 'registration':
         trainer     = RegistrationNetworkTrainer(device, model_path)
