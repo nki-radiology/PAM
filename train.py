@@ -94,15 +94,12 @@ def training(
             trainer.save()
             print('Model saved!')
 
-            (wA, wD), (tA, tD) = trainer.model(fixed, moving)
-
-            print(tA)
+            warp, transform = trainer.model(fixed, moving)
             
-            save_image(fixed,   os.path.join(PROJECT, 'examples', 'fixed.nii.gz'))
-            save_image(moving,  os.path.join(PROJECT, 'examples', 'moving.nii.gz'))
-            save_image(wA,      os.path.join(PROJECT, 'examples', 'wA.nii.gz'))
-            save_image(wD,      os.path.join(PROJECT, 'examples', 'wD.nii.gz'))
-            save_image(tD,      os.path.join(PROJECT, 'examples', 'tD.nii.gz'))
+            save_image(fixed,       os.path.join(PROJECT, 'examples', 'fixed.nii.gz'))
+            save_image(moving,      os.path.join(PROJECT, 'examples', 'moving.nii.gz'))
+            save_image(transform,   os.path.join(PROJECT, 'examples', 'transform.nii.gz'))
+            save_image(warp,        os.path.join(PROJECT, 'examples', 'warp.nii.gz'))
 
 
 if __name__ == "__main__":
