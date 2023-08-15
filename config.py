@@ -21,3 +21,8 @@ PARAMS.img_dim                              = [192, 192, 192]
 PARAMS.filters                              = [16, 32, 64, 128, 256, 512, 1024, 2048]
 PARAMS.filters_discriminator                = [16, 32, 64, 128, 256, 512, 1024, 2048]
 PARAMS.latent_dim                           = 128
+
+if PARAMS.task == 'debug':
+    PARAMS.filters                          = [8, 16, 16, 16, 32, 32, 32, 64]
+    PARAMS.filters_discriminator            = [8, 16, 16, 16, 32, 32, 32, 64]
+    PARAMS.latent_dim                       = 16
