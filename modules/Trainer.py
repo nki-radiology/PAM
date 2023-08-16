@@ -216,6 +216,7 @@ class RegistrationNetworkTrainer(Trainer):
 class StudentNetworkTrainer(Trainer):
     def __init__(self, device, backup_path):
         self.registration     = RegistrationNetworkTrainer(device, backup_path.replace('.pth', '_registration.pth'))
+        self.registration.model.eval()
         super().__init__(device, backup_path)
 
 
@@ -241,7 +242,8 @@ class StudentNetworkTrainer(Trainer):
         fixed, moving           = batch
 
         # get registration target
-        _, (tA, tD)  = self.registration.model(fixed, moving)
+        with torch.no_grad():
+            _, (tA, tD)  = self.registration.model(fixed, moving)
 
         # merge deformation fields
         transform               = affine_grid(tA, moving.shape, align_corners=False)
