@@ -1,19 +1,13 @@
-"""
-    This python file is working with the localizer-CT model from tensorflow
-"""
+import numpy                    as np
 
-import numpy                    as     np
+from sklearn.linear_model       import RANSACRegressor
+from SimpleITK                  import GetArrayFromImage
+from SimpleITK                  import Crop
 
-from   tensorflow.keras.models  import load_model
-from   sklearn.linear_model     import RANSACRegressor
-from   SimpleITK                import GetArrayFromImage, Crop
+from frida.transforms           import Transform
 
-
-# import local libraries 
-import sys
-sys.path.append('../../')
-
-from   libs.frida.transforms    import Transform
+# this models works with tensorflow, you can find the environment in the yml file
+from tensorflow.keras.models    import load_model
 
 
 class LocalizerFactory():
@@ -79,6 +73,23 @@ class SmartCrop(Transform):
         super(SmartCrop, self).__init__()
 
 
+class CropThoraxAbdomen(SmartCrop):
+    def __init__( self, tolerance=0. ):
+        super(CropThorax, self).__init__(tolerance)
+
+    def __call__(self, image):
+        outputs             = None
+        image_arr           = GetArrayFromImage(image)
+
+        localizer           = self.localizer_factory.init_localizer(image_arr)
+        pelvis, neck      = localizer.get_anatomical_region(80, -70, self.tolerance)
+
+        if (pelvis >= 0) and (pelvis < neck):
+            outputs         = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - neck)])
+
+        return outputs
+    
+
 class CropThorax(SmartCrop):
     def __init__( self, tolerance=0. ):
         super(CropThorax, self).__init__(tolerance)
@@ -105,7 +116,7 @@ class CropAbdomen(SmartCrop):
         image_arr           = GetArrayFromImage(image)
 
         localizer           = self.localizer_factory.init_localizer(image_arr)
-        pelvis, diaphram    = localizer.get_anatomical_region(-70, 25, self.tolerance)
+        pelvis, diaphram    = localizer.get_anatomical_region(25, -70, self.tolerance)
 
         if (pelvis >= 0) and (pelvis < diaphram):
             outputs         = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - diaphram)])
