@@ -1,3 +1,6 @@
+# example
+# python preprocess.py --body-part thorax --input /data/groups/beets-tan/s.trebeschi/MPM_FOLLOWUP/0.images --output /data/groups/beets-tan/s.trebeschi/MPM_FOLLOWUP/1.processed/
+
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -18,6 +21,11 @@ DEBUG               = PARAMS.debug
 
 if DEBUG:
     import pdb; pdb.set_trace()
+
+print('#############################################')
+print('Parameters:')
+print(PARAMS)
+print('#############################################')
 
 # scan folder
 import os
@@ -105,9 +113,9 @@ for i, row in dataset.iterrows():
         continue
 
     print ('Saving image...')
-    filename = str(i).zfill(12) + ".nii.gz"
+    filename = str(i).zfill(12)
     filename = os.path.join(OUTPUT, filename + ".nii.gz")
-    sitk.WriteImage(image, row['images'] + '.nii.gz')
+    sitk.WriteImage(image, row['images'])
 
     log.append({
         'input': row['images'],
