@@ -85,7 +85,7 @@ loader = ImageLoader(
     ReadVolume(),
     CropThorax(tolerance=25),
     Resample(2),
-    PadAndCropTo((192, 192, 160), cval=-1000),
+    PadAndCropTo((192, 192, 192), cval=-1000),
     TransformFromITKFilter(clamp),
     TransformFromITKFilter(cast)
 )
@@ -95,6 +95,7 @@ print ('Loading images...')
 dataset = data_inventory()
 print ('Loaded {} images'.format(len(dataset)))
 
+log = []
 for i, row in dataset.iterrows():
     print ('Loading image {} of {}'.format(i+1, len(dataset)))
     try:
@@ -108,4 +109,12 @@ for i, row in dataset.iterrows():
     filename = os.path.join(OUTPUT, filename + ".nii.gz")
     sitk.WriteImage(image, row['images'] + '.nii.gz')
 
+    log.append({
+        'input': row['images'],
+        'output': filename
+    })
+
     print ('Done')
+
+log = pd.DataFrame(log)
+log.to_csv(os.path.join(OUTPUT, 'log.csv'), index=False)
