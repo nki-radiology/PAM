@@ -1,52 +1,23 @@
 import os
-import pandas as pd
-import numpy as np
 import torch
-import torch.nn as nn
 
-from pydicom                import dcmread
+from torch.utils.data               import DataLoader
 
-from networks.PAMNetwork    import StudentNetwork
-from PAMDataset             import get_num_classes
+from modules.Data                   import FollowUpDataset
+from modules.Data                   import save_image
+from modules.Networks               import RegistrationNetwork
 
-from libs.frida.io          import ImageLoader, ReadVolume
-from libs.frida.transforms  import TransformFromNumpyFunction, ZeroOneScaling, ToNumpyArray
+from config                         import PARAMS
 
-
-from config import PARAMS
+DEBUG                               = PARAMS.debug
+PROJECT                             = PARAMS.project_folder
+OUTPUT_FOLDER                       = PARAMS.output_folder
+IMG_DIM                             = PARAMS.img_dim
+FILTERS                             = PARAMS.filters
+LATENT_DIM                          = PARAMS.latent_dim
 
 RANDOM_SEED = 42
 
-class LoaderWithCacheMemory():
-    def __init__(self, loader, queue_max = 10) -> None:
-        self.loader     = loader
-        self.cache      = {}
-        self.count      = 0
-
-    def __call__(self, path):
-        image = None
-
-        if path in self.cache:
-            image = self.cache[path][1]
-        else:
-            image = self.loader(path)
-            self.cache[path] = (self.count, image)
-            self.count += 1
-        
-        if len(self.cache) > self.queue_max:
-            self.__remove_oldest__()
-
-        return image
-        
-    def __remove_oldest__(self):
-        oldest = None
-        for key, value in self.cache.items():
-            if oldest is None:
-                oldest = key
-            elif value[0] < self.cache[oldest][0]:
-                oldest = key
-        del self.cache[oldest]
-        
 
 def cuda_seeds():
     # GPU operations have a separate seed we also want to set
@@ -60,158 +31,68 @@ def cuda_seeds():
     torch.backends.cudnn.benchmark    = False
 
 
-def load_trained_models():
-    # Network definition
-    std_net = StudentNetwork(  PARAMS.img_dim, PARAMS.filters, get_num_classes(PARAMS.body_part), PARAMS.latent_dim)
-    device  = torch.device('cuda:0')
+def hardware_init():
+    # Number of GPUs available. Use 0 for CPU mode.
+    ngpu = 1
 
-    def load_model(model, name):
-        model.to(device)
-        path = os.path.join(PARAMS.project_folder, name + '.pth')
-        model.load_state_dict(torch.load(path))
+    # Device we want to run on
+    device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
-    load_model(std_net, 'StuNet')
+    # where to store the model
+    model_path = os.path.join(PROJECT,  'Network.pth')
 
-    return std_net, device
+    return model_path, device
 
 
-def load_dicom_tagssafely(path, prefix = ''):
-        # wraps metatags loading around a try-catch
-        # attach a prefix to the fields if needed
-        result = {}
-
-        try:
-            dcm = os.path.join(path, os.listdir(path)[0])
-            ds  = dcmread(dcm)
-
-            tags = (
-                0x00080020, # Study Date
-                0x00081030, # Study Description
-                0x00180060, # KVP
-                0x00280030, # Pixel Spacing
-                0x00180050, # Slice Thickness
-                0x00180088, # Spacing Between Slices
-                0x00189306, # Single Collimation Width
-                0x00189307, # Total Collimation Width
-                0x00181151, # X-Ray Tube Current
-                0x00181210, # Convolution Kernel
-                0x00181150, # Exposure Time
-                0x00189311  # Spiral Pitch Factor
-            )
-
-            result = dict()
-            for t in tags:
-                try:
-                    descr = ds[t].description()
-                    descr = descr.replace(' ', '').replace('-', '')
-                    descr = prefix + descr.lower()
-                    result.update({descr: ds[t].value})
-                except:
-                    pass
-        except:
-            print(' - [failed] while loading of the DICOM tags. ' )
-
-        return result
-
-
-def zero_at_edges(im):
-    im[:,  :,  0]  = 0
-    im[:,  :, -1]  = 0
-    im[:,  0,  :]  = 0
-    im[:, -1,  :]  = 0
-    im[0,  :,  :]  = 0
-    im[-1, :,  :]  = 0
-    return im
-
-
-def np2torch(arr):
-    arr = arr.transpose(0, 1, 3, 4, 2)
-    arr = torch.from_numpy(arr).type(torch.float32)
-    return arr
-
-
-def test(student_network, dataset, device):
-
-    dataset = pd.read_csv(dataset, index_col=0)
-    print('loaded dataset', str(dataset.shape[0]), 'rows')
-
-    loader = ImageLoader(
-        ReadVolume(),
-        ZeroOneScaling(),
-        TransformFromNumpyFunction(zero_at_edges),
-        ToNumpyArray(add_batch_dim=True, add_singleton_dim=True, channel_second=True)
+def data_init():
+    dataloader = DataLoader(
+        dataset=FollowUpDataset(), 
+        batch_size=1, 
+        shuffle=False, 
+        pin_memory=False
     )
+    return dataloader
 
-    loader = LoaderWithCacheMemory(loader, queue_max=10)
 
-    student_network.eval()
+def load_registration_model(model_path, device):
+    model = RegistrationNetwork(IMG_DIM, FILTERS)
+    model = model.to(device)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
 
-    result = []
+    return model
 
-    for i, row in dataset.iterrows():
 
-        print('processing row', i, 'of', dataset.shape[0])
-        features = {'index_pair': i}
+def register(model, dataloader, device):
+    for i, batch in enumerate(dataloader):
+        print(f'Processing image {i}')
+        baseline, followup = batch
 
-        baseline_tags = load_dicom_tagssafely(row['PRIOR_PATH'], prefix='baseline_')
-        features.update(baseline_tags)
+        baseline    = baseline.to(device)
+        followup    = followup.to(device)
 
-        followup_tags = load_dicom_tagssafely(row['SUBSQ_PATH'], prefix='followup_')
-        features.update(followup_tags)
+        # forward pass
+        with torch.no_grad():
+            output = model(baseline, followup)
+            (wA, wD), (_, tD)  = output
 
-        baseline_im = loader(row['PRIOR_PATH_NRRD'])
-        followup_im = loader(row['SUBSQ_PATH_NRRD'])
+        # save output
+        save_image(wA, os.path.join(OUTPUT_FOLDER, f'wA_{i}.nrrd'))
+        #save_image(tA, os.path.join(PROJECT, f'tA_{i}.nrrd'))
+        save_image(wD, os.path.join(OUTPUT_FOLDER, f'wD_{i}.nrrd'))
+        save_image(tD, os.path.join(OUTPUT_FOLDER, f'tD_{i}.nrrd'))
 
-        # +++
-        if PARAMS.debug:
-            import SimpleITK as sitk
-            sitk.WriteImage(sitk.GetImageFromArray(baseline_im.squeeze()), 'baseline_im.nii.gz')
-            sitk.WriteImage(sitk.GetImageFromArray(followup_im.squeeze()), 'followup_im.nii.gz')
-        # +++
 
-        baseline_im = np2torch(baseline_im).to(device)
-        followup_im = np2torch(followup_im).to(device)
+if __name__ == '__main__':
 
-        # compute embedding
-        Z = student_network(baseline_im, followup_im, return_embedding=True)
-        z_baseline, z_followup, z_diff = Z
-
-        def append_embedding(embedding, dictionary, prefix):
-            embedding = embedding.detach().cpu().numpy().squeeze()
-            for i, value in enumerate(embedding):
-                dictionary[f'{prefix}_{i}'] = value
-            return dictionary
-        
-        features = append_embedding(z_diff,       features, 'feature')
-        features = append_embedding(z_baseline,   features, 'feature_baseline')
-        features = append_embedding(z_followup,   features, 'feature_followup')
-
-        # +++
-        if PARAMS.debug:
-            import SimpleITK as sitk
-            (w, t), (s_fixed, s_moving) = student_network(baseline_im, followup_im)
-            sitk.WriteImage(sitk.GetImageFromArray(w.detach().cpu().numpy().squeeze()), 'w.nii.gz')
-            sitk.WriteImage(sitk.GetImageFromArray(t.detach().cpu().numpy().squeeze()), 't.nii.gz')
-            sitk.WriteImage(sitk.GetImageFromArray(s_fixed.detach().cpu().numpy().squeeze()), 's_fixed.nii.gz')
-            sitk.WriteImage(sitk.GetImageFromArray(s_moving.detach().cpu().numpy().squeeze()), 's_moving.nii.gz')
-        # +++
-
-        result.append(features)
-
-    pd.DataFrame(result).to_csv('results.csv')
-
-if __name__ == "__main__":
-
-    if PARAMS.debug:
+    if DEBUG:
         breakpoint()
-    else:
-        print('no breakpoint set')
 
     cuda_seeds()
-    std_net, device = load_trained_models()
 
-    with torch.no_grad():
-        test(std_net, PARAMS.inference, device)
+    model_path, device          = hardware_init()
+    train_dataloader            = data_init()
 
+    model                       = load_registration_model(model_path, device)
 
-
+    register(model, train_dataloader, device)

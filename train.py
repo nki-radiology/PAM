@@ -14,7 +14,7 @@ from modules.Trainer            import StudentNetworkTrainer
 from config import PARAMS
 
 BATCH_SIZE  = PARAMS.batch_size
-DEBUG       = PARAMS.task == 'debug'
+DEBUG       = PARAMS.debug
 MODULE      = PARAMS.module
 WANDB       = PARAMS.wandb
 PROJECT     = PARAMS.project_folder

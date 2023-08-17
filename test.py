@@ -10,10 +10,10 @@ from sklearn.model_selection        import train_test_split
 from pathlib                        import Path
 
 
-from PAMDataset            import PAMDataset
-from networks.PAMNetwork            import PAMNetwork
-from networks.DiscriminatorNetwork  import DiscriminatorNetwork
-from metrics.PAMLoss                import Energy_Loss, Cross_Correlation_Loss
+from networks.Data            import PAMDataset
+from modules.Networks            import PAMNetwork
+from modules.DiscriminatorNetwork  import DiscriminatorNetwork
+from modules.Losses                import Energy_Loss, Cross_Correlation_Loss
 
 from config import PARAMS
 
