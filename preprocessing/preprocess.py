@@ -1,10 +1,17 @@
-from config         import PARAMS
+import argparse
 
-IMG_DIM             = PARAMS.img_dim
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--body-part',          type = str, default = 'thorax',         help = 'body part to train on')
+parser.add_argument('--input',              type = str, default = None,             help = 'folder that contains the dataset')
+parser.add_argument('--output',             type = str, default = None,             help = 'folder that contains the dataset')
+
+PARAMS                                      = parser.parse_args()
+
+IMG_DIM             = [192, 192, 192]        
 BODY_PART           = PARAMS.body_part
-DATASET_CSV         = PARAMS.dataset_csv
-DATASET_FOLDER      = PARAMS.dataset_folder
-PROJECT_FOLDER      = PARAMS.project_folder
+INPUT               = PARAMS.input
+OUTPUT              = PARAMS.output
 
 # scan folder
 import os
@@ -16,7 +23,7 @@ from pathlib                        import Path
 def list_dicom_folders():
     dicom_dirs = []
 
-    for dirpath, dirnames, filenames in os.walk(DATASET_FOLDER):
+    for dirpath, dirnames, filenames in os.walk(INPUT):
         for file in filenames:
             filepath = os.path.join(dirpath, file)
             try:
@@ -31,7 +38,7 @@ def list_dicom_folders():
 
 def data_inventory():
     if DATASET_CSV is None:
-        path        = Path(DATASET_FOLDER)
+        path        = Path(INPUT)
         candidates  = list(path.glob('*.nrrd'))
         candidates += list(path.glob('*.nii.gz'))
         candidates += list_dicom_folders()
@@ -89,7 +96,7 @@ for i, row in dataset.iterrows():
 
     print ('Saving image...')
     filename = str(i).zfill(12) + ".nii.gz"
-    filename = os.path.join(PROJECT_FOLDER, '1.processed', filename + ".nii.gz")
+    filename = os.path.join(OUTPUT, filename + ".nii.gz")
     sitk.WriteImage(image, row['images'] + '.nii.gz')
 
     print ('Done')
