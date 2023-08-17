@@ -98,7 +98,7 @@ class CropThorax(SmartCrop):
         outputs             = None
 
         localizer           = self.localizer_factory.init_localizer(image)
-        diaphram, neck      = localizer.get_anatomical_region(80, 10, self.tolerance)
+        neck, diaphram      = localizer.get_anatomical_region(80, 10, self.tolerance)
 
         if (diaphram >= 0) and (diaphram < neck):
             outputs         = Crop(image, [0, 0, int(diaphram)], [0, 0, int(image.GetSize()[2] - neck)])
