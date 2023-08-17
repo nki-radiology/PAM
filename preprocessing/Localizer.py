@@ -7,7 +7,7 @@ from SimpleITK                  import Crop
 from frida.transforms           import Transform
 
 # this models works with tensorflow, you can find the environment in the yml file
-from tensorflow.keras.models    import load_model
+from tensorflow.keras.models    import load_model 
 
 
 class LocalizerFactory():

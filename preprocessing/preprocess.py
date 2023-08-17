@@ -6,12 +6,18 @@ parser.add_argument('--body-part',          type = str, default = 'thorax',     
 parser.add_argument('--input',              type = str, default = None,             help = 'folder that contains the dataset')
 parser.add_argument('--output',             type = str, default = None,             help = 'folder that contains the dataset')
 
+parser.add_argument('--debug' ,             type = bool, default = False,           help = 'debug mode')
+
 PARAMS                                      = parser.parse_args()
 
 IMG_DIM             = [192, 192, 192]        
 BODY_PART           = PARAMS.body_part
 INPUT               = PARAMS.input
 OUTPUT              = PARAMS.output
+DEBUG               = PARAMS.debug
+
+if DEBUG:
+    import pdb; pdb.set_trace()
 
 # scan folder
 import os
