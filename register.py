@@ -1,3 +1,12 @@
+## Usage example
+# python register.py 
+#   --body-part thorax 
+#   --dataset-followup /data/groups/beets-tan/s.trebeschi/MPM_FOLLOWUP/followup-dataset.csv 
+#   --project-folder /projects/split-encoders/thorax-just-registration/ 
+#   --output-folder /data/groups/beets-tan/s.trebeschi/MPM_FOLLOWUP/2.registrations/ 
+#   --debug True 
+#   --keep-network-size True
+
 import os
 import torch
 
@@ -65,7 +74,7 @@ def load_registration_model(model_path, device):
 
 def register(model, dataloader, device):
     for i, batch in enumerate(dataloader):
-        print(f'Processing image {i}')
+        print(f'Processing record {i}')
         baseline, followup = batch
 
         baseline    = baseline.to(device)
