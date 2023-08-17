@@ -82,7 +82,7 @@ class CropThoraxAbdomen(SmartCrop):
         image_arr           = GetArrayFromImage(image)
 
         localizer           = self.localizer_factory.init_localizer(image_arr)
-        pelvis, neck      = localizer.get_anatomical_region(80, -70, self.tolerance)
+        pelvis, neck        = localizer.get_anatomical_region(80, -70, self.tolerance)
 
         if (pelvis >= 0) and (pelvis < neck):
             outputs         = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - neck)])
@@ -96,13 +96,12 @@ class CropThorax(SmartCrop):
 
     def __call__(self, image):
         outputs             = None
-        image_arr           = GetArrayFromImage(image)
 
-        localizer           = self.localizer_factory.init_localizer(image_arr)
+        localizer           = self.localizer_factory.init_localizer(image)
         diaphram, neck      = localizer.get_anatomical_region(80, 10, self.tolerance)
 
         if (diaphram >= 0) and (diaphram < neck):
-            outputs         = Crop(image, [0, 0, int(diaphram)], [0, 0, int(image_arr.shape[0] - neck)])
+            outputs         = Crop(image, [0, 0, int(diaphram)], [0, 0, int(image.GetSize()[2] - neck)])
 
         return outputs
     
