@@ -1,34 +1,29 @@
-
-import numpy as np
-import pandas as pd
-
+import os
+import numpy    as np
+import pandas   as pd
 import torch 
-from torch.utils                    import data
 
+from torch.utils                    import data
 from SimpleITK                      import ReadImage
 from SimpleITK                      import GetArrayFromImage
 from SimpleITK                      import GetImageFromArray
 from SimpleITK                      import WriteImage
-
+from pydicom                        import dcmread
 from pathlib                        import Path
 
 from config                         import PARAMS
 
-
 IMG_DIM             = PARAMS.img_dim
 BODY_PART           = PARAMS.body_part
-DATASET_CSV         = PARAMS.dataset_csv
 DATASET_FOLDER      = PARAMS.dataset_folder
+DATASET_FOLLOWUP    = PARAMS.dataset_followup
 
 
 def data_inventory():
-    if DATASET_CSV is None:
-        path        = Path(DATASET_FOLDER)
-        filenames   = list(path.glob('*.nrrd'))
-        filenames  += list(path.glob('*.nii.gz'))
-        dataset     = pd.DataFrame(filenames, columns=['images'])
-    else:
-        dataset     = pd.read_csv(DATASET_CSV)
+    path        = Path(DATASET_FOLDER)
+    candidates  = list(path.glob('*.nrrd'))
+    candidates += list(path.glob('*.nii.gz'))
+    dataset     = pd.DataFrame(candidates, columns=['images'])
 
     return dataset
 
@@ -62,6 +57,45 @@ def load(path):
     return image
 
 
+def load_dicom_tagssafely(path, prefix = ''):
+        # wraps metatags loading around a try-catch
+        # attach a prefix to the fields if needed
+        result = {}
+
+        try:
+            dcm = os.path.join(path, os.listdir(path)[0])
+            ds  = dcmread(dcm)
+
+            tags = (
+                0x00080020, # Study Date
+                0x00081030, # Study Description
+                0x00180060, # KVP
+                0x00280030, # Pixel Spacing
+                0x00180050, # Slice Thickness
+                0x00180088, # Spacing Between Slices
+                0x00189306, # Single Collimation Width
+                0x00189307, # Total Collimation Width
+                0x00181151, # X-Ray Tube Current
+                0x00181210, # Convolution Kernel
+                0x00181150, # Exposure Time
+                0x00189311  # Spiral Pitch Factor
+            )
+
+            result = dict()
+            for t in tags:
+                try:
+                    descr = ds[t].description()
+                    descr = descr.replace(' ', '').replace('-', '')
+                    descr = prefix + descr.lower()
+                    result.update({descr: ds[t].value})
+                except:
+                    pass
+        except:
+            print(' - [failed] while loading of the DICOM tags. ' )
+
+        return result
+
+
 def save_image(image, path):
     image = image.detach().cpu().numpy().squeeze()
     image = image.astype(np.float32)
@@ -88,18 +122,42 @@ class SimpleDataset(data.Dataset):
 
 
 class RegistrationDataset(data.Dataset):
-    def __init__(self):
-        self.dataset_fixed      = SimpleDataset()
-        self.dataset_moving     = SimpleDataset()
+    def __init__(self, mode='train'):
+        self.dataset_fixed     = SimpleDataset()
+        self.dataset_moving    = SimpleDataset()
+        self.mode              = mode
     
     def __len__(self):
         return len(self.dataset_fixed)
 
     def __getitem__(self, idx):
-        fixed   = self.dataset_fixed.sample()
-        moving  = self.dataset_moving.sample()
+        fixed       = self.dataset_fixed.sample()
+        moving      = self.dataset_moving.sample()
         return fixed, moving
 
+
+class FollowUpDataset(data.Dataset):
+    def __init__(self):
+        self.dataset = pd.read_csv(DATASET_FOLLOWUP)
+
+        if 'baseline' not in self.dataset.columns:
+            raise ValueError('no baseline column found in the follow-up dataset')
+        elif 'followup' not in self.dataset.columns:
+            raise ValueError('no followup column found in the follow-up dataset')
+        else:
+            print(' - [info] follow-up dataset loaded successfully')
+    
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        baseline_path       = self.dataset.iloc[idx]['baseline']
+        baseline_image      = load(baseline_path)
+
+        followup_path       = self.dataset.iloc[idx]['followup']
+        followup_image      = load(followup_path)
+
+        return baseline_image, followup_image
 
 
 
