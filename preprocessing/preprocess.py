@@ -43,14 +43,16 @@ def list_dicom_folders():
 
 
 def data_inventory():
-    if DATASET_CSV is None:
+    if os.path.isdir(INPUT):
         path        = Path(INPUT)
         candidates  = list(path.glob('*.nrrd'))
         candidates += list(path.glob('*.nii.gz'))
         candidates += list_dicom_folders()
         dataset     = pd.DataFrame(candidates, columns=['images'])
+    elif os.path.isfile(INPUT) and INPUT.endswith('.csv'):
+        dataset     = pd.read_csv(INPUT)
     else:
-        dataset     = pd.read_csv(DATASET_CSV)
+        raise ValueError('Invalid input')
 
     return dataset
 
