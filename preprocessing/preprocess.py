@@ -48,6 +48,7 @@ def data_inventory():
         candidates  = list(path.glob('*.nrrd'))
         candidates += list(path.glob('*.nii.gz'))
         candidates += list_dicom_folders()
+        candidates  = [str(c) for c in candidates]
         dataset     = pd.DataFrame(candidates, columns=['images'])
     elif os.path.isfile(INPUT) and INPUT.endswith('.csv'):
         dataset     = pd.read_csv(INPUT)
