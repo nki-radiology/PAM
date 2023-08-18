@@ -13,7 +13,7 @@ import torch
 from torch.utils.data               import DataLoader
 
 from modules.Data                   import FollowUpDataset
-from modules.Data                   import save_image
+from modules.Data                   import save
 from modules.Networks               import RegistrationNetwork
 
 from config                         import PARAMS
@@ -83,13 +83,14 @@ def register(model, dataloader, device):
         # forward pass
         with torch.no_grad():
             output = model(baseline, followup)
-            (wA, wD), (_, tD)  = output
+            (wA, wD), (tA, tD)  = output
 
         # save output
-        save_image(wA, os.path.join(OUTPUT_FOLDER, f'wA_{i}.nrrd'))
-        #save_image(tA, os.path.join(PROJECT, f'tA_{i}.nrrd'))
-        save_image(wD, os.path.join(OUTPUT_FOLDER, f'wD_{i}.nrrd'))
-        save_image(tD, os.path.join(OUTPUT_FOLDER, f'tD_{i}.nrrd'))
+        save(wA, os.path.join(OUTPUT_FOLDER, f'wA_{i}.nii.gz'))
+        save(wD, os.path.join(OUTPUT_FOLDER, f'wD_{i}.nii.gz'))
+
+        save(tA, os.path.join(OUTPUT_FOLDER, f'tA_{i}.npy'))
+        save(tD, os.path.join(OUTPUT_FOLDER, f'tD_{i}.nii.gz'))
 
 
 if __name__ == '__main__':
