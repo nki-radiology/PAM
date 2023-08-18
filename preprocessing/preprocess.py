@@ -115,7 +115,7 @@ for i, row in dataset.iterrows():
     print ('Saving image...')
     filename = str(i).zfill(12)
     filename = os.path.join(OUTPUT, filename + ".nii.gz")
-    sitk.WriteImage(image, row['images'])
+    sitk.WriteImage(image, filename)
 
     log.append({
         'input': row['images'],
