@@ -97,9 +97,14 @@ def load_dicom_tagssafely(path, prefix = ''):
 
 
 def save_image(image, path):
+    # move the channel dimension to the end
+    image = image.permute(0, 2, 3, 4, 1)
+    # convert to numpy array
     image = image.detach().cpu().numpy().squeeze()
     image = image.astype(np.float32)
+    # convert to SimpleITK image
     image = GetImageFromArray(image)
+    # save image
     WriteImage(image, path)
 
 
