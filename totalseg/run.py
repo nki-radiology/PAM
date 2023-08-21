@@ -76,7 +76,12 @@ def load_dataset():
         new_dataset = new_dataset.merge(old_dataset, how='left', on='path')
 
     # assign new uuids
-    new_dataset['uuid'] = new_dataset['uuid'].fillna(uuid.uuid4())
+    def generate_uuid(x):
+        if pd.isna(x):
+            return str(uuid.uuid4())
+        else:
+            return x
+    new_dataset['uuid'] = new_dataset['uuid'].applymap(generate_uuid)
 
     # save dataset
     new_dataset.to_csv(dataset_path, index=False)
@@ -143,7 +148,6 @@ def segment(dataset):
 
 
 def compute_volumes():
-
     path            = Path(OUTPUT)
     segmentations   = list(path.glob('*.seg.nii.gz'))
 
