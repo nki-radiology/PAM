@@ -68,9 +68,15 @@ def log_dataset(dataset):
     filepath = os.path.join(OUTPUT, 'dataset.csv')
 
     if os.path.isfile(filepath):
+        # load old dataset
         dataset_old = pd.read_csv(filepath)
+        # add new entries
         dataset = dataset[~dataset.isin(dataset_old.to_dict(orient='list')).all(axis=1)]
-        dataset.to_csv(filepath, mode='a', header=False, index=False)
+        dataset.to_csv(filepath, mode='a', header=False, index=False) 
+        # load new dataset with new index 
+        dataset = dataset.read_csv(filepath)
+        dataset = dataset[~dataset.isin(dataset_old.to_dict(orient='list')).all(axis=1)]
+        # done ;-) (pardon the loop-hole code)
         print(' -- dataset updated')
 
     else:
@@ -124,9 +130,8 @@ def segment(dataset):
         filepath_output = os.path.join(OUTPUT, 'temp-output.nii')
         cmd = 'TotalSegmentator --ml --fast -i ' + filepath_input + ' -o ' +  filepath_output
 
-        try:
-            os.system(cmd)
-        except:
+        return_value = os.system(cmd)
+        if return_value != 0:
             print(' -- something went wrong segmenting ' + image_path)
             continue
 
@@ -147,14 +152,14 @@ def compute_volumes():
     stats           = LabelShapeStatisticsImageFilter()
     df              = []
 
-    for segmentation in segmentations:
-        print('processing', segmentation.name)
-        segmentation    = ReadImage(str(segmentation))
+    for segmentation_path in segmentations:
+        print('processing', segmentation_path.name)
+        segmentation    = ReadImage(str(segmentation_path))
         stats.Execute(segmentation)
  
         for label in stats.GetLabels():
             entry = dict()
-            entry['filename']   = segmentation.name
+            entry['filename']   = str(segmentation_path)
             entry['label']      = label
             entry['volume_mL']  = stats.GetPhysicalSize(label) / 1000.
             entry['on_border']  = stats.GetPerimeterOnBorder(label) != 0
