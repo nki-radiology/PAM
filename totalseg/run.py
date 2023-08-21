@@ -16,9 +16,6 @@ OUTPUT              = PARAMS.output
 
 DEBUG               = PARAMS.debug
 
-if DEBUG:
-    import pdb; pdb.set_trace()
-
 ####
 
 import os
