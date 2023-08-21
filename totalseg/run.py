@@ -81,7 +81,7 @@ def load_dataset():
             return str(uuid.uuid4())
         else:
             return x
-    new_dataset['uuid'] = new_dataset['uuid'].applymap(generate_uuid)
+    new_dataset['uuid'] = new_dataset['uuid'].apply(generate_uuid)
 
     # save dataset
     new_dataset.to_csv(dataset_path, index=False)
