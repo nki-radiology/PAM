@@ -21,16 +21,16 @@ DEBUG               = PARAMS.debug
 import os
 import pandas               as pd
 import pydicom
+import uuid
 
 from pathlib                import Path
-
 
 from SimpleITK              import ReadImage
 from SimpleITK              import ImageSeriesReader
 from SimpleITK              import WriteImage
 from SimpleITK              import LabelShapeStatisticsImageFilter
 
-
+####
 
 def list_dicom_folders():
     dicom_dirs = []
@@ -55,7 +55,7 @@ def data_inventory():
         candidates += list(path.glob('*.nii.gz'))
         candidates += list_dicom_folders()
         candidates  = [str(c) for c in candidates]
-        dataset     = pd.DataFrame(candidates, columns=['images'])
+        dataset     = pd.DataFrame(candidates, columns=['path'])
     elif os.path.isfile(INPUT) and INPUT.endswith('.csv'):
         dataset     = pd.read_csv(INPUT)
     else:
@@ -64,23 +64,25 @@ def data_inventory():
     return dataset
 
 
-def log_dataset(dataset):
-    filepath = os.path.join(OUTPUT, 'dataset.csv')
+def load_dataset():
+    dataset_path   = os.path.join(OUTPUT, 'dataset.csv')
 
-    if os.path.isfile(filepath):
-        # load old dataset
-        dataset_old = pd.read_csv(filepath)
-        # add new entries
-        dataset = dataset[~dataset.isin(dataset_old.to_dict(orient='list')).all(axis=1)]
-        dataset.to_csv(filepath, mode='a', header=False, index=False) 
-        print(' -- dataset updated')
-
-    else:
-        dataset.to_csv(filepath, index=False)
-        print(' -- dataset saved')
-
-    return dataset
+    # collect data in the input folder
+    new_dataset = data_inventory()
     
+    # load old dataset
+    if os.path.isfile(dataset_path):
+        old_dataset = pd.read_csv(dataset_path)
+        new_dataset = new_dataset.merge(old_dataset, how='left', on='path')
+
+    # assign new uuids
+    new_dataset['uuid'] = new_dataset['uuid'].fillna(uuid.uuid4())
+
+    # save dataset
+    new_dataset.to_csv(dataset_path, index=False)
+
+    return new_dataset
+
 
 def read_image(path):
     image = None
@@ -104,14 +106,14 @@ def read_image(path):
 def segment(dataset):
     for i, row in dataset.iterrows():
         # skip if output already exists
-        compressed_filepath_output = os.path.join(OUTPUT, str(i).zfill(12) + '.seg.nii.gz')
+        compressed_filepath_output = os.path.join(OUTPUT, row['uuid'] + '.seg.nii.gz')
         if os.path.isfile(compressed_filepath_output):
-            print(' -- skipping', str(i), 'out of', len(dataset), '\t', row['images'])
+            print(' -- skipping', str(i), 'out of', len(dataset), '\t', row['path'])
             continue
 
         # read image
-        print('processing', str(i), 'out of', len(dataset), '\t', row['images'])
-        image_path      = row['images']
+        print('processing', str(i), 'out of', len(dataset), '\t', row['path'])
+        image_path      = row['path']
         image           = read_image(image_path)
 
         if image is None:
@@ -174,15 +176,13 @@ if __name__ == '__main__':
 
     print('\n#\nRunning data inventory... (might take a while)')
 
-    dataset = data_inventory()
+    dataset = load_dataset()
 
     print('Data inventory:')
     print(' -- total images:',                  len(dataset))
     print(' -- total number *.nrrd:',           len(dataset[dataset['images'].str.endswith('.nrrd')]))
     print(' -- total number *.nii.gz:',         len(dataset[dataset['images'].str.endswith('.nii.gz')]))
     print(' -- total number DICOM folders:',    len(dataset[dataset['images'].apply(lambda x: os.path.isdir(x))]))
-
-    dataset = log_dataset(dataset)
 
     print('\n#\nRunning segmentation... (might take a while)')
 
