@@ -24,6 +24,6 @@ mkdir /processing/s.trebeschi/totseg 2>/dev/null
 # eval `spack load --sh cuda@11.3 cudnn@8.2.0.53-11.3`
 
 # Run your command
-python /home/s.trebeschi/PAM/totalseg/run.py --input /data/groups/beets-tan/s.trebeschi/QOL_dicoms/DICOM-test --output /processing/s.trebeschi/totseg 
+python /home/s.trebeschi/PAM/totalseg/run.py --input /data/groups/beets-tan/s.trebeschi/QOL_dicoms/ --output /processing/s.trebeschi/totseg 
 
 rsync -avv --info=progress2 /processing/s.trebeschi/totseg/ /data/groups/beets-tan/s.trebeschi/QOL_dicoms/TOTSEG/
