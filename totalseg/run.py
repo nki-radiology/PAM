@@ -74,6 +74,8 @@ def load_dataset():
     if os.path.isfile(dataset_path):
         old_dataset = pd.read_csv(dataset_path)
         new_dataset = new_dataset.merge(old_dataset, how='left', on='path')
+    else:
+        new_dataset['uuid'] = None
 
     # assign new uuids
     def generate_uuid(x):
