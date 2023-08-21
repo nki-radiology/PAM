@@ -122,7 +122,7 @@ def segment(dataset):
 
         # run total segmentor
         filepath_output = os.path.join(OUTPUT, 'temp-output.nii')
-        cmd = 'TotalSegmentator --ml -i ' + filepath_input + ' -o ' + filepath_output
+        cmd = 'TotalSegmentator --ml --fast -i ' + filepath_input + ' -o ' +  filepath_output
 
         try:
             os.system(cmd)
