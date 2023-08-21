@@ -184,9 +184,9 @@ if __name__ == '__main__':
 
     print('Data inventory:')
     print(' -- total images:',                  len(dataset))
-    print(' -- total number *.nrrd:',           len(dataset[dataset['images'].str.endswith('.nrrd')]))
-    print(' -- total number *.nii.gz:',         len(dataset[dataset['images'].str.endswith('.nii.gz')]))
-    print(' -- total number DICOM folders:',    len(dataset[dataset['images'].apply(lambda x: os.path.isdir(x))]))
+    print(' -- total number *.nrrd:',           len(dataset[dataset['path'].str.endswith('.nrrd')]))
+    print(' -- total number *.nii.gz:',         len(dataset[dataset['path'].str.endswith('.nii.gz')]))
+    print(' -- total number DICOM folders:',    len(dataset[dataset['path'].apply(lambda x: os.path.isdir(x))]))
 
     print('\n#\nRunning segmentation... (might take a while)')
 
