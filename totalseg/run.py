@@ -73,10 +73,6 @@ def log_dataset(dataset):
         # add new entries
         dataset = dataset[~dataset.isin(dataset_old.to_dict(orient='list')).all(axis=1)]
         dataset.to_csv(filepath, mode='a', header=False, index=False) 
-        # load new dataset with new index 
-        dataset = pd.read_csv(filepath)
-        dataset = dataset[~dataset.isin(dataset_old.to_dict(orient='list')).all(axis=1)]
-        # done ;-) (pardon the loop-hole code)
         print(' -- dataset updated')
 
     else:
