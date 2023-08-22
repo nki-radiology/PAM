@@ -10,14 +10,18 @@ from frida.transforms           import Transform
 from tensorflow.keras.models    import load_model 
 
 
-class LocalizerFactory():
-    def __init__(self):
-        self.__load()
+class Localizer():
 
-    def __load( self ):
-        self.localizer = load_model(r'localizer.h5', compile=False)
+    NECK_BASE       = 80
+    DIAPHRAGM       = -10
+    PELVIC_FLOOR    = -70
 
-    def init_localizer( self, image ):
+    def __init__(self) -> None:
+        self.is_fitted  = False
+        self.localizer  = load_model(r'localizer.h5', compile=False)
+
+
+    def fit(self, image):
         image_arr = GetArrayFromImage(image)
 
         # get anatomical coordinates
@@ -30,35 +34,36 @@ class LocalizerFactory():
         m.fit(scan_coordinates[..., None], anatomical_coordinates.squeeze())
         coef, intercept = m.estimator_.coef_[0], m.estimator_.intercept_
 
-        return Localizer(coef, intercept, anatomical_coordinates, scan_coordinates)
-
-
-class Localizer():
-    def __init__( self, coef, intercept, anatomical_coords, scan_coords ):
+        # set params
+        self.__anatomical_coords    = anatomical_coordinates
+        self.__scan_coords          = scan_coordinates
         self.coef                   = coef
         self.intercept              = intercept
-        self.anatomical_coords      = anatomical_coords
-        self.scan_coords            = scan_coords
+        self.max_coord_scan         = np.max(scan_coordinates)
+
+        self.is_fitted              = True
+
 
     def anatomy2scan( self, query ):
         return (query - self.intercept) / self.coef
     
+
     def scan2anatomy( self, query ):
         return query * self.coef + self.intercept
     
-    def get_anatomical_region( self, upper_anatomical_coord, lower_anatomical_coord, tolerance=0):
-        max_scan_coord = np.max(self.scan_coords)
 
-        up = self.anatomy2scan(upper_anatomical_coord)
-        if up > max_scan_coord:
-            if (self.scan2anatomy(max_scan_coord) - upper_anatomical_coord) < tolerance:
-                up = max_scan_coord
+    def get_anatomical_region( self, up, lo, tolerance=0):
+        # BUGFIX make it so that it includes as much as possible
+        up = self.anatomy2scan(up)
+        if up > self.max_coord_scan:
+            if (self.scan2anatomy(self.max_coord_scan) - up) < tolerance:
+                up = self.max_coord_scan
             else:
                 up = -1
 
-        lo = self.anatomy2scan(lower_anatomical_coord)
+        lo = self.anatomy2scan(lo)
         if lo < 0:
-            if (lower_anatomical_coord - self.scan2anatomy(0)) < tolerance:
+            if (lo - self.scan2anatomy(0)) < tolerance:
                 lo = 0
             else:
                 lo = -1
@@ -67,60 +72,58 @@ class Localizer():
 
 
 class SmartCrop(Transform):
-    def __init__( self, tolerance=0. ):
-        self.tolerance = tolerance
-        self.localizer_factory = LocalizerFactory()
+    def __init__( self, up, lo, tolerance=0.):
+        self.tolerance              = tolerance
+        self.up                     = up
+        self.lo                     = lo
+
+        self.localizer              = Localizer()
         super(SmartCrop, self).__init__()
 
 
-class CropThoraxAbdomen(SmartCrop):
-    def __init__( self, tolerance=0. ):
-        super(CropThorax, self).__init__(tolerance)
-
     def __call__(self, image):
         outputs             = None
+        self.localizer.fit(image) 
+
         image_arr           = GetArrayFromImage(image)
+        lower, upper        = self.localizer.get_anatomical_region(self.up, self.lo, self.tolerance)
 
-        localizer           = self.localizer_factory.init_localizer(image_arr)
-        pelvis, neck        = localizer.get_anatomical_region(80, -70, self.tolerance)
-
-        if (pelvis >= 0) and (pelvis < neck):
-            outputs         = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - neck)])
+        if (lower >= 0) and (lower < upper):
+            outputs         = Crop(image, [0, 0, int(lower)], [0, 0, int(image_arr.shape[0] - upper)])
 
         return outputs
     
+    
+class LinkedSmartCrop(SmartCrop):
+    def __init__(self, parent_smart_crop):
+        super().__init__()
+        self.localizer = parent_smart_crop.localizer
+
+
+    def __call__(self, image):
+        outputs             = None
+
+        image_arr           = GetArrayFromImage(image)
+        lower, upper        = self.localizer.get_anatomical_region(self.up, self.lo, self.tolerance)
+
+        if (lower >= 0) and (lower < upper):
+            outputs         = Crop(image, [0, 0, int(lower)], [0, 0, int(image_arr.shape[0] - upper)])
+
+        return outputs
+    
+
+class CropThoraxAbdomen(SmartCrop):
+    def __init__(self,  up=Localizer.NECK_BASE, lo=Localizer.PELVIC_FLOOR, tolerance=0):
+        super().__init__(up, lo, tolerance)
+
 
 class CropThorax(SmartCrop):
-    def __init__( self, tolerance=0. ):
-        super(CropThorax, self).__init__(tolerance)
-
-    def __call__(self, image):
-        outputs             = None
-
-        localizer           = self.localizer_factory.init_localizer(image)
-        neck, diaphram      = localizer.get_anatomical_region(80, 10, self.tolerance)
-
-        if (diaphram >= 0) and (diaphram < neck):
-            outputs         = Crop(image, [0, 0, int(diaphram)], [0, 0, int(image.GetSize()[2] - neck)])
-
-        return outputs
+    def __init__(self, up=Localizer.NECK_BASE, lo=Localizer.DIAPHRAGM, tolerance=0):
+        super().__init__(up, lo, tolerance)
     
 
-class CropAbdomen(SmartCrop):
-    def __init__( self, tolerance=0. ):
-        super(CropAbdomen, self).__init__(tolerance)
-
-    def __call__(self, image):
-        outputs             = None
-        image_arr           = GetArrayFromImage(image)
-
-        localizer           = self.localizer_factory.init_localizer(image_arr)
-        pelvis, diaphram    = localizer.get_anatomical_region(25, -70, self.tolerance)
-
-        if (pelvis >= 0) and (pelvis < diaphram):
-            outputs         = Crop(image, [0, 0, int(pelvis)], [0, 0, int(image_arr.shape[0] - diaphram)])
-
-        return outputs
-
+class CropAdbomen(SmartCrop):
+    def __init__(self, up=Localizer.DIAPHRAGM, lo=-Localizer.PELVIC_FLOOR, tolerance=0):
+        super().__init__(up, lo, tolerance)
 
 

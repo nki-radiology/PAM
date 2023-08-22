@@ -7,7 +7,9 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--body-part',          type = str, default = 'thorax',         help = 'body part to train on')
 parser.add_argument('--input',              type = str, default = None,             help = 'folder that contains the dataset')
+parser.add_argument('--input-masks',        type = str, default = None,             help = 'folder that contains the dataset')
 parser.add_argument('--output',             type = str, default = None,             help = 'folder that contains the dataset')
+parser.add_argument('--output-masks',       type = str, default = None,             help = 'folder that contains the dataset')
 
 parser.add_argument('--debug' ,             type = bool, default = False,           help = 'debug mode')
 
@@ -15,24 +17,44 @@ PARAMS                                      = parser.parse_args()
 
 IMG_DIM             = [192, 192, 192]        
 BODY_PART           = PARAMS.body_part
+
 INPUT               = PARAMS.input
+INPUT_MASKS         = PARAMS.input_masks
+
 OUTPUT              = PARAMS.output
+OUTPUT_MASKS        = PARAMS.output_masks
+
 DEBUG               = PARAMS.debug
 
 if DEBUG:
     import pdb; pdb.set_trace()
+
 
 print('#############################################')
 print('Parameters:')
 print(PARAMS)
 print('#############################################')
 
-# scan folder
 import os
 import pandas   as pd
 import pydicom
 
 from pathlib                        import Path
+
+import SimpleITK as sitk
+from SimpleITK                  import CastImageFilter
+from SimpleITK                  import ClampImageFilter
+
+from frida.io                   import ImageLoader
+from frida.io                   import ReadVolume
+
+from frida.transforms           import TransformFromITKFilter
+from frida.transforms           import Resample
+from frida.transforms           import PadAndCropTo
+
+from Localizer                  import CropThorax
+from Localizer                  import LinkedSmartCrop
+
 
 def list_dicom_folders():
     dicom_dirs = []
@@ -51,78 +73,110 @@ def list_dicom_folders():
 
 
 def data_inventory():
+    # load images
     if os.path.isdir(INPUT):
         path        = Path(INPUT)
         candidates  = list(path.glob('*.nrrd'))
         candidates += list(path.glob('*.nii.gz'))
         candidates += list_dicom_folders()
         candidates  = [str(c) for c in candidates]
-        dataset     = pd.DataFrame(candidates, columns=['images'])
+        dataset     = pd.DataFrame(candidates, columns=['image'])
     elif os.path.isfile(INPUT) and INPUT.endswith('.csv'):
         dataset     = pd.read_csv(INPUT)
     else:
         raise ValueError('Invalid input')
+    
+    # load masks
+    if INPUT_MASKS is not None:
+        if INPUT_MASKS.endswith('.csv'):
+            dataset_masks = pd.read_csv(INPUT_MASKS)
+            dataset.merge(dataset_masks, on='image', how='left')
+        else:
+            ValueError('Needs a list of segmentation masks')
+        print(' -- no masks provided, skipping')
 
     return dataset
 
 
-# define imaging transform functions
-import SimpleITK as sitk
-from SimpleITK                  import CastImageFilter
-from SimpleITK                  import ClampImageFilter
+def init_loaders():
+    clamp = ClampImageFilter()
+    clamp.SetUpperBound(300)
+    clamp.SetLowerBound(-120)
 
-clamp = ClampImageFilter()
-clamp.SetUpperBound(300)
-clamp.SetLowerBound(-120)
+    cast = CastImageFilter()
+    cast.SetOutputPixelType(sitk.sitkInt16)
 
-cast = CastImageFilter()
-cast.SetOutputPixelType(sitk.sitkInt16)
+    crop_thorax = CropThorax(tolerance=25)
+
+    loader = ImageLoader(
+        ReadVolume(),
+        crop_thorax,
+        Resample(2),
+        PadAndCropTo((192, 192, 192), cval=-1000),
+        TransformFromITKFilter(clamp),
+        TransformFromITKFilter(cast)
+    )
+
+    mask_loader = ImageLoader(
+        ReadVolume(),
+        LinkedSmartCrop(crop_thorax),
+        Resample(2, sitk.sitkNearestNeighbor),
+        PadAndCropTo((192, 192, 192), cval=-1000)
+    )
+
+    return loader, mask_loader
 
 
-# define transforms
-from frida.io                   import ImageLoader
-from frida.io                   import ReadVolume
+if __name__ == "__main__":
 
-from frida.transforms           import TransformFromITKFilter
-from frida.transforms           import Resample
-from frida.transforms           import PadAndCropTo
+    # iterate over all images
+    print ('Loading images...')
+    dataset = data_inventory()
 
-from Localizer                  import CropThorax
+    print (' -- Loaded {} images'.format(len(dataset)))
 
-loader = ImageLoader(
-    ReadVolume(),
-    CropThorax(tolerance=25),
-    Resample(2),
-    PadAndCropTo((192, 192, 192), cval=-1000),
-    TransformFromITKFilter(clamp),
-    TransformFromITKFilter(cast)
-)
+    loader, mask_loader = init_loaders()
 
-# iterate over all images
-print ('Loading images...')
-dataset = data_inventory()
-print ('Loaded {} images'.format(len(dataset)))
+    log = []
+    for i, row in dataset.iterrows():
+        print ('Loading image {} of {}'.format(i+1, len(dataset)))
 
-log = []
-for i, row in dataset.iterrows():
-    print ('Loading image {} of {}'.format(i+1, len(dataset)))
-    try:
-        image = loader(row['images'])
-    except:
-        print ('Error loading image')
-        continue
+        entry = {
+            'input_image': row['image'],
+            'input_mask': row['mask'] if INPUT_MASKS is not None else None,
+        }
 
-    print ('Saving image...')
-    filename = str(i).zfill(12)
-    filename = os.path.join(OUTPUT, filename + ".nii.gz")
-    sitk.WriteImage(image, filename)
+        try:
+            image = loader(row['image'])
 
-    log.append({
-        'input': row['images'],
-        'output': filename
-    })
+            filename = str(i).zfill(12)
+            filename = os.path.join(OUTPUT, filename + ".nii.gz")
 
-    print ('Done')
+            sitk.WriteImage(image, filename)
 
-log = pd.DataFrame(log)
-log.to_csv(os.path.join(OUTPUT, 'log.csv'), index=False)
+            entry['output_image'] = row['image']
+
+        except:
+            print (' -- Error loading image')
+            continue
+
+        if INPUT_MASKS is not None:
+            try:
+                mask = mask_loader(row['mask'])
+
+                filename = str(i).zfill(12)
+                filename = os.path.join(OUTPUT_MASKS, filename + ".nii.gz")
+
+                sitk.WriteImage(mask, filename)
+
+                entry['output_mask'] = row['mask']
+
+            except:
+                print (' -- Error loading mask, skipping')
+
+        log.append(entry)
+
+        print (' -- Done')
+
+    log = pd.DataFrame(log)
+    log.to_csv(os.path.join(OUTPUT, 'log.csv'), index=False)
