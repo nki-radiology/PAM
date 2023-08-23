@@ -53,6 +53,7 @@ from frida.transforms           import Resample
 from frida.transforms           import PadAndCropTo
 
 from Localizer                  import CropThorax
+from Localizer                  import CropAdbomen
 from Localizer                  import LinkedSmartCrop
 
 
@@ -73,6 +74,8 @@ def list_dicom_folders():
 
 
 def data_inventory():
+    print ('Loading images...')
+
     # load images
     if os.path.isdir(INPUT):
         path        = Path(INPUT)
@@ -95,22 +98,34 @@ def data_inventory():
             ValueError('Needs a list of segmentation masks')
         print(' -- no masks provided, skipping')
 
+    print (' -- Loaded {} images'.format(len(dataset)))
+
     return dataset
 
 
 def init_loaders():
+    # +300HU cortical bone
+    # -120HU fat
     clamp = ClampImageFilter()
     clamp.SetUpperBound(300)
     clamp.SetLowerBound(-120)
 
+    # cast to int16 to save space on disk
     cast = CastImageFilter()
     cast.SetOutputPixelType(sitk.sitkInt16)
 
-    crop_thorax = CropThorax(tolerance=25)
+    # crop objects
+    if BODY_PART == 'thorax':
+        crop_obj = CropThorax(tolerance=25)
+    elif BODY_PART == 'abdomen':
+        crop_obj = CropAdbomen(tolerance=25)
+    else:
+        raise ValueError('Invalid body part')
 
+    # loader objects
     loader = ImageLoader(
         ReadVolume(),
-        crop_thorax,
+        crop_obj,
         Resample(2),
         PadAndCropTo((192, 192, 192), cval=-1000),
         TransformFromITKFilter(clamp),
@@ -119,22 +134,15 @@ def init_loaders():
 
     mask_loader = ImageLoader(
         ReadVolume(),
-        LinkedSmartCrop(crop_thorax),
+        LinkedSmartCrop(crop_obj),
         Resample(2, sitk.sitkNearestNeighbor),
-        PadAndCropTo((192, 192, 192), cval=-1000)
+        PadAndCropTo((192, 192, 192), cval=0)
     )
 
     return loader, mask_loader
 
 
-if __name__ == "__main__":
-
-    # iterate over all images
-    print ('Loading images...')
-    dataset = data_inventory()
-
-    print (' -- Loaded {} images'.format(len(dataset)))
-
+def preprocess(dataset):
     loader, mask_loader = init_loaders()
 
     log = []
@@ -148,12 +156,9 @@ if __name__ == "__main__":
 
         try:
             image = loader(row['image'])
-
             filename = str(i).zfill(12)
             filename = os.path.join(OUTPUT, filename + ".nii.gz")
-
             sitk.WriteImage(image, filename)
-
             entry['output_image'] = row['image']
 
         except:
@@ -163,20 +168,23 @@ if __name__ == "__main__":
         if INPUT_MASKS is not None:
             try:
                 mask = mask_loader(row['mask'])
-
                 filename = str(i).zfill(12)
                 filename = os.path.join(OUTPUT_MASKS, filename + ".nii.gz")
-
                 sitk.WriteImage(mask, filename)
-
                 entry['output_mask'] = row['mask']
 
             except:
                 print (' -- Error loading mask, skipping')
 
         log.append(entry)
-
         print (' -- Done')
+    
+    return pd.DataFrame(log)
 
-    log = pd.DataFrame(log)
+
+if __name__ == "__main__":
+
+    dataset = data_inventory()
+    log = preprocess(dataset)
+    
     log.to_csv(os.path.join(OUTPUT, 'log.csv'), index=False)
