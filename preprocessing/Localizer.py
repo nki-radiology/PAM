@@ -18,7 +18,7 @@ class Localizer():
 
     def __init__(self) -> None:
         self.is_fitted  = False
-        self.localizer  = load_model(r'localizer.h5', compile=False)
+        self.localizer  = load_model(r'preprocessing/localizer.h5', compile=False)
 
 
     def fit(self, image):
