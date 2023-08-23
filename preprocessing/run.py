@@ -85,16 +85,23 @@ def data_inventory():
     else:
         raise ValueError('Invalid input')
     
-    # load masks
-    if INPUT_MASKS is not None:
-        if INPUT_MASKS.endswith('.csv'):
-            dataset_masks = pd.read_csv(INPUT_MASKS)
-            dataset.merge(dataset_masks, on='image', how='left')
-        else:
-            ValueError('Needs a list of segmentation masks')
-        print(' -- no masks provided, skipping')
-
     print (' -- Loaded {} images'.format(len(dataset)))
+
+    # if masks already in dataset, delete them
+    if dataset.columns.contains('mask'):
+        dataset.rename(columns={'mask': 'mask.backup'}, inplace=True)
+    
+    # check input masks input
+    if INPUT_MASKS is None:
+        return dataset
+    if not INPUT_MASKS.endswith('.csv'):
+        return dataset
+    
+    # load masks
+    dataset_masks = pd.read_csv(INPUT_MASKS)
+    dataset = dataset.merge(dataset_masks, on='image', how='left')
+
+    print(' -- Loaded {} masks'.format(len(dataset_masks)))
 
     return dataset
 
