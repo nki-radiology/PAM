@@ -26,10 +26,6 @@ OUTPUT_MASKS        = PARAMS.output_masks
 
 DEBUG               = PARAMS.debug
 
-if DEBUG:
-    import pdb; pdb.set_trace()
-
-
 print('#############################################')
 print('Parameters:')
 print(PARAMS)
@@ -183,6 +179,9 @@ def preprocess(dataset):
 
 
 if __name__ == "__main__":
+
+    if DEBUG:
+        import pdb; pdb.set_trace()
 
     dataset = data_inventory()
     log = preprocess(dataset)
