@@ -88,7 +88,7 @@ def data_inventory():
     print (' -- Loaded {} images'.format(len(dataset)))
 
     # if masks already in dataset, delete them
-    if dataset.columns.contains('mask'):
+    if 'mask' in dataset.columns:
         dataset.rename(columns={'mask': 'mask.backup'}, inplace=True)
     
     # check input masks input
