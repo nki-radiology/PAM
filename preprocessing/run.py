@@ -1,5 +1,6 @@
 # example
 # python preprocess.py --body-part thorax --input /data/groups/beets-tan/s.trebeschi/MPM_FOLLOWUP/0.images --output /data/groups/beets-tan/s.trebeschi/MPM_FOLLOWUP/1.processed/
+# python preprocessing/run.py --input ~/mydata/MPM_FOLLOWUP/dataset.csv --input-masks ~/mydata/MPM_FOLLOWUP/dataset.csv --output ~/mydata/MPM_FOLLOWUP/1.images/ --output-masks ~/mydata/MPM_FOLLOWUP/1.segmentations/  --debug True
 
 import argparse
 
