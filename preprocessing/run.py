@@ -163,7 +163,7 @@ def preprocess(dataset):
             filename = str(i).zfill(12)
             filename = os.path.join(OUTPUT, filename + ".nii.gz")
             sitk.WriteImage(image, filename)
-            entry['output_image'] = row['image']
+            entry['output_image'] = os.path.join(OUTPUT, filename + ".nii.gz")
 
         except:
             print (' -- Error loading image')
@@ -175,7 +175,7 @@ def preprocess(dataset):
                 filename = str(i).zfill(12)
                 filename = os.path.join(OUTPUT_MASKS, filename + ".nii.gz")
                 sitk.WriteImage(mask, filename)
-                entry['output_mask'] = row['mask']
+                entry['output_mask'] = os.path.join(OUTPUT_MASKS, filename + ".nii.gz")
 
             except:
                 print (' -- Error loading mask, skipping')
