@@ -86,7 +86,7 @@ class SmartCrop(Transform):
         self.localizer.fit(image) 
 
         image_arr           = GetArrayFromImage(image)
-        lower, upper        = self.localizer.get_anatomical_region(self.up, self.lo, self.tolerance)
+        upper, lower        = self.localizer.get_anatomical_region(self.up, self.lo, self.tolerance)
 
         if (lower >= 0) and (lower < upper):
             outputs         = Crop(image, [0, 0, int(lower)], [0, 0, int(image_arr.shape[0] - upper)])
@@ -101,13 +101,13 @@ class ZombieCrop(Transform):
         self.up        = smart_crop.up
         self.lo        = smart_crop.lo
         super().__init__()
-        
+
 
     def __call__(self, image):
         outputs             = None
 
         image_arr           = GetArrayFromImage(image)
-        lower, upper        = self.localizer.get_anatomical_region(self.up, self.lo, self.tolerance)
+        upper, lower        = self.localizer.get_anatomical_region(self.up, self.lo, self.tolerance)
 
         if (lower >= 0) and (lower < upper):
             outputs         = Crop(image, [0, 0, int(lower)], [0, 0, int(image_arr.shape[0] - upper)])
