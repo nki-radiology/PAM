@@ -94,11 +94,14 @@ class SmartCrop(Transform):
         return outputs
     
     
-class LinkedSmartCrop(SmartCrop):
-    def __init__(self, parent_smart_crop):
+class ZombieCrop(Transform):
+    def __init__(self, smart_crop):
+        self.localizer = smart_crop.localizer
+        self.tolerance = smart_crop.tolerance
+        self.up        = smart_crop.up
+        self.lo        = smart_crop.lo
         super().__init__()
-        self.localizer = parent_smart_crop.localizer
-
+        
 
     def __call__(self, image):
         outputs             = None

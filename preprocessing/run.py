@@ -50,7 +50,7 @@ from frida.transforms           import PadAndCropTo
 
 from Localizer                  import CropThorax
 from Localizer                  import CropAdbomen
-from Localizer                  import LinkedSmartCrop
+from Localizer                  import ZombieCrop
 
 
 def list_dicom_folders():
@@ -137,7 +137,7 @@ def init_loaders():
 
     mask_loader = ImageLoader(
         ReadVolume(),
-        LinkedSmartCrop(crop_obj),
+        ZombieCrop(crop_obj),
         Resample(2, sitk.sitkNearestNeighbor),
         PadAndCropTo((192, 192, 192), cval=0)
     )
