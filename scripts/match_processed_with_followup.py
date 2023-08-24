@@ -6,12 +6,14 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--log-preprocessing',      type = str, default = None,             help = 'log file of preprocessing')
 parser.add_argument('--dataset-followup',       type = str, default = None,             help = 'log file of followup')
+parser.add_argument('--output',                 type = str, default = None,             help = 'folder that contains the dataset')
 parser.add_argument('--debug' ,                 type = bool, default = False,           help = 'debug mode')
 
 PARAMS                                      = parser.parse_args()
 
 LOG_PREPROCESSING                           = PARAMS.log_preprocessing
 DATASET_FOLLOWUP                            = PARAMS.dataset_followup
+OUTPUT                                      = PARAMS.output
 DEBUG                                       = PARAMS.debug
 
 
@@ -58,4 +60,4 @@ followup_dataset.rename({
 }, inplace=True, axis=1)
 
 
-followup_dataset.to_csv('followup_dataset_preprocessed.csv', index = False)
+followup_dataset.to_csv(OUTPUT, index = False)
