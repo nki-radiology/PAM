@@ -48,8 +48,14 @@ followup_dataset = followup_dataset.merge(log_preprocessing, left_on = 'followup
 
 
 followup_dataset.rename({
+    'baseline': 'original_image_baseline',
+    'followup': 'original_image_followup',
+}, inplace=True, axis=1)
+
+followup_dataset.rename({
     'output_image_baseline' : 'baseline',
     'output_image_followup' : 'followup',
-})
+}, inplace=True, axis=1)
+
 
 followup_dataset.to_csv('followup_dataset_preprocessed.csv', index = False)
