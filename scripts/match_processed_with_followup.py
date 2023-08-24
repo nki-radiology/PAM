@@ -43,8 +43,8 @@ print(f' - [info] preprocessing log has {len(log_preprocessing)} entries')
 print(f' - [info] followup dataset has {len(followup_dataset)} entries')
 
 
-followup_dataset.merge(log_preprocessing, left_on = 'baseline', right_on = 'input_image', how = 'left', suffixes=('', '_baseline'), inplace = True)
-followup_dataset.merge(log_preprocessing, left_on = 'followup', right_on = 'input_image', how = 'left', suffixes=('', '_followup'), inplace = True)
+followup_dataset = followup_dataset.merge(log_preprocessing, left_on = 'baseline', right_on = 'input_image', how = 'left')
+followup_dataset = followup_dataset.merge(log_preprocessing, left_on = 'followup', right_on = 'input_image', how = 'left', suffixes=('_baseline', '_followup'))
 
 
 followup_dataset.rename({
