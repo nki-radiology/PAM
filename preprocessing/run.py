@@ -11,6 +11,7 @@ parser.add_argument('--input',              type = str, default = None,         
 parser.add_argument('--input-masks',        type = str, default = None,             help = 'folder that contains the dataset')
 parser.add_argument('--output',             type = str, default = None,             help = 'folder that contains the dataset')
 parser.add_argument('--output-masks',       type = str, default = None,             help = 'folder that contains the dataset')
+parser.add_argument('--output-log',         type = str, default = None,             help = 'folder that contains the dataset')
 
 parser.add_argument('--debug' ,             type = bool, default = False,           help = 'debug mode')
 
@@ -24,6 +25,7 @@ INPUT_MASKS         = PARAMS.input_masks
 
 OUTPUT              = PARAMS.output
 OUTPUT_MASKS        = PARAMS.output_masks
+OUTPUT_LOG          = PARAMS.output_log
 
 DEBUG               = PARAMS.debug
 
@@ -194,4 +196,4 @@ if __name__ == "__main__":
     dataset = data_inventory()
     log = preprocess(dataset)
     
-    log.to_csv(os.path.join(OUTPUT_MASKS, 'log-preprocessing.csv'), index=False)
+    log.to_csv(OUTPUT_LOG, index=False)
