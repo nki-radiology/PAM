@@ -83,14 +83,11 @@ def register(model, dataloader, device):
         # forward pass
         with torch.no_grad():
             output = model(baseline, followup)
-            (wA, wD), (tA, tD)  = output
+            (_, _), (tA, tD)  = output
 
         # save output
-        save(wA, os.path.join(OUTPUT_FOLDER, f'wA_{i}.nii.gz'))
-        save(wD, os.path.join(OUTPUT_FOLDER, f'wD_{i}.nii.gz'))
-
         save(tA, os.path.join(OUTPUT_FOLDER, f'tA_{i}.npy'))
-        save(tD, os.path.join(OUTPUT_FOLDER, f'tD_{i}.nii.gz'))
+        save(tD, os.path.join(OUTPUT_FOLDER, f'tD_{i}.npy'))
 
 
 if __name__ == '__main__':
