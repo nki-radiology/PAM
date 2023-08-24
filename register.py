@@ -86,8 +86,8 @@ def register(model, dataloader, device):
             (_, _), (tA, tD)  = output
 
         # save output
-        save(tA, os.path.join(OUTPUT_FOLDER, f'tA_{i}.npy'))
-        save(tD, os.path.join(OUTPUT_FOLDER, f'tD_{i}.npy'))
+        save(tA, os.path.join(OUTPUT_FOLDER, f'{i}_affine.npy'))
+        save(tD, os.path.join(OUTPUT_FOLDER, f'{i}_deformable.npy'))
 
 
 if __name__ == '__main__':
