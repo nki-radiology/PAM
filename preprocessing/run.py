@@ -194,4 +194,4 @@ if __name__ == "__main__":
     dataset = data_inventory()
     log = preprocess(dataset)
     
-    log.to_csv(os.path.join(OUTPUT, 'log.csv'), index=False)
+    log.to_csv('log-preprocessing.csv', index=False)
